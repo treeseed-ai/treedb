@@ -1,0 +1,11 @@
+.git
+**/.git
+**/node_modules
+**/dist
+**/_build
+**/deps
+**/target
+**/.elixir_ls
+**/.DS_Store
+packages/ts-sdk/node_modules
+packages/ts-sdk/dist

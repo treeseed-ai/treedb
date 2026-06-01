@@ -1,0 +1,42 @@
+defmodule TreeDb.Application do
+  @moduledoc false
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    data_dir =
+      Application.get_env(:treedb, :data_dir) || System.get_env("TREEDB_DATA_DIR") ||
+        "/var/lib/treedb"
+
+    Application.put_env(:treedb, :data_dir, data_dir)
+
+    TreeDb.Store.init!(node_id: node_id())
+    {:ok, _} = TreeDb.Store.seed_dev_records(node_id(), base_url())
+
+    TreeDb.Audit.append("app.data_dir_initialized", %{
+      node_id: node_id(),
+      data: %{dataDir: data_dir}
+    })
+
+    children = [
+      TreeDbWeb.Endpoint
+    ]
+
+    opts = [strategy: :one_for_one, name: TreeDb.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  @impl true
+  def config_change(changed, _new, removed) do
+    TreeDbWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+
+  defp node_id, do: System.get_env("TREEDB_NODE_ID") || "node_local"
+
+  defp base_url do
+    host = System.get_env("PHX_HOST") || "localhost"
+    port = System.get_env("PORT") || "4000"
+    "http://#{host}:#{port}"
+  end
+end

@@ -1,2 +1,6 @@
 /packages/ts-sdk
-
+/target
+**/_build
+**/deps
+**/priv/native
+**/.elixir_ls
