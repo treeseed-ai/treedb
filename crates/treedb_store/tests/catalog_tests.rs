@@ -1,3 +1,4 @@
+use base64::Engine;
 use chrono::{Duration, Utc};
 use tempfile::tempdir;
 use treedb_store::*;
@@ -199,6 +200,7 @@ fn workspace_input(id: &str, branch_name: &str, ttl_seconds: i64) -> WorkspaceIn
         actor_id: "actor_demo".to_string(),
         tenant_id: "tenant_demo".to_string(),
         base_ref: "refs/heads/main".to_string(),
+        base_commit_sha: "1111111111111111111111111111111111111111".to_string(),
         branch_name: Some(branch_name.to_string()),
         mode: "writable".to_string(),
         allowed_paths: vec!["docs/**".to_string()],
@@ -214,4 +216,121 @@ fn workspace_input(id: &str, branch_name: &str, ttl_seconds: i64) -> WorkspaceIn
             paths: vec!["docs/**".to_string()],
         },
     }
+}
+
+#[test]
+fn workspace_file_overlay_records_persist_and_latest_wins() {
+    let dir = tempdir().unwrap();
+    init_data_dir(
+        dir.path(),
+        InitOptions {
+            node_id: "node_local".to_string(),
+        },
+    )
+    .unwrap();
+    put_workspace(
+        dir.path(),
+        workspace_input("ws_files", "refs/heads/agent/files", 60),
+    )
+    .unwrap();
+
+    let first = put_workspace_file(
+        dir.path(),
+        WorkspaceFileInput {
+            workspace_id: "ws_files".to_string(),
+            path: "docs/readme.md".to_string(),
+            op: "put".to_string(),
+            encoding: Some("utf8".to_string()),
+            content_base64: Some(base64::engine::general_purpose::STANDARD.encode("one")),
+            expected_sha: None,
+            base_sha: None,
+        },
+    )
+    .unwrap();
+    let second = put_workspace_file(
+        dir.path(),
+        WorkspaceFileInput {
+            workspace_id: "ws_files".to_string(),
+            path: "docs/readme.md".to_string(),
+            op: "put".to_string(),
+            encoding: Some("utf8".to_string()),
+            content_base64: Some(base64::engine::general_purpose::STANDARD.encode("two")),
+            expected_sha: Some(first.content_hash.unwrap()),
+            base_sha: None,
+        },
+    )
+    .unwrap();
+
+    assert_eq!(first.id, second.id);
+    assert_eq!(
+        get_workspace_file(dir.path(), "ws_files", "docs/readme.md")
+            .unwrap()
+            .unwrap()
+            .content_hash,
+        second.content_hash
+    );
+    assert_eq!(
+        read_workspace_file_content(dir.path(), &second)
+            .unwrap()
+            .unwrap(),
+        b"two"
+    );
+    assert_eq!(
+        list_workspace_files(dir.path(), "ws_files").unwrap().len(),
+        1
+    );
+
+    let deleted = put_workspace_file(
+        dir.path(),
+        WorkspaceFileInput {
+            workspace_id: "ws_files".to_string(),
+            path: "docs/readme.md".to_string(),
+            op: "delete".to_string(),
+            encoding: None,
+            content_base64: None,
+            expected_sha: second.content_hash,
+            base_sha: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(deleted.op, "delete");
+    assert!(deleted.content_hash.is_none());
+}
+
+#[test]
+fn mark_workspace_committed_sets_status_and_releases_lease() {
+    let dir = tempdir().unwrap();
+    init_data_dir(
+        dir.path(),
+        InitOptions {
+            node_id: "node_local".to_string(),
+        },
+    )
+    .unwrap();
+    let workspace = put_workspace(
+        dir.path(),
+        workspace_input("ws_commit", "refs/heads/agent/commit", 60),
+    )
+    .unwrap();
+    let lease_id = workspace.lease_id.unwrap();
+    let committed = mark_workspace_committed(
+        dir.path(),
+        WorkspaceCommitMarkInput {
+            workspace_id: "ws_commit".to_string(),
+            commit_sha: "2222222222222222222222222222222222222222".to_string(),
+        },
+    )
+    .unwrap();
+    assert_eq!(committed.status, "committed");
+    assert_eq!(
+        committed.commit_sha.as_deref(),
+        Some("2222222222222222222222222222222222222222")
+    );
+    assert_eq!(
+        treedb_store::workspace::get_lease(dir.path(), &lease_id)
+            .unwrap()
+            .unwrap()
+            .status,
+        "released"
+    );
 }

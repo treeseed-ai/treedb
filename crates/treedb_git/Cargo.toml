@@ -6,9 +6,12 @@ license.workspace = true
 
 [dependencies]
 base64.workspace = true
+chrono.workspace = true
 gix.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+base64.workspace = true
 tempfile.workspace = true

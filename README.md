@@ -22,11 +22,14 @@ Implemented now:
 - Repository registration with Git path validation.
 - gix-backed repository status, ref, remote, ref resolution, tree, and blob primitives.
 - Workspace session creation, lookup, close, expiration cleanup, and writable branch leases.
+- Phase 3 workspace File API for tree listing, UTF-8 file read/write/patch/delete, search, status, diff, and commit.
+- Overlay MVP write model: base reads come from Git objects, workspace writes live in TreeDB-native overlay records and blobs, and commit synthesizes a Git commit from base tree plus overlay changes.
+- External Rust `treedb_git_worker` for overlay commits, keeping risky Git object writes out of the BEAM OS process while still using gix and no shell-Git default path.
 
 Not implemented yet:
 
-- File/blob read and write APIs.
-- Commit, patch, diff, fetch, push, and mirror sync workflows.
+- Binary file read/write APIs.
+- Fetch, push, and mirror sync workflows.
 - Graph/search indexing service.
 - Sandbox command execution.
 - Connected control-plane authentication.
@@ -88,7 +91,7 @@ TreeDB API service
   v
 Rust core
   - treedb_store: append-only native records, manifests, recovery, policy, audit
-  - treedb_git: gix-backed repository inspection
+  - treedb_git: gix-backed repository inspection and overlay commit worker
   - future treedb_graph: repository graph/search/context indexing
   |
   v
@@ -112,17 +115,19 @@ Elixir owns process boundaries and lifecycle concerns:
 - `TreeDb.Registry`: node, placement, and mirror records.
 - `TreeDb.Git`: Git inspection wrapper.
 - `TreeDb.Audit`: append-only audit events.
-- `TreeDb.Workspaces`, `TreeDb.Files`, `TreeDb.Search`, `TreeDb.Graph`, and `TreeDb.Exec`: placeholders for future phases.
+- `TreeDb.Workspaces`: workspace sessions, base commit snapshots, and writable leases.
+- `TreeDb.Files`: workspace-scoped tree, file, search, status, diff, and commit API orchestration.
+- `TreeDb.Search`, `TreeDb.Graph`, and `TreeDb.Exec`: placeholders for future phases.
 
 ### Rust Responsibilities
 
 Rust crates are function libraries with explicit inputs and outputs:
 
 - `treedb_store` handles `.tdb` append logs, record encoding, checksums, replay, manifests, dev seed records, capabilities, placements, mirrors, tokens, and audit events.
-- `treedb_git` uses `gix` for repository opening/inspection and returns structured repository, ref, and remote summaries.
+- `treedb_git` uses `gix` for repository opening/inspection, tree/blob reads, recursive tree listing, and overlay commit synthesis.
 - `treedb_native` exposes bounded trusted operations to Elixir through Rustler.
 
-Rustler is used for small and bounded trusted calls. It does not provide OS-process crash isolation for segmentation faults in native code. Future risky or long-running native work should run in an external worker process supervised by Elixir.
+Rustler is used for small and bounded trusted calls. It does not provide OS-process crash isolation for segmentation faults in native code. The Phase 3 overlay commit path uses an external Rust worker process for that reason; future risky or long-running native work should follow the same supervised process boundary.
 
 ## Data Directory
 
@@ -165,6 +170,14 @@ Each following line is a JSON envelope with:
 - `payload`
 
 `payloadHash` is BLAKE3 over canonical JSON bytes for the payload. Replay verifies hashes and keeps the latest `put` for each record unless a later `delete` exists.
+
+Workspace file overlays are recorded in `workspaces/files.tdb`. UTF-8 overlay content is stored under:
+
+```text
+workspaces/active/<workspace_id>/overlay/blobs/<blake3_hex>
+```
+
+Reads resolve `overlay first, then base Git tree`. Deletes are overlay tombstones. Commit keeps overlay records for audit/debug inspection, marks the workspace committed, and releases the writable lease.
 
 ## Quick Start
 
@@ -211,6 +224,7 @@ Important environment variables:
 | `TREEDB_AUTH_MODE` | `dev` | `dev` enables local dev-token auth. `connected` is a future verifier mode and currently returns not implemented for dev-token creation. |
 | `TREEDB_REGISTRY_MODE` | `local` | Local registry mode for Phase 1. |
 | `TREEDB_NODE_ID` | `node_local` | Local node identifier. |
+| `TREEDB_MAX_FILE_BYTES` | `1048576` | Maximum UTF-8 file size for read/write/patch MVP operations. |
 | `PORT` | `4000` | HTTP port for the Phoenix service. |
 | `PHX_HOST` | `0.0.0.0` in Compose | Phoenix host binding. |
 
@@ -274,6 +288,7 @@ files:search
 graph:query
 workspace:create
 git:read
+git:diff
 git:commit
 registry:read
 registry:write
@@ -354,6 +369,63 @@ curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/workspaces \
 
 Writable workspaces require `workspace:create`, repository write capability, allowed ref/path scope, and primary-node placement. Phase 2 permits one active writable lease per repository branch.
 
+Workspace responses include `baseCommitSha` and `commitSha` when applicable. They intentionally do not expose internal workspace materialization paths.
+
+### File API
+
+```http
+GET    /api/v1/workspaces/:workspace_id/tree?path=...
+GET    /api/v1/workspaces/:workspace_id/files?path=...
+PUT    /api/v1/workspaces/:workspace_id/files?path=...
+PATCH  /api/v1/workspaces/:workspace_id/files?path=...
+DELETE /api/v1/workspaces/:workspace_id/files?path=...
+POST   /api/v1/workspaces/:workspace_id/search
+GET    /api/v1/workspaces/:workspace_id/status
+GET    /api/v1/workspaces/:workspace_id/diff
+POST   /api/v1/workspaces/:workspace_id/commit
+```
+
+The File API is workspace-scoped and UTF-8-only in Phase 3. Paths are repository-relative POSIX paths. TreeDB rejects absolute paths, `..`, backslashes, NUL bytes, and protected paths such as `.git/**`, `.env*`, private keys, lockfiles, dependency directories, and build output unless the request explicitly sets `allowProtected=true` and the workspace path scope also allows the path.
+
+Read a file:
+
+```bash
+curl -fsS "http://localhost:4000/api/v1/workspaces/$WORKSPACE_ID/files?path=docs/readme.md" \
+  -H "authorization: Bearer $TREEDB_TOKEN"
+```
+
+Write an overlay file:
+
+```bash
+curl -fsS -X PUT "http://localhost:4000/api/v1/workspaces/$WORKSPACE_ID/files?path=docs/readme.md" \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"encoding":"utf8","content":"Updated through TreeDB\n"}'
+```
+
+Search the current workspace view:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/workspaces/$WORKSPACE_ID/search \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"query":"TreeDB","path":"docs","limit":20}'
+```
+
+Commit overlay changes to the workspace branch:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/workspaces/$WORKSPACE_ID/commit \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{
+    "message": "Update repository file through TreeDB",
+    "author": {"name": "TreeDB Agent", "email": "agent@example.invalid"}
+  }'
+```
+
+Commit finalizes the writable workspace for the MVP: status becomes `committed`, the writable lease is released, further mutations are rejected, and the workspace can still be inspected or closed.
+
 ## Error Format
 
 Controller errors use a stable JSON shape:
@@ -378,6 +450,8 @@ Common HTTP mappings:
 | `403` | Permission denied |
 | `404` | Not found |
 | `409` | Conflict |
+| `413` | Payload too large |
+| `415` | Unsupported media type |
 | `422` | Validation error |
 | `500` | Internal error |
 | `501` | Configured mode not implemented |
@@ -445,8 +519,9 @@ The project currently has:
 
 - Rust store tests for data-dir initialization, dev seeding, repository records, placement records, mirrors, token records, effective scope, and checksum recovery errors.
 - Rust Git tests for missing paths, non-Git directories, non-bare repositories, and bare repositories.
-- Rust Git tests for refs, remotes, ref resolution, tree entries, and blob reads.
-- Elixir context and controller tests for store initialization, auth, repository registration, repository status, refs/remotes/sync, workspace lifecycle, health/version, policy, registry, and mirror endpoints.
+- Rust Git tests for refs, remotes, ref resolution, tree entries, recursive tree entries, blob reads, and overlay commits.
+- Rust store tests for workspace file overlays and committed workspace lease release.
+- Elixir context and controller tests for store initialization, auth, repository registration, repository status, refs/remotes/sync, workspace lifecycle, health/version, policy, registry, mirror endpoints, and File API workflows.
 
 `packages/ts-sdk` has its own baseline state documented in `docs/research/sdk-baseline-verification.md`. Do not treat existing SDK fixture or package graph failures as TreeDB regressions unless the integration work explicitly changes the SDK.
 
@@ -512,8 +587,7 @@ Near-term work follows the phased MVP plan in `PLAN`.
 
 Expected next areas:
 
-- Repository file/blob APIs.
-- Patch, diff, commit, and ref update operations.
+- Binary file strategy and larger object streaming.
 - Fetch/push and mirror synchronization.
 - Graph/search/index crate and API endpoints.
 - Sandboxed exec service.

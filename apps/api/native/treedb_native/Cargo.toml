@@ -9,6 +9,7 @@ name = "treedb_native"
 crate-type = ["cdylib"]
 
 [dependencies]
+base64.workspace = true
 chrono.workspace = true
 rustler.workspace = true
 serde.workspace = true

@@ -110,6 +110,7 @@ pub fn seed_dev_records(
         "graph:query",
         "workspace:create",
         "git:read",
+        "git:diff",
         "git:commit",
         "registry:read",
         "registry:write",
@@ -259,6 +260,7 @@ fn log_files() -> Vec<(PathBuf, &'static str)> {
         ("audit/events.tdb".into(), "audit_event"),
         ("config/dev_tokens.tdb".into(), "dev_token"),
         ("workspaces/sessions.tdb".into(), "workspace"),
+        ("workspaces/files.tdb".into(), "workspace_file"),
         ("leases/leases.tdb".into(), "lease"),
     ]
 }

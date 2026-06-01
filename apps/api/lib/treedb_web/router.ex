@@ -35,5 +35,14 @@ defmodule TreeDbWeb.Router do
 
     get("/workspaces/:workspace_id", WorkspaceController, :show)
     post("/workspaces/:workspace_id/close", WorkspaceController, :close)
+    get("/workspaces/:workspace_id/tree", FileController, :tree)
+    get("/workspaces/:workspace_id/files", FileController, :read)
+    put("/workspaces/:workspace_id/files", FileController, :write)
+    patch("/workspaces/:workspace_id/files", FileController, :patch)
+    delete("/workspaces/:workspace_id/files", FileController, :delete)
+    post("/workspaces/:workspace_id/search", FileController, :search)
+    get("/workspaces/:workspace_id/status", FileController, :status)
+    get("/workspaces/:workspace_id/diff", FileController, :diff)
+    post("/workspaces/:workspace_id/commit", FileController, :commit)
   end
 end

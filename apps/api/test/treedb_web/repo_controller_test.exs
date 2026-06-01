@@ -140,6 +140,7 @@ defmodule TreeDbWeb.RepoControllerTest do
   end
 
   defp create_git_fixture(path) do
+    File.rm_rf!(path)
     File.mkdir_p!(path)
     git(path, ["init", "-b", "main"])
     git(path, ["config", "user.name", "TreeDB Test"])

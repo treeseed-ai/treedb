@@ -53,3 +53,43 @@ pub struct BlobRead {
     pub byte_length: usize,
     pub content_base64: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecursiveTreeEntry {
+    pub path: String,
+    pub object_id: String,
+    pub kind: String,
+    pub mode: String,
+    pub size: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileChange {
+    pub path: String,
+    pub op: String,
+    pub content_base64: Option<String>,
+    pub expected_sha: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommitOverlayInput {
+    pub repo_path: String,
+    pub base_commit_sha: String,
+    pub branch_name: String,
+    pub message: String,
+    pub author_name: String,
+    pub author_email: String,
+    pub changes: Vec<FileChange>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommitOverlayResult {
+    pub commit_sha: String,
+    pub branch_name: String,
+    pub changed_paths: Vec<String>,
+    pub status: String,
+}

@@ -19,6 +19,8 @@ defmodule TreeDb.Workspaces do
          :ok <- require_branch_scope(repo_scope, branch_name),
          :ok <- TreeDb.Capabilities.require_paths(repo_scope, allowed_paths),
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
+         {:ok, base_resolved} <- TreeDb.Git.resolve_ref(repo["localPath"], base_ref),
+         :ok <- ensure_branch_start(repo, branch_name, base_resolved["target"]),
          {:ok, placement} when is_map(placement) <-
            TreeDb.Store.get_repository_placement(repo_id),
          :ok <- ensure_placement_allows(mode, placement, local_node_id),
@@ -26,6 +28,7 @@ defmodule TreeDb.Workspaces do
            persist_workspace(repo, placement, principal, create_scope, %{
              mode: mode,
              base_ref: base_ref,
+             base_commit_sha: base_resolved["target"],
              branch_name: branch_name,
              allowed_paths: allowed_paths,
              ttl: ttl
@@ -88,6 +91,7 @@ defmodule TreeDb.Workspaces do
       actorId: actor_id(principal),
       tenantId: tenant_id(principal),
       baseRef: opts.base_ref,
+      baseCommitSha: opts.base_commit_sha,
       branchName: opts.branch_name,
       mode: opts.mode,
       allowedPaths: opts.allowed_paths,
@@ -170,13 +174,39 @@ defmodule TreeDb.Workspaces do
       repoId: workspace["repositoryId"],
       nodeId: workspace["nodeId"],
       baseRef: workspace["baseRef"],
+      baseCommitSha: workspace["baseCommitSha"],
       branchName: workspace["branchName"],
       mode: workspace["mode"],
       status: workspace["status"],
       expiresAt: workspace["expiresAt"],
-      materializedPath: workspace["materializedPath"],
+      commitSha: workspace["commitSha"],
       effectiveScope: workspace["effectiveScope"],
       capabilities: workspace["capabilities"]
     }
+  end
+
+  defp ensure_branch_start(_repo, nil, _base_sha), do: :ok
+
+  defp ensure_branch_start(repo, branch_name, base_sha) do
+    case TreeDb.Git.resolve_ref(repo["localPath"], branch_name) do
+      {:ok, %{"target" => ^base_sha}} ->
+        :ok
+
+      {:ok, _resolved} ->
+        {:error,
+         %{
+           code: "conflict",
+           message: "Workspace branch already exists at a different commit."
+         }}
+
+      {:error, %{"code" => "not_found"}} ->
+        :ok
+
+      {:error, %{code: "not_found"}} ->
+        :ok
+
+      other ->
+        other
+    end
   end
 end

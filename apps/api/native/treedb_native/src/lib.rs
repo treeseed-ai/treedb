@@ -1,3 +1,4 @@
+use base64::Engine;
 use rustler::{Encoder, Env, Error as NifError, Term};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -214,6 +215,72 @@ fn cleanup_expired_workspaces<'a>(env: Env<'a>, data_dir: String) -> Term<'a> {
 }
 
 #[rustler::nif(schedule = "DirtyIo")]
+fn put_workspace_file<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<WorkspaceFileInput>(input_json) {
+        Ok(input) => match treedb_store::put_workspace_file(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_workspace_file<'a>(
+    env: Env<'a>,
+    data_dir: String,
+    workspace_id: String,
+    path: String,
+) -> Term<'a> {
+    match treedb_store::get_workspace_file(Path::new(&data_dir), &workspace_id, &path) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_workspace_files<'a>(env: Env<'a>, data_dir: String, workspace_id: String) -> Term<'a> {
+    match treedb_store::list_workspace_files(Path::new(&data_dir), &workspace_id) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn read_workspace_file_content<'a>(
+    env: Env<'a>,
+    data_dir: String,
+    record_json: String,
+) -> Term<'a> {
+    match parse_json::<WorkspaceFileRecord>(record_json) {
+        Ok(record) => {
+            match treedb_store::read_workspace_file_content(Path::new(&data_dir), &record) {
+                Ok(Some(bytes)) => ok_json(
+                    env,
+                    serde_json::json!({
+                        "contentBase64": base64::engine::general_purpose::STANDARD.encode(bytes)
+                    }),
+                ),
+                Ok(None) => ok_json(env, serde_json::json!({"contentBase64": null})),
+                Err(error) => err_json(env, error.code(), error),
+            }
+        }
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn mark_workspace_committed<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<WorkspaceCommitMarkInput>(input_json) {
+        Ok(input) => match treedb_store::mark_workspace_committed(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
 fn inspect_repository<'a>(env: Env<'a>, path: String) -> Term<'a> {
     match treedb_git::inspect_repository(Path::new(&path)) {
         Ok(record) => ok_json(env, record),
@@ -264,6 +331,29 @@ fn read_blob<'a>(env: Env<'a>, path: String, ref_name: String, blob_path: String
         Ok(record) => ok_json(env, record),
         Err(error) => err_json(env, error.code(), error),
     }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_tree_recursive<'a>(
+    env: Env<'a>,
+    path: String,
+    ref_name: String,
+    tree_path: Option<String>,
+) -> Term<'a> {
+    match treedb_git::list_tree_recursive(Path::new(&path), &ref_name, tree_path.as_deref()) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn commit_overlay<'a>(env: Env<'a>, input_json: String) -> Term<'a> {
+    let _ = input_json;
+    err_json(
+        env,
+        "not_implemented",
+        "commit_overlay uses the external treedb_git_worker process",
+    )
 }
 
 #[rustler::nif]

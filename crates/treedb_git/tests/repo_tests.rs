@@ -1,3 +1,4 @@
+use base64::Engine;
 use std::process::Command;
 use tempfile::tempdir;
 use treedb_git::*;
@@ -94,6 +95,11 @@ fn refs_remotes_tree_and_blob_can_be_read() {
     assert!(docs.iter().any(|entry| entry.path == "docs/readme.md"));
     let blob = read_blob(dir.path(), "refs/heads/main", "docs/readme.md").unwrap();
     assert_eq!(blob.byte_length, "hello tree".len());
+
+    let recursive = list_tree_recursive(dir.path(), "refs/heads/main", None).unwrap();
+    assert!(recursive
+        .iter()
+        .any(|entry| entry.path == "docs/readme.md" && entry.kind == "blob"));
 }
 
 #[test]
@@ -103,6 +109,66 @@ fn bare_repo_can_be_inspected() {
     let result = inspect_repository(dir.path()).unwrap();
     assert!(result.is_git_repository);
     assert_eq!(result.is_bare, Some(true));
+}
+
+#[test]
+fn commit_overlay_writes_modifies_and_deletes_files() {
+    let dir = tempdir().unwrap();
+    git(dir.path(), &["init", "-b", "main"]);
+    git(dir.path(), &["config", "user.name", "TreeDB Test"]);
+    git(
+        dir.path(),
+        &["config", "user.email", "test@example.invalid"],
+    );
+    std::fs::create_dir_all(dir.path().join("docs")).unwrap();
+    std::fs::write(dir.path().join("docs/readme.md"), "hello\n").unwrap();
+    std::fs::write(dir.path().join("docs/delete.md"), "remove me\n").unwrap();
+    git(dir.path(), &["add", "docs/readme.md", "docs/delete.md"]);
+    git(dir.path(), &["commit", "-m", "init"]);
+    let base = git_stdout(dir.path(), &["rev-parse", "HEAD"]);
+
+    let result = commit_overlay(CommitOverlayInput {
+        repo_path: dir.path().display().to_string(),
+        base_commit_sha: base,
+        branch_name: "refs/heads/agent/overlay".to_string(),
+        message: "overlay commit".to_string(),
+        author_name: "TreeDB Test".to_string(),
+        author_email: "test@example.invalid".to_string(),
+        changes: vec![
+            FileChange {
+                path: "docs/readme.md".to_string(),
+                op: "put".to_string(),
+                content_base64: Some(base64::engine::general_purpose::STANDARD.encode("updated\n")),
+                expected_sha: None,
+            },
+            FileChange {
+                path: "docs/new.md".to_string(),
+                op: "put".to_string(),
+                content_base64: Some(base64::engine::general_purpose::STANDARD.encode("new\n")),
+                expected_sha: None,
+            },
+            FileChange {
+                path: "docs/delete.md".to_string(),
+                op: "delete".to_string(),
+                content_base64: None,
+                expected_sha: None,
+            },
+        ],
+    })
+    .unwrap();
+
+    assert_eq!(result.status, "committed");
+    assert!(result.changed_paths.contains(&"docs/new.md".to_string()));
+    assert_eq!(
+        resolve_ref(dir.path(), "refs/heads/agent/overlay")
+            .unwrap()
+            .target,
+        result.commit_sha
+    );
+    let updated = read_blob(dir.path(), "refs/heads/agent/overlay", "docs/readme.md").unwrap();
+    assert_eq!(updated.byte_length, "updated\n".len());
+    assert!(read_blob(dir.path(), "refs/heads/agent/overlay", "docs/new.md").is_ok());
+    assert!(read_blob(dir.path(), "refs/heads/agent/overlay", "docs/delete.md").is_err());
 }
 
 fn git(cwd: &std::path::Path, args: &[&str]) {

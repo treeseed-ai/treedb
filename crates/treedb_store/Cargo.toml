@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+base64.workspace = true
 blake3.workspace = true
 chrono.workspace = true
 serde.workspace = true
@@ -13,4 +14,5 @@ thiserror.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+base64.workspace = true
 tempfile.workspace = true

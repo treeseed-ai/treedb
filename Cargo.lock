@@ -1954,8 +1954,10 @@ name = "treedb_git"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "chrono",
  "gix",
  "serde",
+ "serde_json",
  "tempfile",
  "thiserror",
 ]
@@ -1964,6 +1966,7 @@ dependencies = [
 name = "treedb_native"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "chrono",
  "rustler",
  "serde",
@@ -1976,6 +1979,7 @@ dependencies = [
 name = "treedb_store"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "blake3",
  "chrono",
  "serde",

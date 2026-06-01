@@ -87,3 +87,7 @@ pub fn workspace_id(
 pub fn lease_id(repo_id: &str, branch_name: &str) -> String {
     format!("lease_{}", short_hash(&format!("{repo_id}|{branch_name}")))
 }
+
+pub fn workspace_file_id(workspace_id: &str, path: &str) -> String {
+    format!("wsfile_{}", short_hash(&format!("{workspace_id}|{path}")))
+}

@@ -1,7 +1,9 @@
 use crate::catalog::{get_record, list_records, put_record};
 use crate::error::StoreError;
 use crate::ids::{lease_id, workspace_id};
-use crate::types::{CleanupReport, LeaseRecord, WorkspaceInput, WorkspaceRecord};
+use crate::types::{
+    CleanupReport, LeaseRecord, WorkspaceCommitMarkInput, WorkspaceInput, WorkspaceRecord,
+};
 use chrono::{Duration, Utc};
 use std::path::Path;
 
@@ -53,6 +55,7 @@ pub fn put_workspace(
         actor_id: input.actor_id,
         tenant_id: input.tenant_id,
         base_ref: input.base_ref,
+        base_commit_sha: input.base_commit_sha,
         branch_name: input.branch_name,
         mode: input.mode,
         allowed_paths: input.allowed_paths,
@@ -61,6 +64,7 @@ pub fn put_workspace(
         materialized_path: input.materialized_path,
         effective_scope: input.effective_scope,
         lease_id: lease.map(|record| record.id),
+        commit_sha: None,
         created_at: now,
         expires_at,
         closed_at: None,
@@ -71,6 +75,38 @@ pub fn put_workspace(
         "workspaces/sessions.tdb",
         "workspace",
         &id,
+        &record,
+    )?;
+    Ok(record)
+}
+
+pub fn mark_workspace_committed(
+    data_dir: &Path,
+    input: WorkspaceCommitMarkInput,
+) -> Result<WorkspaceRecord, StoreError> {
+    let Some(mut record) = get_workspace(data_dir, &input.workspace_id)? else {
+        return Err(StoreError::NotFound(format!(
+            "workspace not found: {}",
+            input.workspace_id
+        )));
+    };
+    if record.status != "ready" {
+        return Err(StoreError::Conflict(format!(
+            "workspace is not ready: {}",
+            record.status
+        )));
+    }
+    record.status = "committed".to_string();
+    record.commit_sha = Some(input.commit_sha);
+    record.closed_at = Some(Utc::now());
+    if let Some(lease_id) = record.lease_id.as_deref() {
+        release_lease(data_dir, lease_id)?;
+    }
+    put_record(
+        data_dir,
+        "workspaces/sessions.tdb",
+        "workspace",
+        &record.id,
         &record,
     )?;
     Ok(record)

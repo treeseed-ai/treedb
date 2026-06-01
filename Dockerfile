@@ -42,7 +42,9 @@ COPY . .
 WORKDIR /workspace/treedb/apps/api
 RUN mix deps.get --only prod \
   && mix compile \
-  && mix release
+  && cargo build --release -p treedb_git --bin treedb_git_worker \
+  && mix release \
+  && cp ../../target/release/treedb_git_worker _build/prod/rel/treedb/bin/treedb_git_worker
 
 FROM debian:bookworm-slim AS prod
 ENV DEBIAN_FRONTEND=noninteractive \

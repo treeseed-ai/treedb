@@ -62,6 +62,26 @@ defmodule TreeDb.Store do
   def cleanup_expired_workspaces,
     do: call_json(&TreeDb.Native.cleanup_expired_workspaces/1, data_dir())
 
+  def put_workspace_file(input),
+    do: call_json(&TreeDb.Native.put_workspace_file/2, data_dir(), Jason.encode!(input))
+
+  def get_workspace_file(workspace_id, path),
+    do: call_json(&TreeDb.Native.get_workspace_file/3, data_dir(), workspace_id, path)
+
+  def list_workspace_files(workspace_id),
+    do: call_json(&TreeDb.Native.list_workspace_files/2, data_dir(), workspace_id)
+
+  def read_workspace_file_content(record),
+    do:
+      call_json(
+        &TreeDb.Native.read_workspace_file_content/2,
+        data_dir(),
+        Jason.encode!(record)
+      )
+
+  def mark_workspace_committed(input),
+    do: call_json(&TreeDb.Native.mark_workspace_committed/2, data_dir(), Jason.encode!(input))
+
   def hash_token(token), do: call_json(&TreeDb.Native.hash_token/1, token)
 
   def call_json(fun, arg1), do: decode(apply_fun(fun, [arg1]))

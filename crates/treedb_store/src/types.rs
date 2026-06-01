@@ -206,6 +206,8 @@ pub struct WorkspaceInput {
     pub actor_id: String,
     pub tenant_id: String,
     pub base_ref: String,
+    #[serde(default)]
+    pub base_commit_sha: String,
     pub branch_name: Option<String>,
     pub mode: String,
     pub allowed_paths: Vec<String>,
@@ -224,6 +226,7 @@ pub struct WorkspaceRecord {
     pub actor_id: String,
     pub tenant_id: String,
     pub base_ref: String,
+    pub base_commit_sha: String,
     pub branch_name: Option<String>,
     pub mode: String,
     pub allowed_paths: Vec<String>,
@@ -232,6 +235,7 @@ pub struct WorkspaceRecord {
     pub materialized_path: String,
     pub effective_scope: EffectiveScope,
     pub lease_id: Option<String>,
+    pub commit_sha: Option<String>,
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub closed_at: Option<DateTime<Utc>>,
@@ -257,4 +261,39 @@ pub struct LeaseRecord {
 pub struct CleanupReport {
     pub expired_workspace_ids: Vec<String>,
     pub released_lease_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceFileInput {
+    pub workspace_id: String,
+    pub path: String,
+    pub op: String,
+    pub encoding: Option<String>,
+    pub content_base64: Option<String>,
+    pub expected_sha: Option<String>,
+    pub base_sha: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceFileRecord {
+    pub id: String,
+    pub workspace_id: String,
+    pub path: String,
+    pub op: String,
+    pub encoding: Option<String>,
+    pub content_hash: Option<String>,
+    pub content_path: Option<String>,
+    pub expected_sha: Option<String>,
+    pub base_sha: Option<String>,
+    pub size: u64,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceCommitMarkInput {
+    pub workspace_id: String,
+    pub commit_sha: String,
 }
