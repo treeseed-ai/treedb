@@ -517,4 +517,4 @@ For Docker-facing changes, also run the container smoke verification listed abov
 
 ## License
 
-TreeDB is licensed under the GNU Affero General Public License v3.0 only. See `LICENSE`.
+TreeDB is licensed under the Apache License, Version 2.0. See `LICENSE`.
