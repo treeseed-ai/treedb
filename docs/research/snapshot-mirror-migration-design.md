@@ -1,12 +1,12 @@
 # Snapshot, Mirror, And Migration Design
 
-## Current Phase 8 State
+## Current MVP State
 
-TreeDB has server-side auth, scoped capability grants, stable audit events, and planner-only federation access reduction. Mirror records exist in the registry, but Phase 8 does not perform network sync. Federation planning intentionally does not execute global search/query. There is no repository snapshot, artifact export, or placement migration API before Phase 9.
+TreeDB has server-side auth, scoped capability grants, stable audit events, and planner-only federation access reduction. Mirror records exist in the registry, but MVP does not perform network sync. Federation planning intentionally does not execute global search/query. There is no repository snapshot, artifact export, or placement migration API before MVP.
 
 ## Snapshot Contract
 
-Phase 9 snapshots are repository/index oriented. They do not encode TreeSeed package, release, template, market, or product semantics.
+MVP snapshots are repository/index oriented. They do not encode TreeSeed package, release, template, market, or product semantics.
 
 Supported snapshot kinds:
 
@@ -34,7 +34,7 @@ Artifact bytes are created by Rust store code using `tar` and `zstd`, not shell 
 
 ## Mirror Sync Contract
 
-Mirror sync is gix-backed. Phase 9 supports local file remotes and HTTP(S) where enabled by gix features. SSH remotes return a structured `unsupported_transport` error unless a future build enables and validates SSH transport.
+Mirror sync is gix-backed. MVP supports local file remotes and HTTP(S) where enabled by gix features. SSH remotes return a structured `unsupported_transport` error unless a future build enables and validates SSH transport.
 
 Mirror sync persists records under TreeDB-native federation files:
 
@@ -62,7 +62,7 @@ The TypeScript SDK receives generic snapshot, artifact, mirror sync, and migrati
 
 ## Security Boundaries
 
-Phase 9 keeps these constraints:
+MVP keeps these constraints:
 
 - no SQL, Ecto, PostgreSQL, or SQLite
 - no shell Git implementation path

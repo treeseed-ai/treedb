@@ -127,7 +127,7 @@ Authorization must happen before search or graph expansion. TreeDB must reduce r
 - `git commit`
 - `git rev-parse HEAD`
 
-Broader SDK Git behavior appears in workflow, workspace, release, package, template, and verification services and tests. Areas to inspect and keep mapped during later phases include:
+Broader SDK Git behavior appears in workflow, workspace, release, package, template, and verification services and tests. Areas to inspect and keep mapped during later capabilities include:
 
 - `src/operations/services/git-workflow.ts`
 - `src/workflow/worktrees.ts`
@@ -253,7 +253,7 @@ Primary seams for later implementation:
 6. Capability translation from TreeSeed platform scopes into opaque TreeDB scoped grants.
 7. Exec transport for verification commands and agent shell needs.
 
-These seams should be introduced without finalizing TreeDB endpoint shapes in Phase 0.
+These seams should be introduced without finalizing TreeDB endpoint shapes in MVP.
 
 ## Domain Concepts That Must Remain Outside TreeDB
 
@@ -285,7 +285,7 @@ TreeDB can store, update, index, search, snapshot, and query files containing th
 5. Reusing market dispatch for TreeDB repository operations would blur product and repository-database boundaries.
 6. Failing to add repo/ref/path/workspace authorization would create security and data leakage risks.
 
-## Architecture Implications For Phase 1+
+## Architecture Implications For MVP
 
 ### Elixir Object/Actor Model
 
@@ -349,7 +349,7 @@ Sources:
 ## Initial Compatibility Issue List
 
 1. SDK fixture submodule missing; baseline tests cannot fully run.
-2. Package graph test has a self-referential deprecated path failure.
+2. Package graph test had a self-referential retired-path assertion; this was corrected during the MVP cleanup and the full SDK suite now passes.
 3. No `typecheck` script exists.
 4. SDK public API mixes generic repository/file behavior with TreeSeed market/product concepts.
 5. Current content store assumes local POSIX filesystem and direct Markdown file walking.

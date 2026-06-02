@@ -53,7 +53,7 @@ The current SDK stores local snapshots under `.treeseed/state/graph`. TreeDB doe
 
 ## Ranking Provider Notes
 
-The SDK supports pluggable ranking providers. TreeDB Phase 6 uses built-in lexical plus graph-neighborhood scoring only. Plugin ranking integration is out of scope until SDK integration.
+The SDK supports pluggable ranking providers. TreeDB MVP uses built-in lexical plus graph-neighborhood scoring only. Plugin ranking integration is out of scope until SDK integration.
 
 ## Access Filtering Contract
 

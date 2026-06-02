@@ -2,13 +2,13 @@
 
 ## Scope
 
-Phase 5 maps TreeDB repository query primitives to the current `packages/ts-sdk` read/search behavior without moving TreeSeed domain models into TreeDB. TreeDB remains generic and Git-oriented; the SDK model registry remains responsible for model names, field aliases, product concepts, and content directory selection.
+MVP maps TreeDB repository query primitives to the current `packages/ts-sdk` read/search behavior without moving TreeSeed domain models into TreeDB. TreeDB remains generic and Git-oriented; the SDK model registry remains responsible for model names, field aliases, product concepts, and content directory selection.
 
 ## SDK File Search Conventions
 
 The SDK content backend walks Markdown and MDX files under a model-specific `contentDir`. It reads files from the local content store, parses frontmatter/body, filters entries, sorts entries, and then applies `limit`.
 
-TreeDB Phase 5 maps this to repository-level query parameters:
+TreeDB MVP maps this to repository-level query parameters:
 
 - SDK `contentDir` -> TreeDB `paths`, such as `["src/content/pages/**"]`.
 - SDK local file read -> TreeDB `POST /repos/:repo_id/files/read`.
@@ -102,7 +102,7 @@ updated_since
 related_to
 ```
 
-TreeDB Phase 5 implements the same ops over generic fields:
+TreeDB MVP implements the same ops over generic fields:
 
 ```text
 path
@@ -128,7 +128,7 @@ TreeDB supports the same shape over generic fields and `score`.
 
 ## Pagination Status
 
-The current SDK content search applies `limit` only. TreeDB Phase 5 supports `limit` and an opaque `cursor` for repository query APIs. SDK callers can ignore `cursor` to preserve current behavior.
+The current SDK content search applies `limit` only. TreeDB MVP supports `limit` and an opaque `cursor` for repository query APIs. SDK callers can ignore `cursor` to preserve current behavior.
 
 TreeDB cursor format is intentionally opaque to clients; internally it is URL-safe Base64 JSON containing an offset.
 

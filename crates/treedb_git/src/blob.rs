@@ -1,4 +1,4 @@
-//! Blob operations are deferred beyond Phase 1.
+//! Blob operations are deferred beyond MVP.
 use crate::error::GitError;
 use crate::refs::resolve_ref;
 use crate::types::BlobRead;

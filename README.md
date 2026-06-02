@@ -6,7 +6,7 @@ TreeDB is intentionally generic. It stores and operates on Git/repository primit
 
 ## Current Status
 
-TreeDB is in early MVP development.
+TreeDB has a working repository-native API, storage, graph, snapshot, audit, registry, SDK, and verification surface.
 
 Implemented now:
 
@@ -22,16 +22,16 @@ Implemented now:
 - Repository registration with Git path validation.
 - gix-backed repository status, ref, remote, ref resolution, tree, and blob primitives.
 - Workspace session creation, lookup, close, expiration cleanup, and writable branch leases.
-- Phase 3 workspace File API for tree listing, UTF-8 file read/write/patch/delete, search, status, diff, and commit.
+- Workspace File API for tree listing, UTF-8 file read/write/patch/delete, search, status, diff, and commit.
 - Overlay MVP write model: base reads come from Git objects, workspace writes live in TreeDB-native overlay records and blobs, and commit synthesizes a Git commit from base tree plus overlay changes.
 - External Rust `treedb_git_worker` for overlay commits, keeping risky Git object writes out of the BEAM OS process while still using gix and no shell-Git default path.
-- Phase 4 remote sandbox shell MVP for allowlisted read-only exploration, verification commands, and explicitly writable internal sessions.
-- Phase 5 repository query MVP for generic Git-object-backed read, path list, search, section/link, and changed-path queries that map cleanly to SDK content usage.
-- Phase 6 single-repository graph and context MVP with TreeDB-native graph segments, generic SDK-compatible node/edge shapes, authorization-aware graph filtering, graph search/query, related/subgraph traversal, context packs, and `ctx` DSL parsing.
-- Phase 7 opt-in TypeScript SDK TreeDB clients/adapters and registry-aware routing primitives.
-- Phase 8 HMAC JWT connected-auth MVP, expanded scoped capability grants, audit event listing, and planner-only federation access reduction.
-- Phase 9 repository snapshots, tar.zst artifact export/download, gix-backed mirror sync, placement migration records, and SDK client methods for those surfaces.
-- Phase 10 end-to-end MVP contract verification with an in-process Phoenix scenario, mocked TypeScript SDK TreeDB contract tests, static OpenAPI fixtures, and an optional Docker black-box smoke script.
+- Remote sandbox shell support for allowlisted read-only exploration, verification commands, and explicitly writable internal sessions.
+- Repository query APIs for generic Git-object-backed read, path list, search, section/link, and changed-path queries that map cleanly to SDK content usage.
+- Single-repository graph and context APIs with TreeDB-native graph segments, generic SDK-compatible node/edge shapes, authorization-aware graph filtering, graph search/query, related/subgraph traversal, context packs, and `ctx` DSL parsing.
+- Opt-in TypeScript SDK TreeDB clients/adapters and registry-aware routing primitives.
+- HMAC JWT connected auth, expanded scoped capability grants, audit event listing, and planner-only federation access reduction.
+- Repository snapshots, tar.zst artifact export/download, gix-backed mirror sync, placement migration records, and SDK client methods for those surfaces.
+- End-to-end contract verification with an in-process Phoenix scenario, mocked TypeScript SDK TreeDB contract tests, static OpenAPI fixtures, and an optional Docker black-box smoke script.
 
 Not implemented yet:
 
@@ -52,7 +52,7 @@ The core design choices are:
 - Keep TreeDB-owned metadata in an explicit TreeDB data directory.
 - Use Rust and Gitoxide/gix for repository operations where practical.
 - Use Elixir/Phoenix for HTTP boundaries, supervision, lifecycle, and API coordination.
-- Avoid PostgreSQL, SQLite, Ecto, and shell Git as default MVP foundations.
+- Avoid PostgreSQL, SQLite, Ecto, and shell Git as default implementation foundations.
 - Keep product and commerce semantics outside TreeDB.
 
 ## Repository Layout
@@ -70,14 +70,14 @@ The core design choices are:
     treedb_git/                  # gix-backed repository inspection
     treedb_graph/                # Generic graph segments, ranking, and context packs
   docs/
-    research/                    # Phase 0 compatibility and architecture research
+    research/                    # MVP compatibility and architecture research
   packages/
     ts-sdk/                      # TreeSeed SDK compatibility target, separate checkout
   PLAN                           # MVP implementation plan
   LICENSE
 ```
 
-`packages/ts-sdk` is included for research and future compatibility work. Phase 1 does not modify it.
+`packages/ts-sdk` is included for compatibility research, TreeDB transport adapters, and SDK contract tests. TreeDB SDK integration is implemented behind explicit TreeDB mode.
 
 ## Architecture
 
@@ -114,7 +114,7 @@ TreeDB data directory
 
 Elixir owns process boundaries and lifecycle concerns:
 
-- `TreeDb.Auth`: dev-token authentication and future verifier boundary.
+- `TreeDb.Auth`: dev-token authentication and connected HS256 JWT verification.
 - `TreeDb.Capabilities`: effective scoped capabilities.
 - `TreeDb.Store`: data directory and native storage wrappers.
 - `TreeDb.Repos`: repository registration and status.
@@ -139,13 +139,13 @@ Rust crates are function libraries with explicit inputs and outputs:
 - `treedb_graph` builds generic file, section, tag, reference, and provenance graphs; writes verified graph segment files; ranks lexical/graph-neighborhood matches; and assembles context packs.
 - `treedb_native` exposes bounded trusted operations to Elixir through Rustler.
 
-Rustler is used for small and bounded trusted calls. It does not provide OS-process crash isolation for segmentation faults in native code. The Phase 3 overlay commit path uses an external Rust worker process for that reason; future risky or long-running native work should follow the same supervised process boundary.
+Rustler is used for small and bounded trusted calls. It does not provide OS-process crash isolation for segmentation faults in native code. The MVP overlay commit path uses an external Rust worker process for that reason; future risky or long-running native work should follow the same supervised process boundary.
 
 ## Data Directory
 
 TreeDB initializes `$TREEDB_DATA_DIR`, defaulting to `/var/lib/treedb` in containers.
 
-Phase 1 creates:
+MVP creates:
 
 ```text
 catalog/
@@ -262,7 +262,7 @@ Important environment variables:
 | `TREEDB_JWT_ISSUER` | unset | Required JWT issuer in connected auth mode. |
 | `TREEDB_JWT_AUDIENCE` | unset | Required JWT audience in connected auth mode. |
 | `TREEDB_JWT_HS256_SECRET` | unset | Required HS256 verifier secret in connected auth mode. |
-| `TREEDB_REGISTRY_MODE` | `local` | Local registry mode for Phase 1. |
+| `TREEDB_REGISTRY_MODE` | `local` | Local registry mode for MVP. |
 | `TREEDB_NODE_ID` | `node_local` | Local node identifier. |
 | `TREEDB_MAX_FILE_BYTES` | `1048576` | Maximum UTF-8 file size for read/write/patch MVP operations. |
 | `TREEDB_SNAPSHOT_MAX_FILE_BYTES` | `10485760` | Maximum single file size included in a snapshot artifact. |
@@ -367,7 +367,7 @@ POST /api/v1/federation/query/plan
 
 Audit events are stored in TreeDB-native append-only files under `audit/events.tdb`. Event payloads include actor, tenant, repository, node, workspace, operation, status, request ID, requested scope, effective scope, and sanitized metadata. File contents, unsanitized commands, full stdout, and full stderr are not stored by default.
 
-The federation planner is read-safe and planner-only in Phase 8. It reduces requested repository/ref/path scope to the caller's effective authorized scope before any future cross-repository query execution. It does not read graph segments, file contents, snippets, or hidden path counts.
+The federation planner is read-safe and planner-only in MVP. It reduces requested repository/ref/path scope to the caller's effective authorized scope before any future cross-repository query execution. It does not read graph segments, file contents, snippets, or hidden path counts.
 
 ### Repositories
 
@@ -442,7 +442,7 @@ curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/workspaces \
   }'
 ```
 
-Writable workspaces require `workspace:create`, repository write capability, allowed ref/path scope, and primary-node placement. Phase 2 permits one active writable lease per repository branch.
+Writable workspaces require `workspace:create`, repository write capability, allowed ref/path scope, and primary-node placement. MVP permits one active writable lease per repository branch.
 
 Workspace responses include `baseCommitSha` and `commitSha` when applicable. They intentionally do not expose internal workspace materialization paths.
 
@@ -461,7 +461,7 @@ POST   /api/v1/workspaces/:workspace_id/commit
 POST   /api/v1/workspaces/:workspace_id/exec
 ```
 
-The File API is workspace-scoped and UTF-8-only in Phase 3. Paths are repository-relative POSIX paths. TreeDB rejects absolute paths, `..`, backslashes, NUL bytes, and protected paths such as `.git/**`, `.env*`, private keys, lockfiles, dependency directories, and build output unless the request explicitly sets `allowProtected=true` and the workspace path scope also allows the path.
+The File API is workspace-scoped and UTF-8-only in MVP. Paths are repository-relative POSIX paths. TreeDB rejects absolute paths, `..`, backslashes, NUL bytes, and protected paths such as `.git/**`, `.env*`, private keys, lockfiles, dependency directories, and build output unless the request explicitly sets `allowProtected=true` and the workspace path scope also allows the path.
 
 Read a file:
 
@@ -541,11 +541,11 @@ Response shape:
 }
 ```
 
-Shell Git mutation commands such as `git push`, `git merge`, and `git rebase` are rejected. TreeDB remains authoritative for status, diff, commit, push, and mirror sync. The Phase 4 sandbox is intended for local development and trusted internal agents; production hosting needs stronger isolation, such as containerized or VM-backed execution, before accepting untrusted commands.
+Shell Git mutation commands such as `git push`, `git merge`, and `git rebase` are rejected. TreeDB remains authoritative for status, diff, commit, push, and mirror sync. The MVP sandbox is intended for local development and trusted internal agents; production hosting needs stronger isolation, such as containerized or VM-backed execution, before accepting untrusted commands.
 
 ### Repository Query API
 
-Phase 5 adds repository-level query endpoints that operate directly on Git objects. These endpoints are read-only, authorization-filtered, and generic. They parse common repository document structure such as Markdown/MDX frontmatter, headings, links, and changed paths, but they do not understand TreeSeed product models.
+MVP adds repository-level query endpoints that operate directly on Git objects. These endpoints are read-only, authorization-filtered, and generic. They parse common repository document structure such as Markdown/MDX frontmatter, headings, links, and changed paths, but they do not understand TreeSeed product models.
 
 ```http
 POST /api/v1/repos/:repo_id/files/read
@@ -603,7 +603,7 @@ The SDK compatibility seam is intentionally generic: SDK model `contentDir` valu
 
 ### Graph and Context API
 
-Phase 6 adds single-repository graph/context endpoints backed by TreeDB-native graph segments. Graph refresh indexes authorized UTF-8 `.md`, `.mdx`, and `.txt` files for a ref. Markdown/MDX files get generic file nodes, heading section nodes, tag/series metadata nodes, link/reference nodes, and commit/ref provenance nodes.
+MVP adds single-repository graph/context endpoints backed by TreeDB-native graph segments. Graph refresh indexes authorized UTF-8 `.md`, `.mdx`, and `.txt` files for a ref. Markdown/MDX files get generic file nodes, heading section nodes, tag/series metadata nodes, link/reference nodes, and commit/ref provenance nodes.
 
 ```http
 POST /api/v1/repos/:repo_id/graph/refresh
@@ -667,7 +667,7 @@ curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/context/parse-ctx 
 
 ### Snapshot, Artifact, Mirror, And Migration API
 
-Phase 9 adds generic repository snapshot, artifact export, mirror sync, and placement migration endpoints.
+MVP adds generic repository snapshot, artifact export, mirror sync, and placement migration endpoints.
 
 ```http
 POST /api/v1/repos/:repo_id/snapshots/build
@@ -731,7 +731,7 @@ Mirror fetch uses gix network APIs for HTTP(S) and local file remotes. Unsupport
 
 ### End-To-End MVP Scenario
 
-Phase 10 adds a repeatable MVP proof that runs the main TreeDB repository loop:
+The repository includes a repeatable end-to-end proof that runs the main TreeDB repository loop:
 
 - create a dev-token actor
 - register fixture repositories
@@ -756,7 +756,7 @@ apps/api/test/treedb_web/end_to_end_mvp_test.exs
 The optional Docker black-box smoke script runs the same style of loop through HTTP only:
 
 ```bash
-scripts/phase10-smoke.sh
+scripts/mvp-smoke.sh
 ```
 
 It starts `treedb-api`, waits for readiness, creates a fixture repository inside the container data volume, registers the repo, updates and commits a file, refreshes graph data, builds a snapshot, exports artifact metadata, reads audit events, and prints a concise summary. Set `TREEDB_KEEP_RUNNING=1` to leave the service up after the script exits.
@@ -795,7 +795,7 @@ Common HTTP mappings:
 
 Docker is the supported contributor runtime. Host-local commands are useful for maintainers who already have the required toolchain installed.
 
-Phase 1 toolchain versions used by the container:
+MVP toolchain versions used by the container:
 
 - Elixir `1.17.3`
 - Erlang/OTP `27`
@@ -858,14 +858,14 @@ The project currently has:
 - Rust store tests for workspace file overlays and committed workspace lease release.
 - Rust graph tests for generic graph extraction, deterministic ranking/query behavior, segment write/read, checksum recovery, and `ctx` DSL parsing.
 - Elixir context and controller tests for store initialization, auth, repository registration, repository status, refs/remotes/sync, workspace lifecycle, health/version, policy, registry, mirror endpoints, File API workflows, Repository Query workflows, Graph/Context API workflows, and SDK query/graph mapping contracts.
-- Phase 10 E2E tests for authenticated repository registration, workspace update/commit, graph/context, federation planning, snapshot/artifact export, migration dry-run, audit coverage, public path hygiene, and restart-style replay.
+- MVP E2E tests for authenticated repository registration, workspace update/commit, graph/context, federation planning, snapshot/artifact export, migration dry-run, audit coverage, public path hygiene, and restart-style replay.
 - TypeScript SDK mocked contract tests for TreeDB remote mode without an agent-side repository clone.
 
-`packages/ts-sdk` has its own baseline state documented in `docs/research/sdk-baseline-verification.md`. Phase 10 adds `treedb-e2e-contract.test.ts` and a live-gated `treedb-live-contract.test.ts`.
+`packages/ts-sdk` has its own baseline state documented in `docs/research/sdk-baseline-verification.md`. The TreeDB SDK contract tests include `treedb-e2e-contract.test.ts` and a live-gated `treedb-live-contract.test.ts`.
 
 ## Security Model
 
-Phase 1 security is development-oriented:
+MVP security is development-oriented:
 
 - `TREEDB_AUTH_MODE=dev` issues local bearer tokens through `/api/v1/auth/dev-token`.
 - Tokens are stored as BLAKE3 hashes in TreeDB-native files.
@@ -877,15 +877,15 @@ Production direction:
 - `TREEDB_AUTH_MODE=connected` will verify credentials through a control-plane boundary.
 - Production identity must not come from request JSON.
 - Repository/file/search/graph operations authorize before querying, ranking, traversing, expanding, counting, or serializing results.
-- Shell execution is workspace-scoped, capability-gated, audited, timeout-bounded, and environment-scrubbed. The Phase 4 direct-process sandbox is not sufficient for untrusted public execution.
+- Shell execution is workspace-scoped, capability-gated, audited, timeout-bounded, and environment-scrubbed. The MVP direct-process sandbox is not sufficient for untrusted public execution.
 
 Do not use dev tokens as a production authentication mechanism. If you find a vulnerability, use GitHub's private vulnerability reporting or Security Advisories if enabled for the repository. If those are not enabled yet, open a GitHub issue with a minimal non-sensitive description and avoid posting exploitable secrets or private repository details.
 
 ## API Stability
 
-TreeDB is pre-1.0. API routes, JSON fields, `.tdb` record formats, Docker configuration, and Rust crate APIs may change while the MVP architecture is being finalized.
+TreeDB is pre-1.0. API routes, JSON fields, `.tdb` record formats, Docker configuration, and Rust crate APIs may change while the system architecture is being finalized.
 
-Compatibility priorities during this phase:
+Compatibility priorities:
 
 - Preserve the generic Git/repository database boundary.
 - Keep TreeSeed product concepts outside TreeDB.
@@ -921,7 +921,7 @@ Research notes for the current SDK compatibility target live in:
 
 ## Roadmap
 
-Near-term work follows the phased MVP plan in `PLAN`.
+Near-term work follows the capability plan in `PLAN`.
 
 Expected next areas:
 

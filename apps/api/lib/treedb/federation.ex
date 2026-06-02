@@ -39,7 +39,7 @@ defmodule TreeDb.Federation do
       effectiveScope: %{repos: Enum.reverse(allowed)},
       rejected: Enum.reverse(rejected),
       executable: false,
-      reason: "planner_only_phase_8"
+      reason: "planner_only_mvp"
     }
 
     TreeDb.Audit.append(

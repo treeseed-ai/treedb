@@ -1,1 +1,1 @@
-//! Segment compaction is intentionally deferred beyond Phase 1.
+//! Segment compaction is intentionally deferred beyond MVP.

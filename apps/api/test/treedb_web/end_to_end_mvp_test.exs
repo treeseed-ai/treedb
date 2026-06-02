@@ -88,7 +88,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
     workspace =
       create_workspace!(build_conn(), token, repo_a_id, %{
         "baseRef" => "refs/heads/main",
-        "branchName" => "refs/heads/agent/phase10",
+        "branchName" => "refs/heads/agent/mvp",
         "mode" => "writable",
         "allowedPaths" => ["docs/**", "src/content/**", "plain/**", "package.json"]
       })
@@ -110,7 +110,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       |> auth_conn(token)
       |> post("/api/v1/repos/#{repo_a_id}/files/search", %{
         "paths" => ["docs/**", "src/content/**", "plain/**"],
-        "query" => "phase ten provenance",
+        "query" => "mvp provenance",
         "limit" => 20
       })
       |> json!(200)
@@ -136,7 +136,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       |> auth_conn(token)
       |> post("/api/v1/repos/#{repo_a_id}/context/build", %{
         "ref" => "refs/heads/main",
-        "query" => "phase ten provenance",
+        "query" => "mvp provenance",
         "scope" => "sections",
         "options" => %{"limit" => 8, "depth" => 1},
         "budget" => %{"maxNodes" => 8, "maxTokens" => 1800}
@@ -163,22 +163,22 @@ defmodule TreeDbWeb.EndToEndMvpTest do
     allowed = federation_plan["effectiveScope"]["repos"]
     assert [%{"repoId" => ^repo_a_id, "paths" => ["docs/**"]}] = allowed
     assert Enum.any?(federation_plan["rejected"], &(&1["repoId"] == repo_b_id))
-    refute Jason.encode!(federation_plan) =~ "phase ten provenance"
+    refute Jason.encode!(federation_plan) =~ "mvp provenance"
     refute Jason.encode!(federation_plan) =~ "docs/private/hidden.md"
     refute Jason.encode!(federation_plan) =~ "src/content/notes"
 
     updated_content = """
     ---
-    title: Phase Ten Readme
+    title: MVP Readme
     status: published
     tags:
-      - phase10
+      - mvp
       - provenance
     updated_at: 2026-06-02T00:00:00Z
     ---
-    # Phase Ten Update
+    # MVP Update
 
-    The committed phase ten update is visible after commit.
+    The committed mvp update is visible after commit.
 
     See [Guide](guide.md).
     """
@@ -198,7 +198,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       |> auth_conn(token)
       |> post("/api/v1/workspaces/#{workspace_id}/exec", %{
         "mode" => "read_only",
-        "cmd" => "rg phase docs plain src/content",
+        "cmd" => "rg mvp docs plain src/content",
         "maxOutputBytes" => 10_000
       })
       |> json!(200)
@@ -232,13 +232,13 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       |> json!(200)
 
     assert "docs/readme.md" in diff["changedPaths"]
-    assert diff["diff"] =~ "committed phase ten update"
+    assert diff["diff"] =~ "committed mvp update"
 
     commit =
       build_conn()
       |> auth_conn(token)
       |> post("/api/v1/workspaces/#{workspace_id}/commit", %{
-        "message" => "Phase 10 update",
+        "message" => "MVP update",
         "author" => %{"name" => "TreeDB Agent", "email" => "agent@example.invalid"}
       })
       |> json!(200)
@@ -258,7 +258,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       })
       |> json!(200)
 
-    assert committed_read["file"]["body"] =~ "committed phase ten update"
+    assert committed_read["file"]["body"] =~ "committed mvp update"
 
     committed_graph =
       build_conn()
@@ -276,7 +276,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       |> auth_conn(token)
       |> post("/api/v1/repos/#{repo_a_id}/graph/search-sections", %{
         "ref" => branch_name,
-        "query" => "committed phase ten update",
+        "query" => "committed mvp update",
         "limit" => 20
       })
       |> json!(200)
@@ -354,7 +354,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
     assert_event(event_types, ["migration.created"])
 
     audit_json = Jason.encode!(audit)
-    refute audit_json =~ "committed phase ten update"
+    refute audit_json =~ "committed mvp update"
     refute audit_json =~ "stdout"
     refute audit_json =~ repo_a_path
     refute audit_json =~ data_dir

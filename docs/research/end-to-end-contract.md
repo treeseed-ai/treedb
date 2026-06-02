@@ -1,10 +1,10 @@
-# Phase 10 End-To-End Contract
+# MVP End-To-End Contract
 
 ## Purpose
 
-Phase 10 turns the Phase 1-9 TreeDB surfaces into a repeatable MVP proof that a repository can be registered, queried, updated, indexed, snapshotted, audited, and replayed without putting TreeSeed product semantics into TreeDB.
+MVP turns the implemented TreeDB surfaces into a repeatable MVP proof that a repository can be registered, queried, updated, indexed, snapshotted, audited, and replayed without putting TreeSeed product semantics into TreeDB.
 
-## Current Phase 9 Baseline
+## Current MVP Baseline
 
 The baseline includes dev and connected auth, scoped capabilities, audit listing, repository query, workspace file operations, graph/context segments, snapshots/artifacts, mirror sync records, placement migration records, and TypeScript SDK TreeDB clients.
 
@@ -17,12 +17,12 @@ The required fast layer is:
 
 The optional deployment layer is:
 
-- `scripts/phase10-smoke.sh`
+- `scripts/mvp-smoke.sh`
 - `packages/ts-sdk/test/utils/treedb-live-contract.test.ts` when live env vars are set
 
 ## Federation Scope
 
-Global federation execution remains out of scope. Phase 10 only verifies planner behavior: requested repositories, refs, paths, and capabilities are reduced to authorized scopes before any future query execution.
+Global federation execution remains out of scope. MVP only verifies planner behavior: requested repositories, refs, paths, and capabilities are reduced to authorized scopes before any future query execution.
 
 ## Fixture Repository Shape
 
@@ -32,7 +32,7 @@ The dynamic fixture repository contains:
 - YAML frontmatter
 - headings and Markdown links
 - a generic unresolved `treedb://` reference
-- `phase ten provenance` as a unique searchable phrase
+- `mvp provenance` as a unique searchable phrase
 - files outside a restricted actor path scope
 
 Shell Git is used only to create this test fixture repository.

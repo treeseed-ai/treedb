@@ -4,11 +4,11 @@
 
 TreeDB currently supports local development bearer tokens through `POST /api/v1/auth/dev-token`. Tokens are stored only as BLAKE3 hashes in `config/dev_tokens.tdb`, and authenticated callers resolve to a generic principal shape with `actorId`, `tenantId`, and `authMode`.
 
-Before Phase 8, `TREEDB_AUTH_MODE=connected` rejected dev-token creation but did not verify production tokens. The Phase 8 connected-mode gap is closed with a local HMAC JWT verifier.
+Before MVP, `TREEDB_AUTH_MODE=connected` rejected dev-token creation but did not verify production tokens. The MVP connected-mode gap is closed with a local HMAC JWT verifier.
 
 ## Connected Auth Decision
 
-Phase 8 uses HMAC-signed JWT verification with `HS256`.
+MVP uses HMAC-signed JWT verification with `HS256`.
 
 Required connected-mode environment:
 
@@ -21,7 +21,7 @@ Optional:
 
 - `TREEDB_JWT_CLOCK_SKEW_SECONDS`, default `60`
 
-Static opaque tokens were rejected because they do not model user/agent/service claims well enough. JWKS JWT was deferred because key discovery, rotation, and network failure behavior are control-plane integration work beyond this MVP phase.
+Static opaque tokens were rejected because they do not model user/agent/service claims well enough. JWKS JWT was deferred because key discovery, rotation, and network failure behavior are control-plane integration work beyond this MVP capability.
 
 ## JWT Claim Contract
 
@@ -93,7 +93,7 @@ Workspace records snapshot effective scope at creation time. Future revocation w
 
 ## Federation Access Contract
 
-Phase 8 federation is planner-only. `POST /api/v1/federation/query/plan` reduces a requested cross-repository scope to the effective authorized repo/ref/path scope before any future query execution.
+MVP federation is planner-only. `POST /api/v1/federation/query/plan` reduces a requested cross-repository scope to the effective authorized repo/ref/path scope before any future query execution.
 
 The planner must not query every repository and filter afterward. It does not read graph segments, search indexes, blobs, snippets, or file contents. Hidden repositories and paths must not leak via snippets, counts, ranking signals, graph node IDs, or unauthorized path names.
 

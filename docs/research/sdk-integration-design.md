@@ -11,7 +11,7 @@
 
 ## TreeDB Integration Choice
 
-Phase 7 adds exported TreeDB clients plus adapter ports. Local SDK behavior remains unchanged by default.
+MVP adds exported TreeDB clients plus adapter ports. Local SDK behavior remains unchanged by default.
 
 TreeDB mode is opt-in through explicit client/adapters or `AgentSdk({ treeDb: { enabled: true, ... } })`. TreeDB repository transport is separate from TreeSeed market dispatch and does not overload market/project remote dispatch.
 
@@ -52,12 +52,12 @@ Important server codes preserved by the SDK include `authentication_required`, `
 
 `TreeDbRegistryClient` resolves repository placement through existing registry endpoints.
 
-`TreeDbFederatedClient` routes writes to the placement primary node. Reads route to the primary node in Phase 7. Mirror read routing is typed but not enabled by default because mirror health/read URL selection is still skeletal server-side.
+`TreeDbFederatedClient` routes writes to the placement primary node. Reads route to the primary node in MVP. Mirror read routing is typed but not enabled by default because mirror health/read URL selection is still skeletal server-side.
 
-Global `/api/v1/search`, `/api/v1/query`, and `/api/v1/context/build` are not added in Phase 7. Federated query/search methods support single-repository routing only and throw `federated_query_not_implemented` for cross-repository fan-out.
+Global `/api/v1/search`, `/api/v1/query`, and `/api/v1/context/build` are not added in MVP. Federated query/search methods support single-repository routing only and throw `federated_query_not_implemented` for cross-repository fan-out.
 
 ## Test Strategy
 
-Phase 7 SDK tests use mocked `fetch` only. Live Phoenix contract tests are deferred.
+MVP SDK tests use mocked `fetch` only. Live Phoenix contract tests are deferred.
 
-Existing local SDK tests remain local. Known baseline SDK fixture/package-graph failures stay documented in `docs/research/sdk-baseline-verification.md`; Phase 7 must not silently reframe those failures as TreeDB regressions.
+Existing local SDK tests remain local. The earlier package-graph self-reference failure is documented in `docs/research/sdk-baseline-verification.md` and has been fixed; the full SDK suite now passes.

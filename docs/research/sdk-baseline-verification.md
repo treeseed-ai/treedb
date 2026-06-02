@@ -36,16 +36,16 @@ Test Files  4 failed | 61 passed | 1 skipped (66)
 Tests       1 failed | 441 passed | 7 skipped (449)
 ```
 
-## Final Phase 0 Rerun
+## Final MVP Rerun
 
-After writing the Phase 0 docs, the requested documentation-safe verification commands were rerun.
+After writing the MVP docs, the requested documentation-safe verification commands were rerun.
 
 | Command | Result | Notes |
 | --- | --- | --- |
 | `git status --short` | pass | Root worktree shows only new `docs/` files. |
 | `git -C packages/ts-sdk status --short` | pass | SDK checkout is clean. |
 | `npm run build` | pass | Build completed through `npm run build:dist`. |
-| `npm test` | fail | Only the package graph assertion failed on this rerun. |
+| `npm test` | historical issue | Only the package graph assertion tripped on this historical rerun; this was corrected later. |
 
 Final rerun Vitest summary:
 
@@ -66,9 +66,9 @@ At the time of the final rerun, the fixture submodule was present at the expecte
 33bac888a055d6e8b649b5ba0a1eb3c2bbd80b71 .fixtures/treeseed-fixtures (0.5.0-2-g33bac88)
 ```
 
-## Phase 9 Cleanup Update
+## MVP Cleanup Update
 
-The package graph self-reference was corrected during Phase 9 cleanup by excluding the actual `packages/ts-sdk/test/utils/package-graph.test.ts` path from its deprecated-alias scan. The focused test now passes:
+The package graph self-reference was corrected during MVP cleanup by excluding the actual `packages/ts-sdk/test/utils/package-graph.test.ts` path from its deprecated-alias scan. The focused test now passes:
 
 ```text
 npx vitest run --config ./vitest.config.ts test/utils/package-graph.test.ts
@@ -76,30 +76,31 @@ Test Files  1 passed (1)
 Tests       9 passed (9)
 ```
 
-The full SDK suite was also rerun after Phase 9 targeted tests. It completed with only that same package graph assertion before the cleanup:
+The full SDK suite was also rerun after MVP targeted tests. It completed with only that same package graph assertion before the cleanup:
 
 ```text
 Test Files  1 failed | 70 passed | 1 skipped (72)
 Tests       1 failed | 499 passed | 7 skipped (507)
 ```
 
-After the cleanup, use the package graph focused run above, targeted TreeDB SDK tests, and a fresh full-suite run as the current baseline.
+## MVP Baseline Update
 
-## Baseline Debt
+The full SDK suite now passes after the package graph cleanup and MVP SDK contract additions:
 
-These failures are copied-state baseline debt and should not be fixed as part of Phase 0:
+```text
+Test Files  72 passed | 2 skipped (74)
+Tests       504 passed | 8 skipped (512)
+```
 
-1. Preserve the fixture submodule state before using the full SDK test suite as a compatibility gate.
-2. Add an explicit `typecheck` script if TypeScript checking should be part of the SDK baseline.
+The remaining baseline note is that `packages/ts-sdk` still has no explicit `typecheck` script; `npm run build` remains the package build/type-emission gate.
 
 ## Suggested Next Verification
 
-After Phase 0, initialize the SDK fixture submodule and rerun the baseline:
+For SDK-facing TreeDB changes, run:
 
 ```bash
-git -C packages/ts-sdk submodule update --init --recursive
 cd packages/ts-sdk
+npm run build
+npx vitest run --config ./vitest.config.ts test/utils/package-graph.test.ts test/utils/treedb-e2e-contract.test.ts
 npm test
 ```
-
-Do not use the current failing SDK test run as evidence of a TreeDB regression. It is the pre-integration baseline.

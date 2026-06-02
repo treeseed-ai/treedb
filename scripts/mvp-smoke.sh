@@ -69,7 +69,7 @@ TOKEN="$(
 )"
 
 AUTH=(-H "authorization: Bearer $TOKEN" -H 'content-type: application/json')
-REPO_PATH="/var/lib/treedb/repos/bare/phase10-smoke"
+REPO_PATH="/var/lib/treedb/repos/bare/mvp-smoke"
 
 docker compose exec -T treedb-api bash -lc "
 set -euo pipefail
@@ -86,9 +86,9 @@ status: published
 ---
 # Smoke
 
-phase ten provenance smoke fixture
+mvp provenance smoke fixture
 DOC
-echo 'phase ten provenance plain fixture' > plain/search.txt
+echo 'mvp provenance plain fixture' > plain/search.txt
 git add .
 git commit -m 'Initial smoke fixture'
 "
@@ -96,29 +96,29 @@ git commit -m 'Initial smoke fixture'
 repo_json="$(
   curl -fsS -X POST "$TREEDB_URL/api/v1/repos/register" \
     "${AUTH[@]}" \
-    -d "{\"name\":\"phase10-smoke\",\"localPath\":\"$REPO_PATH\"}"
+    -d "{\"name\":\"mvp-smoke\",\"localPath\":\"$REPO_PATH\"}"
 )"
 repo_id="$(json_get '.repo.repoId' <<<"$repo_json")"
 
 workspace_json="$(
   curl -fsS -X POST "$TREEDB_URL/api/v1/repos/$repo_id/workspaces" \
     "${AUTH[@]}" \
-    -d '{"baseRef":"refs/heads/main","branchName":"refs/heads/agent/phase10-smoke","mode":"writable","allowedPaths":["docs/**","plain/**"]}'
+    -d '{"baseRef":"refs/heads/main","branchName":"refs/heads/agent/mvp-smoke","mode":"writable","allowedPaths":["docs/**","plain/**"]}'
 )"
 workspace_id="$(json_get '.workspaceId' <<<"$workspace_json")"
 
 curl -fsS -X POST "$TREEDB_URL/api/v1/repos/$repo_id/files/search" \
   "${AUTH[@]}" \
-  -d '{"paths":["docs/**","plain/**"],"query":"phase ten provenance"}' >/dev/null
+  -d '{"paths":["docs/**","plain/**"],"query":"mvp provenance"}' >/dev/null
 
 curl -fsS -X PUT "$TREEDB_URL/api/v1/workspaces/$workspace_id/files?path=docs/readme.md" \
   "${AUTH[@]}" \
-  -d '{"content":"---\ntitle: Smoke Updated\nstatus: published\n---\n# Smoke Updated\n\nphase ten committed smoke update\n"}' >/dev/null
+  -d '{"content":"---\ntitle: Smoke Updated\nstatus: published\n---\n# Smoke Updated\n\nmvp committed smoke update\n"}' >/dev/null
 
 commit_json="$(
   curl -fsS -X POST "$TREEDB_URL/api/v1/workspaces/$workspace_id/commit" \
     "${AUTH[@]}" \
-    -d '{"message":"Phase 10 smoke update","author":{"name":"TreeDB Smoke","email":"smoke@example.invalid"}}'
+    -d '{"message":"MVP smoke update","author":{"name":"TreeDB Smoke","email":"smoke@example.invalid"}}'
 )"
 commit_sha="$(json_get '.commitSha' <<<"$commit_json")"
 branch_name="$(json_get '.branchName' <<<"$commit_json")"
@@ -147,7 +147,7 @@ artifact_checksum="$(json_get '.artifact.checksum' <<<"$artifact_json")"
 curl -fsS "$TREEDB_URL/api/v1/audit/events?repoId=$repo_id&limit=50" "${AUTH[@]}" >/dev/null
 
 cat <<SUMMARY
-Phase 10 smoke passed
+MVP smoke passed
 repo_id=$repo_id
 workspace_id=$workspace_id
 commit_sha=$commit_sha

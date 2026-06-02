@@ -3,7 +3,7 @@ info:
   title: TreeDB MVP API
   version: 0.10.0
   description: >
-    Human-maintained Phase 10 public API contract for implemented TreeDB MVP
+    Human-maintained MVP public API contract for implemented TreeDB MVP
     surfaces. TreeDB is generic and repository/ref/path/workspace scoped.
 servers:
   - url: http://localhost:4000

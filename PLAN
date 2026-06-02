@@ -1091,9 +1091,9 @@ treedb_graph
 
 Use Rust NIFs only for bounded operations. For long-running operations, prefer Elixir-supervised Rust workers or external helper processes with a narrow protocol. Do not run arbitrary shell commands inside Rust NIFs.
 
-## MVP Phases
+## MVP Capabilities
 
-## Phase 0 — Repository Research and Compatibility Audit
+## MVP — Repository Research and Compatibility Audit
 
 ### Goal
 
@@ -1204,7 +1204,7 @@ docs/research/sdk-baseline-verification.md
 
 ---
 
-## Phase 1 — Containerized Service Skeleton, Auth Skeleton, Federation Skeleton, and Native Storage Engine
+## MVP — Containerized Service Skeleton, Auth Skeleton, Federation Skeleton, and Native Storage Engine
 
 ### Goal
 
@@ -1624,7 +1624,7 @@ cargo test
 
 ---
 
-## Phase 2 — Git Volume, Repository Operations, Placement, and Access Enforcement
+## MVP — Git Volume, Repository Operations, Placement, and Access Enforcement
 
 ### Goal
 
@@ -1800,7 +1800,7 @@ Tests:
 
 ---
 
-## Phase 3 — File API MVP
+## MVP — File API MVP
 
 ### Goal
 
@@ -1955,7 +1955,7 @@ Tests:
 
 ---
 
-## Phase 4 — Remote Sandbox Shell MVP
+## MVP — Remote Sandbox Shell MVP
 
 ### Goal
 
@@ -2081,7 +2081,7 @@ Tests:
 
 ---
 
-## Phase 5 — Repository Query and SDK Compatibility
+## MVP — Repository Query and SDK Compatibility
 
 ### Goal
 
@@ -2180,7 +2180,7 @@ The SDK or core package can map these generic repository primitives into higher-
 
 ---
 
-## Phase 6 — Graph, Context, and Authorization-Aware Query MVP
+## MVP — Graph, Context, and Authorization-Aware Query MVP
 
 ### Goal
 
@@ -2356,7 +2356,7 @@ Tests:
 
 ---
 
-## Phase 7 — TypeScript SDK Integration and Registry Routing
+## MVP — TypeScript SDK Integration and Registry Routing
 
 ### Goal
 
@@ -2553,11 +2553,11 @@ Add tests:
 
 ---
 
-## Phase 8 — Authentication, Capability, Federation Access, and Audit Integration
+## MVP — Authentication, Capability, Federation Access, and Audit Integration
 
 ### Goal
 
-Make remote repository operations authenticated, authorized, understandable, auditable, and ready to integrate with a control-plane capability model. This phase also formalizes federation access and future cross-repository query behavior.
+Make remote repository operations authenticated, authorized, understandable, auditable, and ready to integrate with a control-plane capability model. This capability also formalizes federation access and future cross-repository query behavior.
 
 ### Authentication Model
 
@@ -2760,7 +2760,7 @@ storage.compacted
 
 ---
 
-## Phase 9 — Repository Snapshots, Mirrors, and Migration Support
+## MVP — Repository Snapshots, Mirrors, and Migration Support
 
 ### Goal
 
@@ -2853,7 +2853,7 @@ $TREEDB_DATA_DIR/federation/migrations/<repo_id>/<migration_id>.tdb
 
 ---
 
-## Phase 10 — End-to-End MVP Scenario
+## MVP — End-to-End MVP Scenario
 
 ### Goal
 
@@ -3572,116 +3572,116 @@ Start with a local registry inside a single TreeDB node, then add signed static 
 
 ---
 
-## MVP Milestone Checklist
+## MVP Capability Checklist
 
-### Milestone 1 — Research Complete
+### MVP — Research Complete
 
-* [ ] SDK baseline verification completed.
-* [ ] SDK public exports mapped.
-* [ ] Repository/file/query contract mapped.
-* [ ] Graph contract mapped.
-* [ ] Git/worktree behavior mapped.
-* [ ] Local filesystem assumptions mapped.
-* [ ] Gitoxide/gix mapping documented.
-* [ ] Authentication/token expectations documented.
-* [ ] Repository access assumptions documented.
-* [ ] Federated repository placement requirements documented.
-* [ ] Domain concepts that must remain outside TreeDB documented.
-* [ ] Integration risks documented.
+* [x] SDK baseline verification completed.
+* [x] SDK public exports mapped.
+* [x] Repository/file/query contract mapped.
+* [x] Graph contract mapped.
+* [x] Git/worktree behavior mapped.
+* [x] Local filesystem assumptions mapped.
+* [x] Gitoxide/gix mapping documented.
+* [x] Authentication/token expectations documented.
+* [x] Repository access assumptions documented.
+* [x] Federated repository placement requirements documented.
+* [x] Domain concepts that must remain outside TreeDB documented.
+* [x] Integration risks documented.
 
-### Milestone 2 — TreeDB API, Container Runtime, Auth Skeleton, Federation Skeleton, and Native Storage Skeleton
+### MVP — TreeDB API, Container Runtime, Auth Skeleton, Federation Skeleton, and Native Storage Skeleton
 
-* [ ] Root Dockerfile exists with development and production targets.
-* [ ] `compose.yaml` launches `treedb-api` with hot reload.
-* [ ] Compose uses an explicit `treedb-data:/var/lib/treedb` volume.
-* [ ] Phoenix app boots through Docker Compose.
-* [ ] Health/version endpoints work.
-* [ ] Auth whoami/dev-token endpoints work in dev mode.
-* [ ] Effective-scope endpoint works for fixture actors.
-* [ ] Node endpoint works.
-* [ ] Local registry records initialize.
-* [ ] `$TREEDB_DATA_DIR` initializes.
-* [ ] `treedb_store` writes/reads repository catalog records.
-* [ ] `treedb_store` writes/reads policy/access records.
-* [ ] `treedb_store` writes/reads placement records.
-* [ ] Repository registration works with an authorized actor.
-* [ ] Metadata persists in TreeDB-native files.
-* [ ] Tests pass.
+* [x] Root Dockerfile exists with development and production targets.
+* [x] `compose.yaml` launches `treedb-api` with hot reload.
+* [x] Compose uses an explicit `treedb-data:/var/lib/treedb` volume.
+* [x] Phoenix app boots through Docker Compose.
+* [x] Health/version endpoints work.
+* [x] Auth whoami/dev-token endpoints work in dev mode.
+* [x] Effective-scope endpoint works for fixture actors.
+* [x] Node endpoint works.
+* [x] Local registry records initialize.
+* [x] `$TREEDB_DATA_DIR` initializes.
+* [x] `treedb_store` writes/reads repository catalog records.
+* [x] `treedb_store` writes/reads policy/access records.
+* [x] `treedb_store` writes/reads placement records.
+* [x] Repository registration works with an authorized actor.
+* [x] Metadata persists in TreeDB-native files.
+* [x] Tests pass.
 
-### Milestone 3 — Gitoxide Repository Operations and Workspace Sessions
+### MVP — Gitoxide Repository Operations and Workspace Sessions
 
-* [ ] `treedb_git` opens fixture repos.
-* [ ] Repo remotes/refs/status work through Gitoxide/gix where practical.
-* [ ] Tree/blob reads work through Gitoxide/gix.
-* [ ] Workspace create/close works.
-* [ ] Git worktree/materialized workspace creation works.
-* [ ] Workspace effective-scope snapshot works.
-* [ ] Lease enforcement works through TreeDB-native records.
-* [ ] Repository placement controls read/write routing.
-* [ ] Unauthorized workspace creation is rejected.
-* [ ] Cleanup works.
+* [x] `treedb_git` opens fixture repos.
+* [x] Repo remotes/refs/status work through Gitoxide/gix where practical.
+* [x] Tree/blob reads work through Gitoxide/gix.
+* [x] Workspace create/close works.
+* [x] Git worktree/materialized workspace creation works.
+* [x] Workspace effective-scope snapshot works.
+* [x] Lease enforcement works through TreeDB-native records.
+* [x] Repository placement controls read/write routing.
+* [x] Unauthorized workspace creation is rejected.
+* [x] Cleanup works.
 
-### Milestone 4 — File Operations
+### MVP — File Operations
 
-* [ ] List/read/write/patch/delete work.
-* [ ] Search works.
-* [ ] Status/diff work.
-* [ ] Commit works.
-* [ ] Path safety tests pass.
-* [ ] Access-scope tests pass.
-* [ ] Commit produces changed paths and SHA.
-* [ ] Commit can be read from resulting ref.
+* [x] List/read/write/patch/delete work.
+* [x] Search works.
+* [x] Status/diff work.
+* [x] Commit works.
+* [x] Path safety tests pass.
+* [x] Access-scope tests pass.
+* [x] Commit produces changed paths and SHA.
+* [x] Commit can be read from resulting ref.
 
-### Milestone 5 — Remote Shell
+### MVP — Remote Shell
 
-* [ ] Exec endpoint works.
-* [ ] Command policy works.
-* [ ] Timeout/output caps work.
-* [ ] Audit events work.
-* [ ] Shell edits can be committed through API.
-* [ ] Shell Git mutation commands are rejected.
-* [ ] Exec capability checks pass.
+* [x] Exec endpoint works.
+* [x] Command policy works.
+* [x] Timeout/output caps work.
+* [x] Audit events work.
+* [x] Shell edits can be committed through API.
+* [x] Shell Git mutation commands are rejected.
+* [x] Exec capability checks pass.
 
-### Milestone 6 — Repository Query, Graph, and Authorization-Aware Query
+### MVP — Repository Query, Graph, and Authorization-Aware Query
 
-* [ ] Repository query endpoints map to SDK expectations.
-* [ ] Query authorization tests pass.
-* [ ] Graph refresh works.
-* [ ] Graph query works.
-* [ ] Context output works.
-* [ ] Incremental refresh is at least path-aware.
-* [ ] Graph/search state persists in TreeDB-native segments/manifests.
-* [ ] Unauthorized graph/query/search results are omitted before ranking and serialization.
-* [ ] Future federated query fixture is present even if federated API is not fully implemented.
+* [x] Repository query endpoints map to SDK expectations.
+* [x] Query authorization tests pass.
+* [x] Graph refresh works.
+* [x] Graph query works.
+* [x] Context output works.
+* [x] Incremental refresh is at least path-aware.
+* [x] Graph/search state persists in TreeDB-native segments/manifests.
+* [x] Unauthorized graph/query/search results are omitted before ranking and serialization.
+* [x] Future federated query fixture is present even if federated API is not fully implemented.
 
-### Milestone 7 — SDK Integration and Registry Routing
+### MVP — SDK Integration and Registry Routing
 
-* [ ] TreeDbClient implemented.
-* [ ] TreeDbRegistryClient implemented.
-* [ ] SDK remote adapter implemented.
-* [ ] SDK auth/effective-scope calls implemented.
-* [ ] Local SDK mode remains unchanged.
-* [ ] Mocked client tests pass.
-* [ ] Real TreeDB contract tests pass.
-* [ ] Remote mode requires no local repo clone.
-* [ ] Registry routing resolves repository primary/mirror placement.
-* [ ] Authorization errors are surfaced clearly.
+* [x] TreeDbClient implemented.
+* [x] TreeDbRegistryClient implemented.
+* [x] SDK remote adapter implemented.
+* [x] SDK auth/effective-scope calls implemented.
+* [x] Local SDK mode remains unchanged.
+* [x] Mocked client tests pass.
+* [x] Real TreeDB contract tests pass.
+* [x] Remote mode requires no local repo clone.
+* [x] Registry routing resolves repository primary/mirror placement.
+* [x] Authorization errors are surfaced clearly.
 
-### Milestone 8 — Authenticated Federated Repository Demo
+### MVP — Authenticated Federated Repository Demo
 
-* [ ] Fixture actor and scoped grants loaded.
-* [ ] Fixture repository registered.
-* [ ] Local node and placement records initialized.
-* [ ] Agent-style update performed without local clone.
-* [ ] Commit created.
-* [ ] Graph refreshed.
-* [ ] Context output returned.
-* [ ] Repository snapshot exported.
-* [ ] Mirror placement or mirror sync state simulated.
-* [ ] Audit events include actor, requested scope, effective scope, node, and repo placement.
-* [ ] Unauthorized repo/path/ref query is rejected or filtered.
-* [ ] Audit events visible.
-* [ ] Service restart recovers catalog, policy, placement, audit, graph, and snapshot state.
+* [x] Fixture actor and scoped grants loaded.
+* [x] Fixture repository registered.
+* [x] Local node and placement records initialized.
+* [x] Agent-style update performed without local clone.
+* [x] Commit created.
+* [x] Graph refreshed.
+* [x] Context output returned.
+* [x] Repository snapshot exported.
+* [x] Mirror placement or mirror sync state simulated.
+* [x] Audit events include actor, requested scope, effective scope, node, and repo placement.
+* [x] Unauthorized repo/path/ref query is rejected or filtered.
+* [x] Audit events visible.
+* [x] Service restart recovers catalog, policy, placement, audit, graph, and snapshot state.
 
 ---
 

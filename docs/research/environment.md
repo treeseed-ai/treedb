@@ -1,16 +1,16 @@
-# Phase 0 Environment Research
+# MVP Environment Research
 
 ## Repository Layout
 
-The top-level TreeDB repository is only a plan plus a copied SDK at this phase. The root currently contains `PLAN`, `LICENSE`, `.gitignore`, and `packages/ts-sdk`; no root application skeleton is present yet.
+The top-level TreeDB repository is only a plan plus a copied SDK at this capability. The root currently contains `PLAN`, `LICENSE`, `.gitignore`, and `packages/ts-sdk`; no root application skeleton is present yet.
 
-No root `package.json`, `Cargo.toml`, `mix.exs`, `Dockerfile`, `compose.yaml`, or `docker-compose.yml` was found. Phase 1 needs to introduce the root Elixir/Phoenix service, Rust crates, Dockerfile, and Compose manifests described in `PLAN`.
+No root `package.json`, `Cargo.toml`, `mix.exs`, `Dockerfile`, `compose.yaml`, or `docker-compose.yml` was found. MVP needs to introduce the root Elixir/Phoenix service, Rust crates, Dockerfile, and Compose manifests described in `PLAN`.
 
-`packages/ts-sdk` is its own Git checkout/submodule-style directory and is the only runnable package found during Phase 0. It is the current compatibility target for TreeSeed market, core, and agent behavior.
+`packages/ts-sdk` is its own Git checkout/submodule-style directory and is the only runnable package found during MVP. It is the current compatibility target for TreeSeed market, core, and agent behavior.
 
 ## Tooling
 
-Detected local host tools during the Phase 0 audit:
+Detected local host tools during the MVP audit:
 
 | Tool | Version |
 | --- | --- |
@@ -22,7 +22,7 @@ Detected local host tools during the Phase 0 audit:
 | Erlang/OTP | `27` |
 | Elixir | `1.17.3` |
 
-These host versions are useful for Phase 0 research only. They must not become prerequisites for contributors. Phase 1 should make Docker the canonical way to run the service and should containerize Elixir, Erlang/OTP, Rust, Node, Git, ripgrep, and native build tooling.
+These host versions are useful for MVP research only. They must not become prerequisites for contributors. MVP should make Docker the canonical way to run the service and should containerize Elixir, Erlang/OTP, Rust, Node, Git, ripgrep, and native build tooling.
 
 ## Package Manager And Scripts
 
@@ -59,12 +59,12 @@ SDK scripts recorded for compatibility:
 
 Per `PLAN`, host contributors should ultimately need Docker only. The canonical runtime path should be `docker compose up treedb-api`, with the container owning language runtime and native dependency complexity.
 
-Current direct host execution of npm commands in `packages/ts-sdk` is appropriate only for Phase 0 audit and baseline capture. It should not define the long-term TreeDB developer experience.
+Current direct host execution of npm commands in `packages/ts-sdk` is appropriate only for MVP audit and baseline capture. It should not define the long-term TreeDB developer experience.
 
 ## Open Environment Risks
 
 1. No root project skeleton exists yet.
 2. The SDK fixture submodule is not initialized.
-3. The SDK has no `typecheck` script even though Phase 0 suggested one.
-4. Existing host Elixir and Rust versions must not become required; Phase 1 should containerize them.
+3. The SDK has no `typecheck` script even though MVP suggested one.
+4. Existing host Elixir and Rust versions must not become required; MVP should containerize them.
 5. `packages/ts-sdk` is a separate Git checkout, so root-level automation must be careful not to assume a single worktree.

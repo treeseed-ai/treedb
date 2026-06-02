@@ -19,25 +19,25 @@ defmodule TreeDbTestFixtures do
     title: Root Readme
     status: published
     tags:
-      - phase10
+      - mvp
     ---
     # Root
 
-    Root fixture for phase ten provenance.
+    Root fixture for mvp provenance.
     """)
 
     write!(path, "docs/readme.md", """
     ---
-    title: Phase Ten Readme
+    title: MVP Readme
     status: published
     tags:
-      - phase10
+      - mvp
       - provenance
     updated_at: 2026-06-01T00:00:00Z
     ---
-    # Phase Ten Provenance
+    # MVP Provenance
 
-    This document contains the unique phrase phase ten provenance.
+    This document contains the unique phrase mvp provenance.
 
     See [Guide](guide.md) and [Other Repo](treedb://repo/repo_b/docs/other.md).
     """)
@@ -50,7 +50,7 @@ defmodule TreeDbTestFixtures do
     ---
     # Guide
 
-    Linked guide content for phase ten provenance.
+    Linked guide content for mvp provenance.
     """)
 
     write!(path, "docs/private/hidden.md", """
@@ -74,7 +74,7 @@ defmodule TreeDbTestFixtures do
 
     # Alpha
 
-    Alpha MDX body mentions phase ten provenance.
+    Alpha MDX body mentions mvp provenance.
     """)
 
     write!(path, "src/content/notes/beta.mdx", """
@@ -107,7 +107,7 @@ defmodule TreeDbTestFixtures do
     Home page fixture.
     """)
 
-    write!(path, "plain/search.txt", "plain text phase ten provenance fixture\n")
+    write!(path, "plain/search.txt", "plain text mvp provenance fixture\n")
 
     write!(path, "package.json", """
     {

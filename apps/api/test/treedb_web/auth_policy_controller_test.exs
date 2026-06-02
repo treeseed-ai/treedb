@@ -1,4 +1,4 @@
-defmodule TreeDbWeb.Phase8ControllerTest do
+defmodule TreeDbWeb.AuthPolicyControllerTest do
   use TreeDbWeb.ConnCase, async: false
 
   setup %{conn: conn} do
