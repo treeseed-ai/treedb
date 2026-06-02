@@ -36,6 +36,7 @@ defmodule TreeDb.Native do
   def list_tree(_path, _ref_name, _tree_path), do: :erlang.nif_error(:nif_not_loaded)
   def list_tree_recursive(_path, _ref_name, _tree_path), do: :erlang.nif_error(:nif_not_loaded)
   def read_blob(_path, _ref_name, _blob_path), do: :erlang.nif_error(:nif_not_loaded)
+  def changed_paths(_path, _base_ref, _head_ref), do: :erlang.nif_error(:nif_not_loaded)
   def commit_overlay(_input), do: :erlang.nif_error(:nif_not_loaded)
   def hash_token(_token), do: :erlang.nif_error(:nif_not_loaded)
 end

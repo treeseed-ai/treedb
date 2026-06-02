@@ -171,6 +171,61 @@ fn commit_overlay_writes_modifies_and_deletes_files() {
     assert!(read_blob(dir.path(), "refs/heads/agent/overlay", "docs/delete.md").is_err());
 }
 
+#[test]
+fn changed_paths_reports_added_modified_and_deleted_files() {
+    let dir = tempdir().unwrap();
+    git(dir.path(), &["init", "-b", "main"]);
+    git(dir.path(), &["config", "user.name", "TreeDB Test"]);
+    git(
+        dir.path(),
+        &["config", "user.email", "test@example.invalid"],
+    );
+    std::fs::create_dir_all(dir.path().join("docs")).unwrap();
+    std::fs::write(dir.path().join("docs/readme.md"), "hello\n").unwrap();
+    std::fs::write(dir.path().join("docs/delete.md"), "remove\n").unwrap();
+    git(dir.path(), &["add", "docs/readme.md", "docs/delete.md"]);
+    git(dir.path(), &["commit", "-m", "init"]);
+    git(dir.path(), &["checkout", "-b", "feature"]);
+    std::fs::write(dir.path().join("docs/readme.md"), "updated\n").unwrap();
+    std::fs::write(dir.path().join("docs/new.md"), "new\n").unwrap();
+    std::fs::remove_file(dir.path().join("docs/delete.md")).unwrap();
+    git(dir.path(), &["add", "-A"]);
+    git(dir.path(), &["commit", "-m", "feature"]);
+
+    let changes = changed_paths(dir.path(), "refs/heads/main", "refs/heads/feature").unwrap();
+    assert_eq!(
+        changes
+            .iter()
+            .map(|change| change.path.as_str())
+            .collect::<Vec<_>>(),
+        vec!["docs/delete.md", "docs/new.md", "docs/readme.md"]
+    );
+    assert_eq!(
+        changes
+            .iter()
+            .find(|change| change.path == "docs/delete.md")
+            .unwrap()
+            .status,
+        "deleted"
+    );
+    assert_eq!(
+        changes
+            .iter()
+            .find(|change| change.path == "docs/new.md")
+            .unwrap()
+            .status,
+        "added"
+    );
+    assert_eq!(
+        changes
+            .iter()
+            .find(|change| change.path == "docs/readme.md")
+            .unwrap()
+            .status,
+        "modified"
+    );
+}
+
 fn git(cwd: &std::path::Path, args: &[&str]) {
     let output = Command::new("git")
         .args(args)

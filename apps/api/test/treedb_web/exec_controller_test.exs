@@ -152,6 +152,58 @@ defmodule TreeDbWeb.ExecControllerTest do
     assert json_response(conn, 403)["error"]["code"] == "permission_denied"
   end
 
+  test "actor without live exec capability is rejected", %{repo_id: repo_id} do
+    token =
+      build_conn()
+      |> post("/api/v1/auth/dev-token", %{
+        "actorId" => "actor_no_exec",
+        "tenantId" => "tenant_demo"
+      })
+      |> json_response(200)
+      |> Map.fetch!("accessToken")
+
+    {:ok, repo} = TreeDb.Store.get_repository(repo_id)
+    {:ok, resolved} = TreeDb.Git.resolve_ref(repo["localPath"], "refs/heads/main")
+    workspace_id = TreeDb.Ids.workspace()
+    materialized_path = Path.join([TreeDb.Store.data_dir(), "workspaces", "active", workspace_id])
+    File.mkdir_p!(materialized_path)
+
+    {:ok, _workspace} =
+      TreeDb.Store.put_workspace(%{
+        id: workspace_id,
+        repositoryId: repo_id,
+        nodeId: "node_local",
+        actorId: "actor_no_exec",
+        tenantId: "tenant_demo",
+        baseRef: "refs/heads/main",
+        baseCommitSha: resolved["target"],
+        branchName: nil,
+        mode: "read_only",
+        allowedPaths: ["docs/**"],
+        capabilities: ["workspace:exec:read_only"],
+        ttlSeconds: 1800,
+        materializedPath: materialized_path,
+        effectiveScope: %{
+          actorId: "actor_no_exec",
+          tenantId: "tenant_demo",
+          repoIds: [repo_id],
+          capabilities: ["workspace:exec:read_only"],
+          refs: ["refs/heads/main"],
+          paths: ["docs/**"]
+        }
+      })
+
+    conn =
+      build_conn()
+      |> auth(token)
+      |> post("/api/v1/workspaces/#{workspace_id}/exec", %{
+        "cmd" => "cat docs/readme.md",
+        "mode" => "read_only"
+      })
+
+    assert json_response(conn, 403)["error"]["code"] == "permission_denied"
+  end
+
   defp create_workspace(token, repo_id, branch_name, allowed_paths, overrides \\ %{}) do
     params =
       Map.merge(

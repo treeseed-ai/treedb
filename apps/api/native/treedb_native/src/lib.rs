@@ -347,6 +347,14 @@ fn list_tree_recursive<'a>(
 }
 
 #[rustler::nif(schedule = "DirtyIo")]
+fn changed_paths<'a>(env: Env<'a>, path: String, base_ref: String, head_ref: String) -> Term<'a> {
+    match treedb_git::changed_paths(Path::new(&path), &base_ref, &head_ref) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
 fn commit_overlay<'a>(env: Env<'a>, input_json: String) -> Term<'a> {
     let _ = input_json;
     err_json(

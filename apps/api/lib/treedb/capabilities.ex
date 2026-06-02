@@ -34,6 +34,25 @@ defmodule TreeDb.Capabilities do
            details: %{capability: capability}
          }}
       end
+    else
+      {:error, %{"code" => "not_found"}} ->
+        {:error,
+         %{
+           code: "permission_denied",
+           message: "Permission denied.",
+           details: %{capability: capability}
+         }}
+
+      {:error, %{code: "not_found"}} ->
+        {:error,
+         %{
+           code: "permission_denied",
+           message: "Permission denied.",
+           details: %{capability: capability}
+         }}
+
+      other ->
+        other
     end
   end
 

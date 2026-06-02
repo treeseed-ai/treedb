@@ -26,12 +26,13 @@ Implemented now:
 - Overlay MVP write model: base reads come from Git objects, workspace writes live in TreeDB-native overlay records and blobs, and commit synthesizes a Git commit from base tree plus overlay changes.
 - External Rust `treedb_git_worker` for overlay commits, keeping risky Git object writes out of the BEAM OS process while still using gix and no shell-Git default path.
 - Phase 4 remote sandbox shell MVP for allowlisted read-only exploration, verification commands, and explicitly writable internal sessions.
+- Phase 5 repository query MVP for generic Git-object-backed read, path list, search, section/link, and changed-path queries that map cleanly to SDK content usage.
 
 Not implemented yet:
 
 - Binary file read/write APIs.
 - Fetch, push, and mirror sync workflows.
-- Graph/search indexing service.
+- Persistent graph/search indexing service.
 - Connected control-plane authentication.
 - SDK transport integration.
 
@@ -117,6 +118,7 @@ Elixir owns process boundaries and lifecycle concerns:
 - `TreeDb.Audit`: append-only audit events.
 - `TreeDb.Workspaces`: workspace sessions, base commit snapshots, and writable leases.
 - `TreeDb.Files`: workspace-scoped tree, file, search, status, diff, and commit API orchestration.
+- `TreeDb.RepositoryQuery`: repository-scoped read, path list, search, section/link, and changed-path query orchestration.
 - `TreeDb.Search`, `TreeDb.Graph`, and `TreeDb.Exec`: placeholders for future phases.
 
 ### Rust Responsibilities
@@ -467,6 +469,64 @@ Response shape:
 ```
 
 Shell Git mutation commands such as `git push`, `git merge`, and `git rebase` are rejected. TreeDB remains authoritative for status, diff, commit, push, and mirror sync. The Phase 4 sandbox is intended for local development and trusted internal agents; production hosting needs stronger isolation, such as containerized or VM-backed execution, before accepting untrusted commands.
+
+### Repository Query API
+
+Phase 5 adds repository-level query endpoints that operate directly on Git objects. These endpoints are read-only, authorization-filtered, and generic. They parse common repository document structure such as Markdown/MDX frontmatter, headings, links, and changed paths, but they do not understand TreeSeed product models.
+
+```http
+POST /api/v1/repos/:repo_id/files/read
+POST /api/v1/repos/:repo_id/paths/list
+POST /api/v1/repos/:repo_id/files/search
+POST /api/v1/repos/:repo_id/query
+```
+
+Read a Markdown file with frontmatter and body:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/files/read \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"ref":"refs/heads/main","path":"docs/readme.md","parseFrontmatter":true}'
+```
+
+List Markdown and MDX paths:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/paths/list \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"ref":"refs/heads/main","paths":["docs/**"],"extensions":[".md",".mdx"]}'
+```
+
+Search text under a path:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/files/search \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"ref":"refs/heads/main","paths":["docs/**"],"query":"release provenance","limit":20}'
+```
+
+Filter by generic frontmatter metadata:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/query \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"type":"frontmatter","ref":"refs/heads/main","paths":["docs/**"],"filters":[{"field":"status","op":"eq","value":"published"}]}'
+```
+
+Compare changed paths between refs:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/repos/$REPO_ID/query \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"type":"changed_path","baseRef":"refs/heads/main","ref":"refs/heads/feature","paths":["docs/**"]}'
+```
+
+The SDK compatibility seam is intentionally generic: SDK model `contentDir` values map to TreeDB `paths`, SDK filters map to generic fields such as `frontmatter.status`, and the SDK model registry remains responsible for aliases, model names, slugs, and TreeSeed product semantics.
 
 ## Error Format
 

@@ -11,6 +11,7 @@ pub mod types;
 
 pub use blob::read_blob;
 pub use commit::commit_overlay;
+pub use diff::changed_paths;
 pub use error::GitError;
 pub use refs::{list_refs, resolve_ref};
 pub use remotes::list_remotes;

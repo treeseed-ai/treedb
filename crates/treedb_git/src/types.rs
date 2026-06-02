@@ -93,3 +93,13 @@ pub struct CommitOverlayResult {
     pub changed_paths: Vec<String>,
     pub status: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangedPath {
+    pub path: String,
+    pub status: String,
+    pub base_object_id: Option<String>,
+    pub object_id: Option<String>,
+    pub kind: String,
+}

@@ -18,6 +18,9 @@ defmodule TreeDb.Git do
   def read_blob(path, ref_name, blob_path),
     do: call(&TreeDb.Native.read_blob/3, [path, ref_name, blob_path])
 
+  def changed_paths(path, base_ref, head_ref),
+    do: call(&TreeDb.Native.changed_paths/3, [path, base_ref, head_ref])
+
   def commit_overlay(input) do
     input_json = Jason.encode!(input)
 

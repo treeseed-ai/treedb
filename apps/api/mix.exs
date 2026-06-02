@@ -29,6 +29,7 @@ defmodule TreeDb.MixProject do
       {:jason, "~> 1.4"},
       {:bandit, "~> 1.8"},
       {:rustler, "~> 0.38.0"},
+      {:yamerl, "~> 0.10"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"}
     ]
