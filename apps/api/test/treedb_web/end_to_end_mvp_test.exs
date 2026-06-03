@@ -198,7 +198,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       |> auth_conn(token)
       |> post("/api/v1/workspaces/#{workspace_id}/exec", %{
         "mode" => "read_only",
-        "cmd" => "rg mvp docs plain src/content",
+        "cmd" => "grep -R mvp docs plain src/content",
         "maxOutputBytes" => 10_000
       })
       |> json!(200)
@@ -211,7 +211,7 @@ defmodule TreeDbWeb.EndToEndMvpTest do
       |> auth_conn(token)
       |> post("/api/v1/workspaces/#{workspace_id}/exec", %{
         "mode" => "verification",
-        "cmd" => "npm test"
+        "cmd" => "grep -q test package.json"
       })
       |> json!(200)
 

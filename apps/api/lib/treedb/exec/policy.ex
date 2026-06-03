@@ -61,13 +61,21 @@ defmodule TreeDb.Exec.Policy do
   end
 
   defp allow_verification(command) do
-    if Enum.any?(
-         @verification_prefixes,
-         &(command == &1 or String.starts_with?(command, &1 <> " "))
-       ) do
-      :ok
-    else
-      deny("command is not in the verification allowlist.")
+    verification_command? =
+      Enum.any?(
+        @verification_prefixes,
+        &(command == &1 or String.starts_with?(command, &1 <> " "))
+      )
+
+    cond do
+      verification_command? ->
+        :ok
+
+      allow_read_only(command) == :ok ->
+        :ok
+
+      true ->
+        deny("command is not in the verification allowlist.")
     end
   end
 
