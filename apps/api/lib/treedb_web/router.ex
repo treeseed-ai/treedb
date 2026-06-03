@@ -22,6 +22,10 @@ defmodule TreeDbWeb.Router do
     post("/policy/grants", CapabilityController, :put_grant)
     get("/audit/events", AuditController, :events)
     post("/federation/query/plan", FederationController, :plan_query)
+    get("/admin/workspaces/quarantined", AdminWorkspaceController, :quarantined)
+    get("/admin/storage/health", AdminStorageController, :health)
+    post("/admin/storage/check", AdminStorageController, :check)
+    post("/admin/storage/recover", AdminStorageController, :recover)
 
     get("/node", NodeController, :show)
     get("/registry/nodes", RegistryController, :nodes)

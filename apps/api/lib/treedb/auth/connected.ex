@@ -1,10 +1,10 @@
 defmodule TreeDb.Auth.Connected do
   @moduledoc false
 
-  alias TreeDb.Auth.{Jwt, Principal}
+  alias TreeDb.Auth.{Principal, Verifier}
 
   def authenticate(token) do
-    case Jwt.verify(token) do
+    case Verifier.verify(token) do
       {:ok, claims} ->
         with {:ok, principal} <- Principal.from_claims(claims) do
           persist_seen_token(claims, principal)
@@ -28,9 +28,9 @@ defmodule TreeDb.Auth.Connected do
     end
   end
 
-  def validate_config, do: Jwt.validate_config()
+  def validate_config, do: Verifier.validate_config()
 
-  def verifier_info, do: Jwt.verifier_info()
+  def verifier_info, do: Verifier.info()
 
   defp persist_seen_token(%{"jti" => jti} = claims, principal)
        when is_binary(jti) and jti != "" do

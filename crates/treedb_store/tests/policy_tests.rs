@@ -42,6 +42,9 @@ fn capability_grants_filter_and_expire() {
             refs: vec!["refs/heads/main".into()],
             paths: vec!["docs/**".into()],
             expires_at: None,
+            revoked_at: None,
+            revoked_by_actor_id: None,
+            revocation_reason: None,
         },
     )
     .unwrap();
@@ -56,6 +59,9 @@ fn capability_grants_filter_and_expire() {
             refs: vec!["*".into()],
             paths: vec!["**".into()],
             expires_at: Some(Utc::now() - Duration::seconds(1)),
+            revoked_at: None,
+            revoked_by_actor_id: None,
+            revocation_reason: None,
         },
     )
     .unwrap();
@@ -69,7 +75,40 @@ fn capability_grants_filter_and_expire() {
     let scope = resolve_effective_scope(dir.path(), "actor_a", Some("repo_a")).unwrap();
     assert!(scope.capabilities.contains(&"files:read".into()));
     assert!(!scope.capabilities.contains(&"files:write".into()));
+    assert!(scope.policy_version.unwrap().starts_with("polv_"));
+    assert!(scope.policy_hash.unwrap().starts_with("blake3:"));
     assert!(resolve_effective_scope(dir.path(), "actor_a", Some("repo_b")).is_err());
+}
+
+#[test]
+fn revoked_capability_grants_do_not_authorize_scope() {
+    let dir = tempdir().unwrap();
+    init_data_dir(
+        dir.path(),
+        InitOptions {
+            node_id: "node_local".into(),
+        },
+    )
+    .unwrap();
+    put_capability_grant(
+        dir.path(),
+        CapabilityGrantRecord {
+            id: "revoked".into(),
+            actor_id: "actor_a".into(),
+            tenant_id: "tenant_a".into(),
+            repo_ids: vec!["repo_a".into()],
+            capabilities: vec!["files:read".into()],
+            refs: vec!["refs/heads/main".into()],
+            paths: vec!["docs/**".into()],
+            expires_at: None,
+            revoked_at: Some(Utc::now()),
+            revoked_by_actor_id: Some("admin".into()),
+            revocation_reason: Some("test".into()),
+        },
+    )
+    .unwrap();
+
+    assert!(resolve_effective_scope(dir.path(), "actor_a", Some("repo_a")).is_err());
 }
 
 #[test]

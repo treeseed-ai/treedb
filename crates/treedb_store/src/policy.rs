@@ -1,6 +1,6 @@
 use crate::catalog::{get_record, list_records, put_record};
 use crate::error::StoreError;
-use crate::ids::capability_id;
+use crate::ids::{capability_id, payload_hash};
 use crate::types::{
     CapabilityGrantRecord, ConnectedTokenRecord, DevTokenRecord, EffectiveScope,
     PolicyRefreshRecord,
@@ -44,10 +44,15 @@ pub fn resolve_effective_scope(
     let now = Utc::now();
     let mut expires_at: Option<chrono::DateTime<Utc>> = None;
 
+    let mut hash_grants = Vec::new();
+
     for grant in grants
         .into_iter()
         .filter(|grant| grant.actor_id == actor_id)
     {
+        if grant.revoked_at.is_some() {
+            continue;
+        }
         if grant
             .expires_at
             .map(|expires| expires <= now)
@@ -64,6 +69,11 @@ pub fn resolve_effective_scope(
                 continue;
             }
         }
+        hash_grants.push(serde_json::json!({
+            "id": grant.id,
+            "expiresAt": grant.expires_at,
+            "revokedAt": grant.revoked_at,
+        }));
         if tenant_id.is_empty() {
             tenant_id = grant.tenant_id.clone();
         }
@@ -84,6 +94,31 @@ pub fn resolve_effective_scope(
         )));
     }
 
+    repo_ids.sort();
+    capabilities.sort();
+    refs.sort();
+    paths.sort();
+    hash_grants.sort_by_key(|value| value["id"].as_str().unwrap_or("").to_string());
+
+    let policy_hash = policy_hash(serde_json::json!({
+        "actorId": actor_id,
+        "tenantId": tenant_id,
+        "repoId": repo_id,
+        "repoIds": repo_ids.clone(),
+        "capabilities": capabilities.clone(),
+        "refs": refs.clone(),
+        "paths": paths.clone(),
+        "grants": hash_grants,
+    }))?;
+    let policy_version = format!(
+        "polv_{}",
+        policy_hash
+            .trim_start_matches("blake3:")
+            .chars()
+            .take(24)
+            .collect::<String>()
+    );
+
     Ok(EffectiveScope {
         actor_id: actor_id.to_string(),
         tenant_id,
@@ -93,6 +128,8 @@ pub fn resolve_effective_scope(
         paths,
         source: Some("catalog".to_string()),
         expires_at,
+        policy_version: Some(policy_version),
+        policy_hash: Some(policy_hash),
     })
 }
 
@@ -185,4 +222,8 @@ fn extend_unique(target: &mut Vec<String>, values: Vec<String>) {
             target.push(value);
         }
     }
+}
+
+fn policy_hash(payload: serde_json::Value) -> Result<String, StoreError> {
+    payload_hash(&payload).map_err(|error| StoreError::Validation(error.to_string()))
 }

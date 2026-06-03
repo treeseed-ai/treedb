@@ -9,11 +9,53 @@ defmodule TreeDb.Store do
   def init!(opts \\ %{}) do
     opts = Map.new(opts)
     node_id = Map.get(opts, :node_id) || System.get_env("TREEDB_NODE_ID") || "node_local"
+    ensure_lock_marker!()
 
     {:ok, report} =
       call_json(&TreeDb.Native.init_data_dir/2, data_dir(), Jason.encode!(%{nodeId: node_id}))
 
     report
+  end
+
+  defp ensure_lock_marker! do
+    if System.get_env("TREEDB_STORAGE_MODE") != "read_only_recovery" do
+      File.mkdir_p!(data_dir())
+      lock_path = Path.join(data_dir(), ".treedb.lock")
+      current_pid = System.pid()
+
+      case File.write(lock_path, "#{current_pid}\n", [:write, :exclusive]) do
+        :ok ->
+          :ok
+
+        {:error, :eexist} ->
+          existing_pid = lock_path |> File.read!() |> String.trim()
+
+          cond do
+            existing_pid == current_pid ->
+              :ok
+
+            live_pid?(existing_pid) ->
+              raise "TreeDB data directory is already locked by process #{existing_pid}."
+
+            true ->
+              File.write!(lock_path, "#{current_pid}\n")
+          end
+
+        {:error, reason} ->
+          raise "Unable to create TreeDB data directory lock: #{inspect(reason)}"
+      end
+    end
+  end
+
+  defp live_pid?(""), do: false
+
+  defp live_pid?(pid) do
+    case System.cmd("kill", ["-0", pid], stderr_to_stdout: true) do
+      {_output, 0} -> true
+      _ -> false
+    end
+  rescue
+    _ -> false
   end
 
   def seed_dev_records(node_id, base_url),
@@ -109,6 +151,15 @@ defmodule TreeDb.Store do
 
   def cleanup_expired_workspaces,
     do: call_json(&TreeDb.Native.cleanup_expired_workspaces/1, data_dir())
+
+  def quarantine_workspace(input),
+    do: call_json(&TreeDb.Native.quarantine_workspace/2, data_dir(), Jason.encode!(input))
+
+  def update_workspace_policy(input),
+    do: call_json(&TreeDb.Native.update_workspace_policy/2, data_dir(), Jason.encode!(input))
+
+  def list_quarantined_workspaces(input \\ %{}),
+    do: call_json(&TreeDb.Native.list_quarantined_workspaces/2, data_dir(), Jason.encode!(input))
 
   def put_workspace_file(input),
     do: call_json(&TreeDb.Native.put_workspace_file/2, data_dir(), Jason.encode!(input))

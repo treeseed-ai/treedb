@@ -396,6 +396,40 @@ fn cleanup_expired_workspaces<'a>(env: Env<'a>, data_dir: String) -> Term<'a> {
 }
 
 #[rustler::nif(schedule = "DirtyIo")]
+fn quarantine_workspace<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<WorkspaceQuarantineInput>(input_json) {
+        Ok(input) => match treedb_store::quarantine_workspace(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn update_workspace_policy<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<WorkspacePolicyUpdateInput>(input_json) {
+        Ok(input) => match treedb_store::update_workspace_policy(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_quarantined_workspaces<'a>(
+    env: Env<'a>,
+    data_dir: String,
+    _input_json: String,
+) -> Term<'a> {
+    match treedb_store::list_quarantined_workspaces(Path::new(&data_dir)) {
+        Ok(records) => ok_json(env, records),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
 fn put_workspace_file<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
     match parse_json::<WorkspaceFileInput>(input_json) {
         Ok(input) => match treedb_store::put_workspace_file(Path::new(&data_dir), input) {

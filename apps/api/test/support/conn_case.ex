@@ -6,6 +6,7 @@ defmodule TreeDbWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import TreeDbTestFixtures
+      import TreeDbPublicHygieneAssertions
 
       @endpoint TreeDbWeb.Endpoint
     end

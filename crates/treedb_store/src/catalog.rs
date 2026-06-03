@@ -130,6 +130,9 @@ pub fn seed_dev_records(
             refs,
             paths,
             expires_at: None,
+            revoked_at: None,
+            revoked_by_actor_id: None,
+            revocation_reason: None,
         },
     )?;
     Ok(SeedReport {

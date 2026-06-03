@@ -34,6 +34,7 @@ defmodule TreeDbWeb.ControllerHelpers do
   def status_for("payload_too_large"), do: 413
   def status_for("unsupported_media_type"), do: 415
   def status_for("conflict"), do: 409
+  def status_for("workspace_revoked"), do: 409
   def status_for("migration_conflict"), do: 409
   def status_for("not_implemented"), do: 501
   def status_for("unsupported_transport"), do: 422

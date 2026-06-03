@@ -36,8 +36,8 @@ pub use snapshots::{
 };
 pub use types::*;
 pub use workspace::{
-    cleanup_expired_workspaces, close_workspace, get_workspace, mark_workspace_committed,
-    put_workspace,
+    cleanup_expired_workspaces, close_workspace, get_workspace, list_quarantined_workspaces,
+    mark_workspace_committed, put_workspace, quarantine_workspace, update_workspace_policy,
 };
 pub use workspace_files::{
     get_workspace_file, list_workspace_files, put_workspace_file, read_workspace_file_content,

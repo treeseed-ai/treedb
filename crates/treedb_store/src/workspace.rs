@@ -2,7 +2,8 @@ use crate::catalog::{get_record, list_records, put_record};
 use crate::error::StoreError;
 use crate::ids::{lease_id, workspace_id};
 use crate::types::{
-    CleanupReport, LeaseRecord, WorkspaceCommitMarkInput, WorkspaceInput, WorkspaceRecord,
+    CleanupReport, LeaseRecord, WorkspaceCommitMarkInput, WorkspaceInput,
+    WorkspacePolicyUpdateInput, WorkspaceQuarantineInput, WorkspaceRecord,
 };
 use chrono::{Duration, Utc};
 use std::path::Path;
@@ -62,7 +63,11 @@ pub fn put_workspace(
         capabilities: input.capabilities,
         status: "ready".to_string(),
         materialized_path: input.materialized_path,
+        policy_version: input.effective_scope.policy_version.clone(),
+        policy_hash: input.effective_scope.policy_hash.clone(),
         effective_scope: input.effective_scope,
+        revoked_at: None,
+        revoked_reason: None,
         lease_id: lease.map(|record| record.id),
         commit_sha: None,
         created_at: now,
@@ -78,6 +83,70 @@ pub fn put_workspace(
         &record,
     )?;
     Ok(record)
+}
+
+pub fn quarantine_workspace(
+    data_dir: &Path,
+    input: WorkspaceQuarantineInput,
+) -> Result<WorkspaceRecord, StoreError> {
+    let Some(mut record) = get_workspace(data_dir, &input.workspace_id)? else {
+        return Err(StoreError::NotFound(format!(
+            "workspace not found: {}",
+            input.workspace_id
+        )));
+    };
+    if record.status == "ready" {
+        record.status = "quarantined".to_string();
+        record.closed_at = Some(Utc::now());
+        if let Some(lease_id) = record.lease_id.as_deref() {
+            release_lease(data_dir, lease_id)?;
+        }
+    }
+    record.policy_version = input.policy_version;
+    record.policy_hash = input.policy_hash;
+    record.revoked_at = Some(Utc::now());
+    record.revoked_reason = Some(input.reason);
+    put_record(
+        data_dir,
+        "workspaces/sessions.tdb",
+        "workspace",
+        &record.id,
+        &record,
+    )?;
+    Ok(record)
+}
+
+pub fn update_workspace_policy(
+    data_dir: &Path,
+    input: WorkspacePolicyUpdateInput,
+) -> Result<WorkspaceRecord, StoreError> {
+    let Some(mut record) = get_workspace(data_dir, &input.workspace_id)? else {
+        return Err(StoreError::NotFound(format!(
+            "workspace not found: {}",
+            input.workspace_id
+        )));
+    };
+    record.policy_version = Some(input.policy_version);
+    record.policy_hash = Some(input.policy_hash);
+    record.effective_scope.policy_version = record.policy_version.clone();
+    record.effective_scope.policy_hash = record.policy_hash.clone();
+    put_record(
+        data_dir,
+        "workspaces/sessions.tdb",
+        "workspace",
+        &record.id,
+        &record,
+    )?;
+    Ok(record)
+}
+
+pub fn list_quarantined_workspaces(data_dir: &Path) -> Result<Vec<WorkspaceRecord>, StoreError> {
+    Ok(
+        list_records::<WorkspaceRecord>(data_dir, "workspaces/sessions.tdb", "workspace")?
+            .into_iter()
+            .filter(|workspace| workspace.status == "quarantined" || workspace.status == "revoked")
+            .collect(),
+    )
 }
 
 pub fn mark_workspace_committed(

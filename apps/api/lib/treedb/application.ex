@@ -25,6 +25,7 @@ defmodule TreeDb.Application do
     })
 
     children = [
+      TreeDb.Auth.JwksCache,
       TreeDbWeb.Endpoint
     ]
 

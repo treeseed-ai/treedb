@@ -216,6 +216,8 @@ fn workspace_input(id: &str, branch_name: &str, ttl_seconds: i64) -> WorkspaceIn
             paths: vec!["docs/**".to_string()],
             source: Some("test".to_string()),
             expires_at: None,
+            policy_version: Some("polv_test".to_string()),
+            policy_hash: Some("blake3:test".to_string()),
         },
     }
 }

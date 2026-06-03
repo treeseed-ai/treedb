@@ -49,7 +49,7 @@ defmodule TreeDb.Repos do
         repo_id: repo_id
       })
 
-      {:ok, %{repo: public_repo(repo), git: git, placement: placement}}
+      {:ok, %{repo: public_repo(repo), git: public_git(git), placement: placement}}
     else
       {:ok, nil} -> {:error, %{code: "not_found", message: "Repository not found."}}
       other -> other
@@ -103,7 +103,7 @@ defmodule TreeDb.Repos do
         data: %{refreshed: false}
       })
 
-      {:ok, %{repo: public_repo(repo), refreshed: false, git: git}}
+      {:ok, %{repo: public_repo(repo), refreshed: false, git: public_git(git)}}
     else
       {:ok, nil} -> {:error, %{code: "not_found", message: "Repository not found."}}
       other -> other
@@ -179,4 +179,9 @@ defmodule TreeDb.Repos do
 
   defp public_placement(nil), do: nil
   defp public_placement(placement), do: %{"primaryNodeId" => placement["primaryNodeId"]}
+
+  defp public_git(git) do
+    git
+    |> Map.drop(["path", "repoPath", "gitDir", "worktreePath"])
+  end
 end

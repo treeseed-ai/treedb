@@ -49,7 +49,8 @@ defmodule TreeDb.Workspaces do
 
   def get(workspace_id, principal) do
     with {:ok, workspace} when is_map(workspace) <- TreeDb.Store.get_workspace(workspace_id),
-         :ok <- workspace_actor_allowed(workspace, principal) do
+         :ok <- workspace_actor_allowed(workspace, principal),
+         {:ok, workspace, _scope} <- ensure_policy_current(workspace, principal, "files:read") do
       {:ok, public_workspace(workspace)}
     else
       {:ok, nil} -> {:error, %{code: "not_found", message: "Workspace not found."}}
@@ -60,6 +61,7 @@ defmodule TreeDb.Workspaces do
   def close(workspace_id, principal) do
     with {:ok, workspace} when is_map(workspace) <- TreeDb.Store.get_workspace(workspace_id),
          :ok <- workspace_actor_allowed(workspace, principal),
+         {:ok, _workspace, _scope} <- ensure_policy_current(workspace, principal, "files:read"),
          {:ok, closed} when is_map(closed) <- TreeDb.Store.close_workspace(workspace_id) do
       TreeDb.Audit.append("workspace.closed", %{
         actor_id: actor_id(principal),
@@ -77,6 +79,120 @@ defmodule TreeDb.Workspaces do
 
   def cleanup_expired do
     TreeDb.Store.cleanup_expired_workspaces()
+  end
+
+  def quarantined(principal) do
+    with {:ok, _scope} <- TreeDb.Capabilities.require_capability(principal, "policy:read"),
+         {:ok, workspaces} <- TreeDb.Store.list_quarantined_workspaces() do
+      {:ok, %{workspaces: Enum.map(workspaces, &public_workspace/1)}}
+    end
+  end
+
+  def ensure_policy_current(workspace, principal, capability) do
+    cond do
+      workspace["status"] in ["quarantined", "revoked"] ->
+        revoked_error(workspace, workspace["policyVersion"])
+
+      true ->
+        with {:ok, current_scope} <-
+               TreeDb.Capabilities.require_capability(
+                 principal,
+                 capability,
+                 workspace["repositoryId"]
+               ) do
+          current_hash = current_scope["policyHash"]
+
+          cond do
+            is_nil(workspace["policyHash"]) or workspace["policyHash"] == current_hash ->
+              maybe_update_policy(workspace, current_scope)
+
+            scope_covers_workspace?(current_scope, workspace, capability) ->
+              maybe_update_policy(workspace, current_scope)
+
+            true ->
+              quarantine(workspace, current_scope, "policy_scope_revoked")
+          end
+        else
+          {:error, %{code: "permission_denied"}} ->
+            quarantine(workspace, %{}, "policy_scope_revoked")
+
+          {:error, %{"code" => "permission_denied"}} ->
+            quarantine(workspace, %{}, "policy_scope_revoked")
+
+          {:error, %{code: "not_found"}} ->
+            quarantine(workspace, %{}, "policy_scope_revoked")
+
+          {:error, %{"code" => "not_found"}} ->
+            quarantine(workspace, %{}, "policy_scope_revoked")
+
+          other ->
+            other
+        end
+    end
+  end
+
+  defp maybe_update_policy(workspace, current_scope) do
+    current_hash = current_scope["policyHash"]
+    current_version = current_scope["policyVersion"]
+
+    if is_binary(current_hash) and workspace["policyHash"] != current_hash do
+      with {:ok, updated} <-
+             TreeDb.Store.update_workspace_policy(%{
+               workspaceId: workspace["id"],
+               policyVersion: current_version,
+               policyHash: current_hash
+             }) do
+        {:ok, updated, current_scope}
+      end
+    else
+      {:ok, workspace, current_scope}
+    end
+  end
+
+  defp quarantine(workspace, current_scope, reason) do
+    {:ok, quarantined} =
+      TreeDb.Store.quarantine_workspace(%{
+        workspaceId: workspace["id"],
+        policyVersion: current_scope["policyVersion"],
+        policyHash: current_scope["policyHash"],
+        reason: reason
+      })
+
+    TreeDb.Audit.append("workspace.quarantined", %{
+      actor_id: workspace["actorId"],
+      tenant_id: workspace["tenantId"],
+      repo_id: workspace["repositoryId"],
+      workspace_id: workspace["id"],
+      status: "error",
+      data: %{reason: reason}
+    })
+
+    revoked_error(quarantined, current_scope["policyVersion"])
+  end
+
+  defp revoked_error(workspace, current_policy_version) do
+    {:error,
+     %{
+       code: "workspace_revoked",
+       message: "Workspace policy has been revoked.",
+       details: %{
+         workspaceId: workspace["id"],
+         policyVersion: workspace["policyVersion"],
+         currentPolicyVersion: current_policy_version
+       }
+     }}
+  end
+
+  defp scope_covers_workspace?(scope, workspace, capability) do
+    with true <- capability in (scope["capabilities"] || []),
+         true <- TreeDb.Capabilities.allowed_repo?(scope, workspace["repositoryId"]),
+         :ok <- TreeDb.Capabilities.require_ref(scope, workspace["baseRef"]),
+         :ok <- require_branch_scope(scope, workspace["branchName"]),
+         :ok <- TreeDb.Capabilities.require_paths(scope, workspace["allowedPaths"] || []) do
+      true
+    else
+      _ -> false
+    end
   end
 
   defp persist_workspace(repo, placement, principal, scope, opts) do
@@ -104,8 +220,12 @@ defmodule TreeDb.Workspaces do
         repoIds: [repo["id"]],
         capabilities: workspace_capabilities(opts.mode),
         refs: workspace_refs(scope, opts),
-        paths: opts.allowed_paths
-      }
+        paths: opts.allowed_paths,
+        policyVersion: scope["policyVersion"],
+        policyHash: scope["policyHash"]
+      },
+      policyVersion: scope["policyVersion"],
+      policyHash: scope["policyHash"]
     }
 
     TreeDb.Store.put_workspace(input)
@@ -189,6 +309,10 @@ defmodule TreeDb.Workspaces do
       status: workspace["status"],
       expiresAt: workspace["expiresAt"],
       commitSha: workspace["commitSha"],
+      policyVersion: workspace["policyVersion"],
+      policyHash: workspace["policyHash"],
+      revokedAt: workspace["revokedAt"],
+      revokedReason: workspace["revokedReason"],
       effectiveScope: workspace["effectiveScope"],
       capabilities: workspace["capabilities"]
     }

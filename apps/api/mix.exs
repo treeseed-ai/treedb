@@ -16,7 +16,7 @@ defmodule TreeDb.MixProject do
   def application do
     [
       mod: {TreeDb.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :inets, :ssl, :public_key]
     ]
   end
 

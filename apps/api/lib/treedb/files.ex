@@ -31,7 +31,7 @@ defmodule TreeDb.Files do
   end
 
   def write(workspace_id, params, principal) do
-    with {:ok, ctx} <- writable_context(workspace_id, principal, "files:delete"),
+    with {:ok, ctx} <- writable_context(workspace_id, principal, "files:write"),
          {:ok, path} <- PathPolicy.normalize(params["path"]),
          :ok <- PathPolicy.authorize(ctx.workspace, path, truthy?(params["allowProtected"])),
          {:ok, content} <- utf8_content(params["content"]),
@@ -59,7 +59,7 @@ defmodule TreeDb.Files do
   end
 
   def patch(workspace_id, params, principal) do
-    with {:ok, ctx} <- writable_context(workspace_id, principal, "files:write"),
+    with {:ok, ctx} <- writable_context(workspace_id, principal, "files:delete"),
          {:ok, path} <- PathPolicy.normalize(params["path"]),
          :ok <- PathPolicy.authorize(ctx.workspace, path, truthy?(params["allowProtected"])),
          {:ok, file} <- current_file(ctx, path),
@@ -202,6 +202,8 @@ defmodule TreeDb.Files do
   defp context(workspace_id, principal, capability) do
     with {:ok, workspace} when is_map(workspace) <- TreeDb.Store.get_workspace(workspace_id),
          :ok <- same_actor(workspace, principal),
+         {:ok, workspace, _current_scope} <-
+           TreeDb.Workspaces.ensure_policy_current(workspace, principal, capability),
          {:ok, scope} <-
            TreeDb.Capabilities.require_capability(
              principal,

@@ -242,7 +242,14 @@ pub struct CapabilityGrantRecord {
     pub capabilities: Vec<String>,
     pub refs: Vec<String>,
     pub paths: Vec<String>,
+    #[serde(default)]
     pub expires_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub revoked_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub revoked_by_actor_id: Option<String>,
+    #[serde(default)]
+    pub revocation_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -273,8 +280,14 @@ pub struct EffectiveScope {
     pub capabilities: Vec<String>,
     pub refs: Vec<String>,
     pub paths: Vec<String>,
+    #[serde(default)]
     pub source: Option<String>,
+    #[serde(default)]
     pub expires_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub policy_version: Option<String>,
+    #[serde(default)]
+    pub policy_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -385,6 +398,14 @@ pub struct WorkspaceRecord {
     pub status: String,
     pub materialized_path: String,
     pub effective_scope: EffectiveScope,
+    #[serde(default)]
+    pub policy_version: Option<String>,
+    #[serde(default)]
+    pub policy_hash: Option<String>,
+    #[serde(default)]
+    pub revoked_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub revoked_reason: Option<String>,
     pub lease_id: Option<String>,
     pub commit_sha: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -447,4 +468,21 @@ pub struct WorkspaceFileRecord {
 pub struct WorkspaceCommitMarkInput {
     pub workspace_id: String,
     pub commit_sha: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceQuarantineInput {
+    pub workspace_id: String,
+    pub policy_version: Option<String>,
+    pub policy_hash: Option<String>,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspacePolicyUpdateInput {
+    pub workspace_id: String,
+    pub policy_version: String,
+    pub policy_hash: String,
 }
