@@ -103,6 +103,27 @@ defmodule TreeDb.Store do
 
   def list_tdb_logs, do: call_json(&TreeDb.Native.list_tdb_logs/1, data_dir())
 
+  def put_graph_refresh_job(input),
+    do: call_json(&TreeDb.Native.put_graph_refresh_job/2, data_dir(), Jason.encode!(input))
+
+  def get_graph_refresh_job(repo_id, job_id),
+    do: call_json(&TreeDb.Native.get_graph_refresh_job/3, data_dir(), repo_id, job_id)
+
+  def put_search_index_manifest(input),
+    do: call_json(&TreeDb.Native.put_search_index_manifest/2, data_dir(), Jason.encode!(input))
+
+  def get_search_index_manifest(repo_id, ref_name),
+    do: call_json(&TreeDb.Native.get_search_index_manifest/3, data_dir(), repo_id, ref_name)
+
+  def put_search_index_segment(input),
+    do: call_json(&TreeDb.Native.put_search_index_segment/2, data_dir(), Jason.encode!(input))
+
+  def list_search_index_segments(repo_id, ref_name),
+    do: call_json(&TreeDb.Native.list_search_index_segments/3, data_dir(), repo_id, ref_name)
+
+  def compact_search_index(input),
+    do: call_json(&TreeDb.Native.compact_search_index/2, data_dir(), Jason.encode!(input))
+
   def put_mirror_sync(input),
     do: call_json(&TreeDb.Native.put_mirror_sync/2, data_dir(), Jason.encode!(input))
 

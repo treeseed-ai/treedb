@@ -21,6 +21,19 @@ defmodule TreeDb.Native do
   def compact_storage(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)
   def create_backup(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)
   def list_tdb_logs(_data_dir), do: :erlang.nif_error(:nif_not_loaded)
+  def put_graph_refresh_job(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)
+  def get_graph_refresh_job(_data_dir, _repo_id, _job_id), do: :erlang.nif_error(:nif_not_loaded)
+  def put_search_index_manifest(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)
+
+  def get_search_index_manifest(_data_dir, _repo_id, _ref_name),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  def put_search_index_segment(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)
+
+  def list_search_index_segments(_data_dir, _repo_id, _ref_name),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  def compact_search_index(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)
   def put_mirror_sync(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)
   def get_mirror_sync(_data_dir, _sync_id), do: :erlang.nif_error(:nif_not_loaded)
   def list_mirror_syncs(_data_dir, _input), do: :erlang.nif_error(:nif_not_loaded)

@@ -2,12 +2,14 @@ pub mod audit;
 pub mod catalog;
 pub mod error;
 pub mod federation;
+pub mod graph_jobs;
 pub mod ids;
 pub mod log;
 pub mod manifest;
 pub mod migration;
 pub mod policy;
 pub mod recovery;
+pub mod search;
 pub mod segment;
 pub mod snapshots;
 pub mod types;
@@ -23,6 +25,7 @@ pub use error::StoreError;
 pub use federation::{
     get_repository_placement, list_mirrors, put_mirror, put_repository_placement,
 };
+pub use graph_jobs::{get_graph_refresh_job, put_graph_refresh_job};
 pub use ids::{hash_bytes, hash_token};
 pub use migration::{
     get_migration, get_mirror_sync, list_mirror_syncs, put_migration, put_mirror_sync,
@@ -32,6 +35,10 @@ pub use policy::{
     put_connected_token, put_dev_token, put_policy_refresh, resolve_effective_scope,
 };
 pub use recovery::{compact_storage, create_backup, list_tdb_logs};
+pub use search::{
+    compact_search_index, get_search_index_manifest, list_search_index_segments,
+    put_search_index_manifest, put_search_index_segment,
+};
 pub use snapshots::{
     build_snapshot_artifact, get_artifact, get_snapshot_manifest, read_artifact_bytes,
 };

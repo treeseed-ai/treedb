@@ -219,6 +219,89 @@ fn list_tdb_logs<'a>(env: Env<'a>, data_dir: String) -> Term<'a> {
 }
 
 #[rustler::nif(schedule = "DirtyIo")]
+fn put_graph_refresh_job<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<GraphRefreshJobRecord>(input_json) {
+        Ok(input) => match treedb_store::put_graph_refresh_job(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_graph_refresh_job<'a>(
+    env: Env<'a>,
+    data_dir: String,
+    repo_id: String,
+    job_id: String,
+) -> Term<'a> {
+    match treedb_store::get_graph_refresh_job(Path::new(&data_dir), &repo_id, &job_id) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_search_index_manifest<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<SearchIndexManifestRecord>(input_json) {
+        Ok(input) => match treedb_store::put_search_index_manifest(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_search_index_manifest<'a>(
+    env: Env<'a>,
+    data_dir: String,
+    repo_id: String,
+    ref_name: String,
+) -> Term<'a> {
+    match treedb_store::get_search_index_manifest(Path::new(&data_dir), &repo_id, &ref_name) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_search_index_segment<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<SearchIndexSegmentRecord>(input_json) {
+        Ok(input) => match treedb_store::put_search_index_segment(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_search_index_segments<'a>(
+    env: Env<'a>,
+    data_dir: String,
+    repo_id: String,
+    ref_name: String,
+) -> Term<'a> {
+    match treedb_store::list_search_index_segments(Path::new(&data_dir), &repo_id, &ref_name) {
+        Ok(records) => ok_json(env, records),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn compact_search_index<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<SearchIndexCompactInput>(input_json) {
+        Ok(input) => match treedb_store::compact_search_index(Path::new(&data_dir), input) {
+            Ok(result) => ok_json(env, result),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
 fn put_mirror_sync<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
     match parse_json::<MirrorSyncRecord>(input_json) {
         Ok(input) => match treedb_store::put_mirror_sync(Path::new(&data_dir), input) {

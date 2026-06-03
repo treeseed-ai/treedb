@@ -31,8 +31,13 @@ Priority routes for typed response schemas:
    - `/api/v1/repos/{repo_id}/blobs/read`
    - `/api/v1/repos/{repo_id}/query`
 4. Graph/context:
+   - `/api/v1/repos/{repo_id}/graph/refresh`
+   - `/api/v1/repos/{repo_id}/graph/refresh-jobs/{job_id}`
    - `/api/v1/repos/{repo_id}/graph/query`
    - `/api/v1/repos/{repo_id}/context/build`
+   - `/api/v1/repos/{repo_id}/search/index/refresh`
+   - `/api/v1/repos/{repo_id}/search/index/status`
+   - `/api/v1/repos/{repo_id}/search/index/compact`
 5. Snapshot/mirror/migration:
    - `/api/v1/repos/{repo_id}/snapshots/build`
    - `/api/v1/repos/{repo_id}/artifacts/export`
@@ -49,6 +54,8 @@ Request bodies are not yet schema-complete for:
 - repository file read/search/path/query
 - repository blob read
 - graph refresh/query/search/traversal
+- graph refresh job status
+- search index refresh/status/compact
 - context build and parse
 - snapshot build and artifact export
 - workspace create/write/patch/search/commit/exec
@@ -73,6 +80,7 @@ Response schemas are not yet complete for:
 - blob read, mutation, upload, and download metadata
 - git push/fetch, mirror health/promotion, and storage compact/backup records
 - graph/context results
+- graph refresh job records and search index records
 - federated diagnostics, partial errors, and cross-repo graph results
 - snapshot/artifact records
 

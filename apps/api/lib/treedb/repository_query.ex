@@ -3,6 +3,7 @@ defmodule TreeDb.RepositoryQuery do
 
   alias TreeDb.Files.PathPolicy
   alias TreeDb.RepositoryQuery.{Document, Filters, Links, Pagination, PathMatch, Sections, Sort}
+  alias TreeDb.Search.Ranking
 
   @default_query_limit 20
   @max_query_limit 50
@@ -72,13 +73,22 @@ defmodule TreeDb.RepositoryQuery do
            ) do
       audit("repo.files_searched", ctx, %{paths: patterns, resultCount: length(page_results)})
 
-      {:ok,
-       base_response(ctx)
-       |> Map.merge(%{
-         query: params["query"],
-         results: Enum.map(page_results, &project_search_result(&1, params)),
-         page: page
-       })}
+      response =
+        base_response(ctx)
+        |> Map.merge(%{
+          query: params["query"],
+          results: Enum.map(page_results, &project_search_result(&1, params)),
+          page: page
+        })
+        |> Ranking.maybe_put_diagnostics(
+          results,
+          page_results,
+          params,
+          patterns,
+          Ranking.include?(params)
+        )
+
+      {:ok, response}
     end
   end
 
@@ -248,9 +258,9 @@ defmodule TreeDb.RepositoryQuery do
     end
   end
 
-  defp context(_repo_id, %{"__ctx" => ctx}, _principal, _capability), do: {:ok, ctx}
+  def context(_repo_id, %{"__ctx" => ctx}, _principal, _capability), do: {:ok, ctx}
 
-  defp context(repo_id, params, principal, capability) do
+  def context(repo_id, params, principal, capability) do
     with {:ok, scope} <- TreeDb.Capabilities.require_capability(principal, capability, repo_id),
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
          ref <- params["ref"] || repo["defaultRef"] || "refs/heads/main",

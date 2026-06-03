@@ -5,6 +5,9 @@ defmodule TreeDbWeb.GraphController do
   def refresh(conn, %{"repo_id" => repo_id} = params),
     do: with_principal(conn, &TreeDb.Graph.refresh(repo_id, params, &1))
 
+  def refresh_job(conn, %{"repo_id" => repo_id, "job_id" => job_id} = params),
+    do: with_principal(conn, &TreeDb.Graph.refresh_job(repo_id, job_id, params, &1))
+
   def query(conn, %{"repo_id" => repo_id} = params),
     do: with_principal(conn, &TreeDb.Graph.query(repo_id, params, &1))
 

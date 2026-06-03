@@ -39,7 +39,8 @@ required by the route itself.
 | POST | `/api/v1/repos/:repo_id/blobs/read` | `BlobController.read_repo` | `files:read` | yes | yes | yes | no | no | `blob.read` | Stage 2 binary-safe base64 read |
 | POST | `/api/v1/repos/:repo_id/paths/list` | `RepoQueryController.paths` | `files:read` | yes | yes | yes | no | no | path list audit | hide unauthorized paths |
 | POST | `/api/v1/repos/:repo_id/query` | `RepoQueryController.query` | `files:search` | yes | yes | yes | no | no | query audit | rank only authorized results |
-| POST | `/api/v1/repos/:repo_id/graph/refresh` | `GraphController.refresh` | `graph:refresh` | yes | yes | yes | no | no | graph refresh audit | none |
+| POST | `/api/v1/repos/:repo_id/graph/refresh` | `GraphController.refresh` | `graph:refresh` | yes | yes | yes | no | no | graph refresh audit | Stage 5 incremental metadata and job record |
+| GET | `/api/v1/repos/:repo_id/graph/refresh-jobs/:job_id` | `GraphController.refresh_job` | `graph:query` | yes | yes | no | no | no | none | Stage 5 job status uses logical metadata only |
 | POST | `/api/v1/repos/:repo_id/graph/query` | `GraphController.query` | `graph:query` | yes | yes | yes | no | no | graph query audit | leakage tests |
 | POST | `/api/v1/repos/:repo_id/graph/search-files` | `GraphController.search_files` | `graph:query` | yes | yes | yes | no | no | graph query audit | leakage tests |
 | POST | `/api/v1/repos/:repo_id/graph/search-sections` | `GraphController.search_sections` | `graph:query` | yes | yes | yes | no | no | graph query audit | leakage tests |
@@ -47,8 +48,11 @@ required by the route itself.
 | GET | `/api/v1/repos/:repo_id/graph/nodes/:node_id` | `GraphController.node` | `graph:query` | yes | yes | yes | no | no | graph query audit | hidden node checks |
 | POST | `/api/v1/repos/:repo_id/graph/related` | `GraphController.related` | `graph:query` | yes | yes | yes | no | no | graph query audit | hidden edge checks |
 | POST | `/api/v1/repos/:repo_id/graph/subgraph` | `GraphController.subgraph` | `graph:query` | yes | yes | yes | no | no | graph query audit | hidden edge checks |
-| POST | `/api/v1/repos/:repo_id/context/build` | `ContextController.build` | `graph:query` | yes | yes | yes | no | no | context build audit | snippets must be authorized |
+| POST | `/api/v1/repos/:repo_id/context/build` | `ContextController.build` | `graph:query` | yes | yes | yes | no | no | context build audit | Stage 5 modes and budget diagnostics must stay authorized |
 | POST | `/api/v1/repos/:repo_id/context/parse-ctx` | `ContextController.parse_ctx` | `graph:query` | yes | optional | optional | no | no | none | none |
+| POST | `/api/v1/repos/:repo_id/search/index/refresh` | `SearchIndexController.refresh` | `files:search` | yes | yes | yes | no | no | `search.index_refreshed` | Stage 5 search segment metadata, no hidden paths |
+| GET | `/api/v1/repos/:repo_id/search/index/status` | `SearchIndexController.status` | `files:search` | yes | yes | no | no | no | none | Stage 5 logical status only |
+| POST | `/api/v1/repos/:repo_id/search/index/compact` | `SearchIndexController.compact` | `policy:write` | yes | optional | no | no | no | none | Stage 5 compaction status only |
 | POST | `/api/v1/repos/:repo_id/snapshots/build` | `SnapshotController.build` | `snapshot:build` | yes | yes | yes | no | no | snapshot build audit | hide excluded paths |
 | GET | `/api/v1/repos/:repo_id/snapshots/:snapshot_id` | `SnapshotController.show` | `snapshot:build` | yes | no | no | no | no | none | hide file lists by policy |
 | POST | `/api/v1/repos/:repo_id/artifacts/export` | `SnapshotController.export` | `artifact:export` | yes | no | no | no | no | artifact export audit | no internal paths |

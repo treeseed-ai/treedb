@@ -1,32 +1,67 @@
 defmodule TreeDb.Graph do
   @moduledoc false
 
-  alias TreeDb.Graph.{Auth, Builder, ContextPack, Dsl, Filter, Native}
+  alias TreeDb.Graph.{Auth, Builder, ContextPack, Dsl, Filter, Native, RefreshJobs}
 
   def refresh(repo_id, params, principal) do
     with {:ok, ctx} <- Auth.context(repo_id, params, principal, "graph:refresh"),
          {:ok, _} <- TreeDb.Capabilities.require_capability(principal, "files:read", repo_id),
          {:ok, _} <- TreeDb.Capabilities.require_capability(principal, "git:read", repo_id),
          {:ok, previous} <- Native.read_latest_graph_manifest(repo_id, ctx.ref),
+         {:ok, refresh_plan} <- refresh_plan(params, previous),
+         {:ok, job} <-
+           RefreshJobs.start(
+             ctx,
+             params,
+             refresh_plan.mode,
+             refresh_plan.fallback_reason,
+             refresh_plan.stale
+           ),
          {:ok, input} <- Builder.build_input(ctx, params, previous),
          {:ok, index} <- Native.build_graph_index(input),
-         {:ok, manifest} <- Native.write_graph_segments(index) do
-      audit("graph.refreshed", ctx, %{graphVersion: manifest["graphVersion"]})
+         {:ok, manifest} <- Native.write_graph_segments(index),
+         changed_paths <- authorized_changed_paths(ctx, params),
+         indexed_count <- indexed_path_count(refresh_plan.mode, changed_paths, manifest),
+         removed_count <- length(manifest["delta"]["removed"] || []),
+         {:ok, completed_job} <-
+           RefreshJobs.complete(job, manifest["graphVersion"], indexed_count, removed_count) do
+      audit("graph.refreshed", ctx, %{
+        graphVersion: manifest["graphVersion"],
+        refreshMode: refresh_plan.mode,
+        changedPathCount: length(changed_paths),
+        stale: refresh_plan.stale
+      })
 
       {:ok,
        %{
          ready: true,
+         jobId: completed_job["jobId"],
          repoId: repo_id,
          ref: ctx.ref,
          resolvedRef: ctx.resolved_ref,
          graphVersion: manifest["graphVersion"],
          snapshotRoot: snapshot_root(repo_id, manifest["graphVersion"]),
+         refreshMode: refresh_plan.mode,
+         fallbackReason: refresh_plan.fallback_reason,
+         changedPathCount: length(changed_paths),
+         indexedPathCount: indexed_count,
+         removedPathCount: removed_count,
+         stale: refresh_plan.stale,
          changed: manifest["delta"],
          metrics: manifest["metrics"],
          diagnostics: index["diagnostics"]
        }}
+    else
+      {:error, _error} = result ->
+        result
+
+      other ->
+        other
     end
   end
+
+  def refresh_job(repo_id, job_id, params, principal),
+    do: RefreshJobs.get(repo_id, job_id, params, principal)
 
   def search_files(repo_id, params, principal),
     do: search(repo_id, params, principal, "files", "graph.files_searched")
@@ -158,6 +193,58 @@ defmodule TreeDb.Graph do
       maxNodes: options["maxNodes"],
       scoreThreshold: options["scoreThreshold"]
     }
+  end
+
+  defp refresh_plan(params, previous) do
+    changed_paths = list_param(params["changedPaths"])
+    incremental? = params["incremental"] != false and params["forceFull"] != true
+    max_changed = graph_incremental_max_changed_paths()
+    base = params["baseGraphVersion"]
+    stale = is_binary(base) and is_map(previous) and previous["graphVersion"] != base
+
+    cond do
+      !incremental? ->
+        {:ok, %{mode: "full", fallback_reason: nil, stale: stale}}
+
+      previous in [nil, %{}] ->
+        {:ok, %{mode: "full", fallback_reason: "missing_base_graph", stale: false}}
+
+      stale ->
+        {:ok, %{mode: "full", fallback_reason: "stale_base_graph", stale: true}}
+
+      length(changed_paths) > max_changed ->
+        {:ok, %{mode: "full", fallback_reason: "changed_path_limit_exceeded", stale: false}}
+
+      changed_paths == [] ->
+        {:ok, %{mode: "full", fallback_reason: "changed_paths_empty", stale: false}}
+
+      true ->
+        {:ok, %{mode: "incremental", fallback_reason: nil, stale: false}}
+    end
+  end
+
+  defp authorized_changed_paths(ctx, params) do
+    params["changedPaths"]
+    |> list_param()
+    |> Enum.filter(fn path ->
+      match?(:ok, TreeDb.Capabilities.require_paths(ctx.scope, [path]))
+    end)
+  end
+
+  defp indexed_path_count("incremental", changed_paths, _manifest), do: length(changed_paths)
+
+  defp indexed_path_count(_mode, _changed_paths, manifest),
+    do: manifest["documentCount"] || get_in(manifest, ["metrics", "totalFiles"]) || 0
+
+  defp list_param(nil), do: []
+  defp list_param(values) when is_list(values), do: Enum.map(values, &to_string/1)
+  defp list_param(value) when is_binary(value), do: [value]
+
+  defp graph_incremental_max_changed_paths do
+    System.get_env("TREEDB_GRAPH_INCREMENTAL_MAX_CHANGED_PATHS", "500")
+    |> String.to_integer()
+  rescue
+    _ -> 500
   end
 
   defp require_manifest(nil),
