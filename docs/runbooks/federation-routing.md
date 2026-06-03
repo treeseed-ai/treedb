@@ -1,6 +1,6 @@
 # Federation Routing Runbook
 
-Stage 4 global federation routes:
+Global federation routes:
 
 ```text
 POST /api/v1/search

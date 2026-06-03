@@ -1,6 +1,6 @@
 # Native Storage Hardening
 
-Stage 3 extends the append-only `.tdb` store with:
+TreeDB extends the append-only `.tdb` store with:
 
 - recursive log discovery for storage checks
 - latest-record compaction for non-audit logs
@@ -13,4 +13,4 @@ renames the compacted log.
 
 Backups include catalog, policy, audit, graph, snapshots, federation,
 workspaces, and leases by default. Public responses expose logical URIs only.
-Destructive public restore is deferred to a later stage.
+Guarded restore verification and apply are available through admin storage restore endpoints.

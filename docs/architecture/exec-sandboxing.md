@@ -1,6 +1,6 @@
 # Exec Sandboxing
 
-Stage 3 introduces `TreeDb.Exec.Backend` with three configured modes:
+TreeDB uses `TreeDb.Exec.Backend` with three configured modes:
 
 - `direct_dev`
 - `container_sandbox`

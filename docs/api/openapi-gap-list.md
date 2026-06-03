@@ -1,6 +1,6 @@
 # TreeDB OpenAPI Gap List
 
-Status: Stage 0 baseline
+Status: Route and schema gap inventory
 
 `docs/api/openapi.yaml` is currently a human-maintained route inventory with
 generic envelopes. It is complete enough to prevent missing-route drift, but it
@@ -8,8 +8,8 @@ is not yet a schema-complete contract.
 
 ## Routes With Generic `OkEnvelope`
 
-All current MVP routes still use the generic `OkEnvelope` response. Stage 0
-keeps this intentionally to avoid pretending the contract is stricter than the
+Many routes still use the generic `OkEnvelope` response. The route inventory
+keeps this explicit to avoid pretending the contract is stricter than the
 implementation.
 
 Priority routes for typed response schemas:
@@ -104,10 +104,10 @@ Add examples for:
 - `backup_failed`
 - `storage_compaction_failed`
 
-## Stage 2 Binary Blob Follow-Ups
+## Binary Blob Follow-Ups
 
-Implemented Stage 2 routes are binary-safe but still use generic OpenAPI
-envelopes. Later schema work should add typed contracts for:
+Implemented blob routes are binary-safe but still use generic OpenAPI
+envelopes. Schema work should add typed contracts for:
 
 - base64 blob read/write request and response bodies
 - raw upload headers (`x-treedb-expected-sha`,
@@ -117,13 +117,15 @@ envelopes. Later schema work should add typed contracts for:
 - `payload_too_large`, malformed base64, hash mismatch, and
   `workspace_revoked` examples
 
-Resumable uploads, multipart upload, large artifact lifecycle, retention
-policy, and destructive storage repair remain later-stage work.
+Production hardening routes now cover resumable multipart blob uploads,
+artifact lifecycle metadata, retention cleanup, storage migration metadata, and
+guarded restore verification. These routes still use generic envelopes until
+OpenAPI schema generation adds fully typed request/response schemas.
 
-## Stage 3 Transport, Sandbox, and Storage Follow-Ups
+## Transport, Sandbox, and Storage Follow-Ups
 
-Stage 3 routes are documented with operation metadata but still use generic
-`OkEnvelope`/`ErrorEnvelope` schemas. Later schema work should add typed
+Transport, sandbox, and storage routes are documented with operation metadata
+but still use generic `OkEnvelope`/`ErrorEnvelope` schemas. Schema work should add typed
 contracts for:
 
 - explicit push/fetch refspec request bodies and sanitized remote response
@@ -132,8 +134,11 @@ contracts for:
 - exec sandbox metadata, resource limits, and sandbox error envelopes
 - storage compaction per-file statistics and logical backup records
 
-Authenticated HTTPS push credentials, SSH push, external exec workers, public
-destructive restore, and off-node backup retention remain later-stage work.
+Credential-ID based Git remotes, constrained external transport, external
+worker and microVM-profile exec, storage migration metadata, guarded restore
+verification, and artifact retention cleanup are now documented as
+production-hardening route/API surfaces. Fully generated schemas and external
+infrastructure conformance tests remain later API contract/release work.
 
 ## Hand-Maintained SDK Types
 
@@ -143,9 +148,13 @@ TreeDB SDK types are currently hand-maintained in:
 packages/ts-sdk/src/treedb/types.ts
 ```
 
-Stage 0 locks public exports with tests. Later stages should decide whether to
-generate these types from OpenAPI or keep hand-maintained types with explicit
-drift checks.
+Export tests lock public TreeDB SDK surfaces. Future contract work should
+decide whether to generate these types from OpenAPI or keep hand-maintained
+types with explicit drift checks.
+
+The SDK keeps the types hand-maintained and uses SDK/OpenAPI drift tests for
+critical TreeDB routes and package export subpaths. Full schema-generated SDK
+types remain deferred until route schemas are more complete.
 
 ## Recommended Closure Order
 

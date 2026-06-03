@@ -8,7 +8,8 @@ defmodule TreeDb.Pushes do
          :ok <- authorize_push_refspecs(scope, refspecs),
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
          {:ok, remote_url} <- remote_url(repo, params),
-         :ok <- reject_credential_url(remote_url) do
+         :ok <- TreeDb.Git.RemoteUrl.reject_credential_url(remote_url),
+         {:ok, credential} <- TreeDb.Git.Credentials.resolve(params["credentialId"]) do
       remote_name = params["remoteName"] || "origin"
 
       input = %{
@@ -17,7 +18,8 @@ defmodule TreeDb.Pushes do
         remoteName: remote_name,
         refspecs: refspecs,
         dryRun: truthy?(params["dryRun"]),
-        expectedRemoteHead: params["expectedRemoteHead"]
+        expectedRemoteHead: params["expectedRemoteHead"],
+        credentialId: params["credentialId"]
       }
 
       TreeDb.Audit.append("git.push.started", %{
@@ -34,7 +36,7 @@ defmodule TreeDb.Pushes do
         }
       })
 
-      case TreeDb.Git.push_remote(input) do
+      case push_transport(input, credential) do
         {:ok, result} ->
           result = sanitize_result(result, repo_id)
 
@@ -85,7 +87,8 @@ defmodule TreeDb.Pushes do
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
          :continue <- maybe_noop_fetch(repo, params, principal, repo_id),
          {:ok, remote_url} <- remote_url(repo, params),
-         :ok <- reject_credential_url(remote_url) do
+         :ok <- TreeDb.Git.RemoteUrl.reject_credential_url(remote_url),
+         {:ok, credential} <- TreeDb.Git.Credentials.resolve(params["credentialId"]) do
       remote_name = params["remoteName"] || "origin"
 
       input = %{
@@ -93,10 +96,11 @@ defmodule TreeDb.Pushes do
         remoteUrl: remote_url,
         remoteName: remote_name,
         refspecs: params["refspecs"] || ["+refs/heads/*:refs/remotes/#{remote_name}/*"],
-        dryRun: truthy?(params["dryRun"])
+        dryRun: truthy?(params["dryRun"]),
+        credentialId: params["credentialId"]
       }
 
-      case TreeDb.Git.fetch_remote(input) do
+      case fetch_transport(input, credential) do
         {:ok, result} ->
           result = sanitize_result(result, repo_id)
 
@@ -128,15 +132,7 @@ defmodule TreeDb.Pushes do
   end
 
   def sanitize_remote_url(nil), do: nil
-
-  def sanitize_remote_url("file://" <> _path), do: "file://redacted"
-
-  def sanitize_remote_url(url) when is_binary(url) do
-    cond do
-      String.starts_with?(url, "/") -> "local-path:redacted"
-      true -> Regex.replace(~r{(https?://)[^/@\s]+@}i, url, "\\1")
-    end
-  end
+  def sanitize_remote_url(url), do: TreeDb.Git.RemoteUrl.sanitize(url)
 
   defp remote_url(repo, params) do
     url = params["remoteUrl"] || repo["remoteUrl"]
@@ -182,18 +178,6 @@ defmodule TreeDb.Pushes do
     }
   end
 
-  defp reject_credential_url(url) do
-    if credential_url?(url) do
-      {:error, %{code: "validation_error", message: "remoteUrl must not contain credentials."}}
-    else
-      :ok
-    end
-  end
-
-  defp credential_url?(url) when is_binary(url) do
-    Regex.match?(~r{^(https?|file)://[^/\s]*@}i, url)
-  end
-
   defp authorize_push_refspecs(scope, refspecs) when is_list(refspecs) and refspecs != [] do
     refspecs
     |> Enum.map(&push_ref_pair/1)
@@ -235,6 +219,22 @@ defmodule TreeDb.Pushes do
 
   defp push_ref_pair(_),
     do: {:error, %{code: "validation_error", message: "invalid push refspec."}}
+
+  defp push_transport(input, credential) do
+    if TreeDb.Git.ExternalTransport.required?(input.remoteUrl, input.credentialId) do
+      TreeDb.Git.ExternalTransport.push(input, credential)
+    else
+      TreeDb.Git.push_remote(input)
+    end
+  end
+
+  defp fetch_transport(input, credential) do
+    if TreeDb.Git.ExternalTransport.required?(input.remoteUrl, input.credentialId) do
+      TreeDb.Git.ExternalTransport.fetch(input, credential)
+    else
+      TreeDb.Git.fetch_remote(input)
+    end
+  end
 
   defp sanitize_result(result, repo_id) do
     result

@@ -1,6 +1,6 @@
 # Sandbox Exec Runbook
 
-Stage 3 makes the exec backend explicit.
+The TreeDB exec runtime makes the exec backend explicit.
 
 ## Configuration
 

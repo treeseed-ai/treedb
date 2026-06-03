@@ -1,6 +1,6 @@
 # Backup and Recovery Runbook
 
-Stage 3 adds diagnostic compaction and logical backup creation. Public
+TreeDB provides diagnostic compaction and logical backup creation. Public
 destructive restore is intentionally deferred.
 
 ## Health and Check

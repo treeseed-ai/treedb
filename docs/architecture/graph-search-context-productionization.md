@@ -1,8 +1,8 @@
 # Graph, Search, and Context Productionization
 
-Status: Stage 5
+Status: Productionized graph, search, and context
 
-Stage 5 hardens TreeDB graph, search, and context behavior without adding product-domain concepts. The API remains scoped to repositories, refs, paths, graph nodes, search records, context packs, and capabilities.
+TreeDB hardens TreeDB graph, search, and context behavior without adding product-domain concepts. The API remains scoped to repositories, refs, paths, graph nodes, search records, context packs, and capabilities.
 
 ## Incremental Graph Refresh
 
@@ -21,7 +21,7 @@ Graph refresh writes a durable refresh job record. Public job status exposes log
 
 ## Search Index Segments
 
-Stage 5 adds search index metadata records:
+Search index metadata records include:
 
 - search index manifests
 - search index segment records
@@ -56,4 +56,4 @@ Modes influence context selection and budget defaults. They do not influence aut
 
 ## SDK Compatibility
 
-The TypeScript SDK keeps local graph runtime behavior as the default. TreeDB graph adapter methods map server responses into SDK-compatible graph and context shapes. Stage 5 adds low-level client methods for graph refresh job status and search index operations.
+The TypeScript SDK keeps local graph runtime behavior as the default. TreeDB graph adapter methods map server responses into SDK-compatible graph and context shapes. The SDK includes low-level client methods for graph refresh job status and search index operations.

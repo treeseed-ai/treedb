@@ -1,15 +1,15 @@
 # TreeDB Capability Matrix
 
-Status: Stage 0 baseline  
+Status: Unified route and capability inventory  
 Source of truth: `apps/api/lib/treedb_web/router.ex`  
 Scope: Public `/api/v1` HTTP routes
 
-This matrix freezes the current route inventory and the intended capability
-contract for Stage 1 hardening. `public` means the route may be called without a
+This matrix documents the current route inventory and intended capability
+contract. `public` means the route may be called without a
 principal. `auth` means a principal is required but no narrower capability is
 required by the route itself.
 
-| Method | Path | Controller action | Required capability | Repo | Ref | Path | Workspace | Public | Audit event | Stage 1 gap |
+| Method | Path | Controller action | Required capability | Repo | Ref | Path | Workspace | Public | Audit event | Production note |
 |---|---|---|---|---:|---:|---:|---:|---:|---|---|
 | GET | `/api/v1/health` | `HealthController.health` | public | no | no | no | no | yes | none | none |
 | GET | `/api/v1/version` | `HealthController.version` | public | no | no | no | no | yes | none | none |
@@ -36,11 +36,11 @@ required by the route itself.
 | POST | `/api/v1/repos/:repo_id/sync` | `RepoController.sync` | `git:fetch` | yes | optional | no | no | no | sync audit | credential scrubbing |
 | POST | `/api/v1/repos/:repo_id/files/search` | `RepoQueryController.search` | `files:search` | yes | yes | yes | no | no | query audit | leakage tests |
 | POST | `/api/v1/repos/:repo_id/files/read` | `RepoQueryController.read` | `files:read` | yes | yes | yes | no | no | file read audit | leakage tests |
-| POST | `/api/v1/repos/:repo_id/blobs/read` | `BlobController.read_repo` | `files:read` | yes | yes | yes | no | no | `blob.read` | Stage 2 binary-safe base64 read |
+| POST | `/api/v1/repos/:repo_id/blobs/read` | `BlobController.read_repo` | `files:read` | yes | yes | yes | no | no | `blob.read` | binary-safe base64 read |
 | POST | `/api/v1/repos/:repo_id/paths/list` | `RepoQueryController.paths` | `files:read` | yes | yes | yes | no | no | path list audit | hide unauthorized paths |
 | POST | `/api/v1/repos/:repo_id/query` | `RepoQueryController.query` | `files:search` | yes | yes | yes | no | no | query audit | rank only authorized results |
-| POST | `/api/v1/repos/:repo_id/graph/refresh` | `GraphController.refresh` | `graph:refresh` | yes | yes | yes | no | no | graph refresh audit | Stage 5 incremental metadata and job record |
-| GET | `/api/v1/repos/:repo_id/graph/refresh-jobs/:job_id` | `GraphController.refresh_job` | `graph:query` | yes | yes | no | no | no | none | Stage 5 job status uses logical metadata only |
+| POST | `/api/v1/repos/:repo_id/graph/refresh` | `GraphController.refresh` | `graph:refresh` | yes | yes | yes | no | no | graph refresh audit | incremental graph metadata and job record |
+| GET | `/api/v1/repos/:repo_id/graph/refresh-jobs/:job_id` | `GraphController.refresh_job` | `graph:query` | yes | yes | no | no | no | none | graph refresh job status uses logical metadata only |
 | POST | `/api/v1/repos/:repo_id/graph/query` | `GraphController.query` | `graph:query` | yes | yes | yes | no | no | graph query audit | leakage tests |
 | POST | `/api/v1/repos/:repo_id/graph/search-files` | `GraphController.search_files` | `graph:query` | yes | yes | yes | no | no | graph query audit | leakage tests |
 | POST | `/api/v1/repos/:repo_id/graph/search-sections` | `GraphController.search_sections` | `graph:query` | yes | yes | yes | no | no | graph query audit | leakage tests |
@@ -48,14 +48,17 @@ required by the route itself.
 | GET | `/api/v1/repos/:repo_id/graph/nodes/:node_id` | `GraphController.node` | `graph:query` | yes | yes | yes | no | no | graph query audit | hidden node checks |
 | POST | `/api/v1/repos/:repo_id/graph/related` | `GraphController.related` | `graph:query` | yes | yes | yes | no | no | graph query audit | hidden edge checks |
 | POST | `/api/v1/repos/:repo_id/graph/subgraph` | `GraphController.subgraph` | `graph:query` | yes | yes | yes | no | no | graph query audit | hidden edge checks |
-| POST | `/api/v1/repos/:repo_id/context/build` | `ContextController.build` | `graph:query` | yes | yes | yes | no | no | context build audit | Stage 5 modes and budget diagnostics must stay authorized |
+| POST | `/api/v1/repos/:repo_id/context/build` | `ContextController.build` | `graph:query` | yes | yes | yes | no | no | context build audit | context modes and budget diagnostics must stay authorized |
 | POST | `/api/v1/repos/:repo_id/context/parse-ctx` | `ContextController.parse_ctx` | `graph:query` | yes | optional | optional | no | no | none | none |
-| POST | `/api/v1/repos/:repo_id/search/index/refresh` | `SearchIndexController.refresh` | `files:search` | yes | yes | yes | no | no | `search.index_refreshed` | Stage 5 search segment metadata, no hidden paths |
-| GET | `/api/v1/repos/:repo_id/search/index/status` | `SearchIndexController.status` | `files:search` | yes | yes | no | no | no | none | Stage 5 logical status only |
-| POST | `/api/v1/repos/:repo_id/search/index/compact` | `SearchIndexController.compact` | `policy:write` | yes | optional | no | no | no | none | Stage 5 compaction status only |
+| POST | `/api/v1/repos/:repo_id/search/index/refresh` | `SearchIndexController.refresh` | `files:search` | yes | yes | yes | no | no | `search.index_refreshed` | search segment metadata, no hidden paths |
+| GET | `/api/v1/repos/:repo_id/search/index/status` | `SearchIndexController.status` | `files:search` | yes | yes | no | no | no | none | logical status only |
+| POST | `/api/v1/repos/:repo_id/search/index/compact` | `SearchIndexController.compact` | `policy:write` | yes | optional | no | no | no | none | search compaction status only |
 | POST | `/api/v1/repos/:repo_id/snapshots/build` | `SnapshotController.build` | `snapshot:build` | yes | yes | yes | no | no | snapshot build audit | hide excluded paths |
 | GET | `/api/v1/repos/:repo_id/snapshots/:snapshot_id` | `SnapshotController.show` | `snapshot:build` | yes | no | no | no | no | none | hide file lists by policy |
 | POST | `/api/v1/repos/:repo_id/artifacts/export` | `SnapshotController.export` | `artifact:export` | yes | no | no | no | no | artifact export audit | no internal paths |
+| GET | `/api/v1/repos/:repo_id/artifacts` | `ArtifactController.index` | `files:read` | yes | no | no | no | no | none | production hardening artifact lifecycle; logical metadata only |
+| GET | `/api/v1/repos/:repo_id/artifacts/:artifact_id` | `ArtifactController.show` | `files:read` | yes | no | no | no | no | none | production hardening artifact lifecycle; logical metadata only |
+| DELETE | `/api/v1/repos/:repo_id/artifacts/:artifact_id` | `ArtifactController.delete` | `policy:write` | yes | no | no | no | no | `artifact.deleted` | production hardening artifact lifecycle; logical metadata only |
 | POST | `/api/v1/repos/:repo_id/workspaces` | `RepoController.create_workspace` | `workspace:create` plus repo mode capability | yes | yes | yes | no | no | `workspace.created` | persist policy hash |
 | GET | `/api/v1/repos/:repo_id/mirrors` | `RegistryController.mirrors` | `mirror:read` | yes | optional | no | no | no | none | credential hygiene |
 | POST | `/api/v1/repos/:repo_id/mirrors` | `RegistryController.put_mirror` | `mirror:write` | yes | optional | no | no | no | mirror write audit | credential hygiene |
@@ -69,26 +72,30 @@ required by the route itself.
 | PUT | `/api/v1/workspaces/:workspace_id/files` | `FileController.write` | `files:write` | via workspace | via workspace | yes | yes | no | `file.written` | policy hash check |
 | PATCH | `/api/v1/workspaces/:workspace_id/files` | `FileController.patch` | `files:write` | via workspace | via workspace | yes | yes | no | `file.patched` | policy hash check |
 | DELETE | `/api/v1/workspaces/:workspace_id/files` | `FileController.delete` | `files:delete` | via workspace | via workspace | yes | yes | no | `file.deleted` | policy hash check |
-| POST | `/api/v1/workspaces/:workspace_id/blobs/write` | `BlobController.write` | `files:write` | via workspace | via workspace | yes | yes | no | `blob.written` | Stage 2 binary-safe overlay |
-| POST | `/api/v1/workspaces/:workspace_id/blobs/delete` | `BlobController.delete` | `files:delete` | via workspace | via workspace | yes | yes | no | `blob.deleted` | Stage 2 binary-safe overlay |
-| GET | `/api/v1/workspaces/:workspace_id/blobs/download` | `BlobController.download` | `files:read` | via workspace | via workspace | yes | yes | no | `blob.downloaded` | Stage 2 raw byte download |
-| PUT | `/api/v1/workspaces/:workspace_id/blobs/upload` | `BlobController.upload` | `files:write` | via workspace | via workspace | yes | yes | no | `blob.uploaded` | Stage 2 raw byte upload |
+| POST | `/api/v1/workspaces/:workspace_id/blobs/write` | `BlobController.write` | `files:write` | via workspace | via workspace | yes | yes | no | `blob.written` | base64 binary-safe overlay |
+| POST | `/api/v1/workspaces/:workspace_id/blobs/delete` | `BlobController.delete` | `files:delete` | via workspace | via workspace | yes | yes | no | `blob.deleted` | base64 binary-safe overlay |
+| GET | `/api/v1/workspaces/:workspace_id/blobs/download` | `BlobController.download` | `files:read` | via workspace | via workspace | yes | yes | no | `blob.downloaded` | raw byte download |
+| PUT | `/api/v1/workspaces/:workspace_id/blobs/upload` | `BlobController.upload` | `files:write` | via workspace | via workspace | yes | yes | no | `blob.uploaded` | raw byte upload |
+| POST | `/api/v1/workspaces/:workspace_id/blobs/uploads` | `BlobUploadController.create` | `files:write` | via workspace | via workspace | yes | yes | no | none | production hardening resumable upload session |
+| PUT | `/api/v1/workspaces/:workspace_id/blobs/uploads/:upload_id/parts/:part_number` | `BlobUploadController.part` | `files:write` | via workspace | via workspace | yes | yes | no | none | production hardening resumable upload part |
+| POST | `/api/v1/workspaces/:workspace_id/blobs/uploads/:upload_id/complete` | `BlobUploadController.complete` | `files:write` | via workspace | via workspace | yes | yes | no | `blob.uploaded` | completes through existing blob write path |
+| DELETE | `/api/v1/workspaces/:workspace_id/blobs/uploads/:upload_id` | `BlobUploadController.abort` | `files:write` | via workspace | via workspace | yes | yes | no | none | aborts uncommitted upload metadata |
 | POST | `/api/v1/workspaces/:workspace_id/search` | `FileController.search` | `files:search` | via workspace | via workspace | yes | yes | no | `file.searched` | policy hash check |
 | GET | `/api/v1/workspaces/:workspace_id/status` | `FileController.status` | `files:read` | via workspace | via workspace | yes | yes | no | `workspace.status_viewed` | policy hash check |
 | GET | `/api/v1/workspaces/:workspace_id/diff` | `FileController.diff` | `git:diff` | via workspace | via workspace | yes | yes | no | `workspace.diff_viewed` | policy hash check |
 | POST | `/api/v1/workspaces/:workspace_id/commit` | `FileController.commit` | `git:commit` | via workspace | via workspace | yes | yes | no | `workspace.committed` | policy hash check |
-| POST | `/api/v1/workspaces/:workspace_id/exec` | `ExecController.exec` | workspace exec capability | via workspace | via workspace | yes | yes | no | exec audit | sandbox hardening later |
+| POST | `/api/v1/workspaces/:workspace_id/exec` | `ExecController.exec` | workspace exec capability | via workspace | via workspace | yes | yes | no | exec audit | sandbox backend policy and workspace revocation checks |
 
-Stage 1 adds:
+Admin workspace and storage routes:
 
 - `GET /api/v1/admin/workspaces/quarantined`
 - `GET /api/v1/admin/storage/health`
 - `POST /api/v1/admin/storage/check`
 - `POST /api/v1/admin/storage/recover`
 
-Stage 3 adds:
+Remote workflow, mirror, and storage routes:
 
-| Method | Path | Controller action | Required capability | Repo | Ref | Path | Workspace | Public | Audit event | Stage 3 note |
+| Method | Path | Controller action | Required capability | Repo | Ref | Path | Workspace | Public | Audit event | Production note |
 |---|---|---|---|---:|---:|---:|---:|---:|---|---|
 | POST | `/api/v1/repos/:repo_id/push` | `PushController.push` | `git:push` | yes | source and destination refspec refs | no | no | no | `git.push.started`, `git.push.completed`, `git.push.failed` | explicit non-wildcard refspecs only; remote URLs are sanitized |
 | POST | `/api/v1/repos/:repo_id/sync` | `RepoController.sync` | `git:fetch` | yes | optional fetch refs | no | no | no | `git.fetch.completed` | request body accepts remote name/url/refspecs/dryRun |
@@ -97,13 +104,25 @@ Stage 3 adds:
 | POST | `/api/v1/admin/storage/compact` | `AdminStorageController.compact` | `policy:write` | no | no | no | no | no | `storage.compacted` | compacts latest-record logs, never audit logs |
 | POST | `/api/v1/admin/storage/backup` | `AdminStorageController.backup` | `policy:read` | no | no | no | no | no | `storage.backup_created` | returns logical backup URI only |
 
-Stage 3 also hardens `POST /api/v1/workspaces/:workspace_id/exec` with
+Production hardening storage and artifact operations add:
+
+| Method | Path | Controller action | Required capability | Repo | Ref | Path | Workspace | Public | Audit event | Production hardening note |
+|---|---|---|---|---:|---:|---:|---:|---:|---|---|
+| GET | `/api/v1/admin/storage/migrations` | `AdminStorageController.migrations` | `policy:read` | no | no | no | no | no | none | lists logical storage migration records |
+| POST | `/api/v1/admin/storage/migrations/plan` | `AdminStorageController.plan_migration` | `policy:read` | no | no | no | no | no | `storage.migration_planned` | non-mutating migration plan |
+| POST | `/api/v1/admin/storage/migrations/apply` | `AdminStorageController.apply_migration` | `policy:write` | no | no | no | no | no | `storage.migration_applied` | guarded migration apply with backup metadata |
+| POST | `/api/v1/admin/storage/migrations/rollback` | `AdminStorageController.rollback_migration` | `policy:write` | no | no | no | no | no | `storage.migration_rolled_back` | reversible migration rollback |
+| POST | `/api/v1/admin/storage/restore/verify` | `AdminStorageController.verify_restore` | `policy:read` | no | no | no | no | no | `storage.restore_verified` | verifies logical backup before restore |
+| POST | `/api/v1/admin/storage/restore` | `AdminStorageController.restore` | `policy:write` | no | no | no | no | no | `storage.restore_checked` | restore disabled unless explicitly configured or dry run |
+| POST | `/api/v1/admin/artifacts/cleanup` | `ArtifactController.cleanup` | `policy:write` | no | no | no | no | no | `artifact.cleanup` | retention cleanup by logical artifact ID |
+
+Exec hardening uses `POST /api/v1/workspaces/:workspace_id/exec` with
 `TREEDB_EXEC_BACKEND`, sandbox metadata, network denial by default, and
 binary-safe `write_limited` overlay persistence.
 
-Stage 4 adds:
+Global federation routes:
 
-| Method | Path | Controller action | Required capability | Repo | Ref | Path | Workspace | Public | Audit event | Stage 4 note |
+| Method | Path | Controller action | Required capability | Repo | Ref | Path | Workspace | Public | Audit event | Production note |
 |---|---|---|---|---:|---:|---:|---:|---:|---|---|
 | POST | `/api/v1/search` | `GlobalQueryController.search` | `query:federated`, `files:search` | yes | yes | yes | no | no | `federated.search.started`, `federated.search.completed`, `federated.search.partial` | executes only reduced authorized repository scopes |
 | POST | `/api/v1/query` | `GlobalQueryController.query` | `query:federated` plus query-specific file/git capability | yes | yes | yes | no | no | `federated.query.started`, `federated.query.completed`, `federated.query.partial` | `text`/`combined` use `files:search`; `changed_path` uses `git:diff`; others use `files:read` |

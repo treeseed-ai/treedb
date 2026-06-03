@@ -55,7 +55,7 @@ defmodule TreeDbWeb.ContextControllerTest do
       })
       |> json_response(200)
 
-    assert parsed["query"]["stage"] == "research"
+    assert parsed["query"]["focus"] == "research"
     assert parsed["query"]["budget"]["maxTokens"] == 1200
     assert parsed["errors"] == []
 

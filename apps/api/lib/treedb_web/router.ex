@@ -32,6 +32,13 @@ defmodule TreeDbWeb.Router do
     post("/admin/storage/recover", AdminStorageController, :recover)
     post("/admin/storage/compact", AdminStorageController, :compact)
     post("/admin/storage/backup", AdminStorageController, :backup)
+    get("/admin/storage/migrations", AdminStorageController, :migrations)
+    post("/admin/storage/migrations/plan", AdminStorageController, :plan_migration)
+    post("/admin/storage/migrations/apply", AdminStorageController, :apply_migration)
+    post("/admin/storage/migrations/rollback", AdminStorageController, :rollback_migration)
+    post("/admin/storage/restore/verify", AdminStorageController, :verify_restore)
+    post("/admin/storage/restore", AdminStorageController, :restore)
+    post("/admin/artifacts/cleanup", ArtifactController, :cleanup)
 
     get("/node", NodeController, :show)
     get("/registry/nodes", RegistryController, :nodes)
@@ -68,6 +75,9 @@ defmodule TreeDbWeb.Router do
     post("/repos/:repo_id/snapshots/build", SnapshotController, :build)
     get("/repos/:repo_id/snapshots/:snapshot_id", SnapshotController, :show)
     post("/repos/:repo_id/artifacts/export", SnapshotController, :export)
+    get("/repos/:repo_id/artifacts", ArtifactController, :index)
+    get("/repos/:repo_id/artifacts/:artifact_id", ArtifactController, :show)
+    delete("/repos/:repo_id/artifacts/:artifact_id", ArtifactController, :delete)
     post("/repos/:repo_id/workspaces", RepoController, :create_workspace)
     get("/repos/:repo_id/mirrors", RegistryController, :mirrors)
     post("/repos/:repo_id/mirrors", RegistryController, :put_mirror)
@@ -88,6 +98,21 @@ defmodule TreeDbWeb.Router do
     post("/workspaces/:workspace_id/blobs/delete", BlobController, :delete)
     get("/workspaces/:workspace_id/blobs/download", BlobController, :download)
     put("/workspaces/:workspace_id/blobs/upload", BlobController, :upload)
+    post("/workspaces/:workspace_id/blobs/uploads", BlobUploadController, :create)
+
+    put(
+      "/workspaces/:workspace_id/blobs/uploads/:upload_id/parts/:part_number",
+      BlobUploadController,
+      :part
+    )
+
+    post(
+      "/workspaces/:workspace_id/blobs/uploads/:upload_id/complete",
+      BlobUploadController,
+      :complete
+    )
+
+    delete("/workspaces/:workspace_id/blobs/uploads/:upload_id", BlobUploadController, :abort)
     post("/workspaces/:workspace_id/search", FileController, :search)
     get("/workspaces/:workspace_id/status", FileController, :status)
     get("/workspaces/:workspace_id/diff", FileController, :diff)

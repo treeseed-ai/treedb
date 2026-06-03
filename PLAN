@@ -1274,9 +1274,9 @@ packages/ts-sdk/docs/treedb-no-clone.md
 
 ---
 
-# 11. Production Rollout Plan
+# 11. Production Rollout Milestones
 
-## Phase 1 — Internal Dev Production-Like
+## Internal Dev Production-Like
 
 - Connected auth with test JWKS.
 - Sandbox backend enabled.
@@ -1284,7 +1284,7 @@ packages/ts-sdk/docs/treedb-no-clone.md
 - SDK live tests enabled.
 - No external users.
 
-## Phase 2 — Controlled Agent Workloads
+## Controlled Agent Workloads
 
 - Limited repository set.
 - Restricted path grants.
@@ -1292,21 +1292,21 @@ packages/ts-sdk/docs/treedb-no-clone.md
 - Read-only and verification exec only.
 - Full audit review.
 
-## Phase 3 — Write Workloads
+## Write Workloads
 
 - Workspace write/commit enabled.
 - Binary APIs enabled.
 - Snapshot/artifact export enabled.
 - Push enabled for selected actors/refs.
 
-## Phase 4 — Federation Pilot
+## Federation Pilot
 
 - Two or more TreeDB nodes.
 - Mirror read policy enabled.
 - Federated query enabled for selected repos.
 - Leakage test fixtures required in CI.
 
-## Phase 5 — General Production
+## General Production
 
 - SLOs active.
 - Incident runbooks complete.
@@ -1334,4 +1334,3 @@ packages/ts-sdk/docs/treedb-no-clone.md
 - [ ] Observability and runbooks are complete.
 - [ ] Security review is complete.
 - [ ] Controlled production rollout has passed.
-

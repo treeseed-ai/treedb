@@ -34,7 +34,7 @@ fn build(target: &[String], clauses: &[String]) -> DslParseResult {
         return error("ctx query must include a target.");
     }
     let mut query = json!({
-        "stage": "plan",
+        "focus": "plan",
         "relations": ["related", "references"],
         "view": "brief",
         "options": {"depth": 1, "limit": 8, "maxNodes": 8},
@@ -56,7 +56,7 @@ fn build(target: &[String], clauses: &[String]) -> DslParseResult {
             continue;
         }
         match key.as_str() {
-            "for" => query["stage"] = json!(value),
+            "for" => query["focus"] = json!(value),
             "in" => {
                 query["scopePaths"] = json!(value
                     .split('+')

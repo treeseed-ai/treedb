@@ -1,6 +1,6 @@
 # Federated Query Execution
 
-Stage 4 moves federation from planning-only to authorized execution for global
+TreeDB moves federation from planning-only to authorized execution for global
 search, query, context, and graph routes.
 
 Execution always starts with scope reduction. TreeDB resolves the caller's

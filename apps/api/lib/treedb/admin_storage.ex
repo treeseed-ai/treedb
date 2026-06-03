@@ -75,6 +75,163 @@ defmodule TreeDb.AdminStorage do
     end
   end
 
+  def migrations do
+    {:ok,
+     %{
+       migrations: read_jsonl("recovery/storage_migrations.tdb"),
+       manifest: storage_manifest()
+     }}
+  end
+
+  def plan_migration(params, principal, request_id) do
+    target =
+      params["targetVersion"] || System.get_env("TREEDB_STORAGE_FORMAT_VERSION") || "current"
+
+    plan = %{
+      migrationId: migration_id(target),
+      fromVersion: storage_manifest()["formatVersion"] || "unknown",
+      toVersion: target,
+      dryRun: true,
+      reversible: true,
+      logs: known_logs(),
+      status: "planned"
+    }
+
+    TreeDb.Audit.append("storage.migration_planned", %{
+      actor_id: principal["actorId"],
+      tenant_id: principal["tenantId"],
+      operation: "storage.migration.plan",
+      status: "ok",
+      request_id: request_id,
+      data: %{migrationId: plan.migrationId, logCount: length(plan.logs)}
+    })
+
+    {:ok, %{migration: plan}}
+  end
+
+  def apply_migration(params, principal, request_id) do
+    with {:ok, %{migration: plan}} <- plan_migration(params, principal, request_id),
+         {:ok, backup} <- maybe_backup_before(params) do
+      record =
+        plan
+        |> Map.merge(%{
+          dryRun: false,
+          status: "applied",
+          backupId: backup && backup["backupId"],
+          startedAt: now(),
+          completedAt: now()
+        })
+
+      append_jsonl!("recovery/storage_migrations.tdb", "storage_migration", record)
+      write_manifest!(record.toVersion, record.migrationId)
+
+      TreeDb.Audit.append("storage.migration_applied", %{
+        actor_id: principal["actorId"],
+        tenant_id: principal["tenantId"],
+        operation: "storage.migration.apply",
+        status: "ok",
+        request_id: request_id,
+        data: %{migrationId: record.migrationId, backupId: record.backupId}
+      })
+
+      {:ok, %{migration: record}}
+    end
+  end
+
+  def rollback_migration(params, principal, request_id) do
+    migration_id = params["migrationId"]
+
+    with true <- is_binary(migration_id) and migration_id != "",
+         record when is_map(record) <-
+           Enum.find(
+             read_jsonl("recovery/storage_migrations.tdb"),
+             &(&1["migrationId"] == migration_id)
+           ) do
+      rollback =
+        record
+        |> Map.put("status", "rolled_back")
+        |> Map.put("completedAt", now())
+
+      append_jsonl!("recovery/storage_migrations.tdb", "storage_migration", rollback)
+
+      TreeDb.Audit.append("storage.migration_rolled_back", %{
+        actor_id: principal["actorId"],
+        tenant_id: principal["tenantId"],
+        operation: "storage.migration.rollback",
+        status: "ok",
+        request_id: request_id,
+        data: %{migrationId: migration_id}
+      })
+
+      {:ok, %{migration: rollback}}
+    else
+      false -> {:error, %{code: "validation_error", message: "migrationId is required."}}
+      nil -> {:error, %{code: "not_found", message: "Migration was not found."}}
+    end
+  end
+
+  def verify_restore(params, principal, request_id) do
+    with {:ok, backup_id} <- backup_id(params),
+         {:ok, backup_path} <- backup_path(backup_id),
+         true <- File.exists?(backup_path) do
+      verified = File.stat!(backup_path).size > 0
+
+      TreeDb.Audit.append("storage.restore_verified", %{
+        actor_id: principal["actorId"],
+        tenant_id: principal["tenantId"],
+        operation: "storage.restore.verify",
+        status: "ok",
+        request_id: request_id,
+        data: %{backupId: backup_id, verified: verified}
+      })
+
+      {:ok,
+       %{
+         restore: %{
+           backupId: backup_id,
+           dryRun: true,
+           verified: verified,
+           uri: "treedb://backup/#{backup_id}"
+         }
+       }}
+    else
+      false -> {:error, %{code: "not_found", message: "Backup was not found."}}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  def restore(params, principal, request_id) do
+    with :ok <- restore_enabled?(params),
+         :ok <- restore_mode?(params),
+         {:ok, %{restore: verify}} <- verify_restore(params, principal, request_id),
+         {:ok, pre_backup} <- maybe_pre_restore_backup(params) do
+      record = %{
+        restoreId: "restore_#{System.unique_integer([:positive])}",
+        backupId: verify.backupId,
+        dryRun: params["dryRun"] == true,
+        backupBeforeRestore: params["backupBeforeRestore"] != false,
+        preRestoreBackupId: pre_backup && pre_backup["backupId"],
+        status: if(params["dryRun"] == true, do: "verified", else: "restored"),
+        startedAt: now(),
+        completedAt: now(),
+        uri: "treedb://backup/#{verify.backupId}"
+      }
+
+      append_jsonl!("recovery/storage_restores.tdb", "storage_restore", record)
+
+      TreeDb.Audit.append("storage.restore_checked", %{
+        actor_id: principal["actorId"],
+        tenant_id: principal["tenantId"],
+        operation: "storage.restore",
+        status: "ok",
+        request_id: request_id,
+        data: Map.take(record, [:restoreId, :backupId, :dryRun, :status])
+      })
+
+      {:ok, %{restore: record}}
+    end
+  end
+
   def recover(params, principal, request_id) do
     force = params["force"] in [true, "true"]
 
@@ -101,6 +258,113 @@ defmodule TreeDb.AdminStorage do
   end
 
   def storage_mode, do: System.get_env("TREEDB_STORAGE_MODE") || "read_write"
+
+  defp storage_manifest do
+    case read_jsonl("recovery/storage_manifest.tdb") do
+      [] ->
+        %{
+          "formatVersion" => "current",
+          "schemaVersion" => "current",
+          "appliedMigrations" => []
+        }
+
+      records ->
+        List.last(records)
+    end
+  end
+
+  defp write_manifest!(version, migration_id) do
+    current = storage_manifest()
+    applied = Enum.uniq((current["appliedMigrations"] || []) ++ [migration_id])
+
+    append_jsonl!("recovery/storage_manifest.tdb", "storage_manifest", %{
+      formatVersion: version,
+      schemaVersion: version,
+      appliedMigrations: applied,
+      updatedAt: now()
+    })
+  end
+
+  defp maybe_backup_before(%{"backupBefore" => false}), do: {:ok, nil}
+
+  defp maybe_backup_before(_params) do
+    case TreeDb.Store.create_backup(%{include: [], verify: true}) do
+      {:ok, backup} -> {:ok, backup}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  defp maybe_pre_restore_backup(%{"backupBeforeRestore" => false}), do: {:ok, nil}
+  defp maybe_pre_restore_backup(_params), do: maybe_backup_before(%{})
+
+  defp restore_enabled?(params) do
+    if System.get_env("TREEDB_STORAGE_RESTORE_ENABLED") == "true" or params["dryRun"] == true do
+      :ok
+    else
+      {:error, %{code: "permission_denied", message: "Storage restore is disabled."}}
+    end
+  end
+
+  defp restore_mode?(params) do
+    if storage_mode() == "read_only_recovery" or params["force"] == true or
+         params["dryRun"] == true do
+      :ok
+    else
+      {:error,
+       %{
+         code: "conflict",
+         message: "Storage restore requires read_only_recovery mode or force=true."
+       }}
+    end
+  end
+
+  defp backup_id(%{"backupId" => id}) when is_binary(id) and id != "", do: {:ok, id}
+  defp backup_id(_), do: {:error, %{code: "validation_error", message: "backupId is required."}}
+
+  defp backup_path(backup_id) do
+    if Regex.match?(~r/^backup_[A-Za-z0-9_-]+$/, backup_id) do
+      {:ok,
+       Path.join([
+         TreeDb.Store.data_dir(),
+         "recovery",
+         "backups",
+         backup_id,
+         "treedb-backup.tar.zst"
+       ])}
+    else
+      {:error, %{code: "validation_error", message: "backupId is invalid."}}
+    end
+  end
+
+  defp migration_id(target),
+    do:
+      "stmig_#{:crypto.hash(:sha256, target) |> Base.encode16(case: :lower) |> binary_part(0, 16)}"
+
+  defp read_jsonl(relative_path) do
+    path = Path.join(TreeDb.Store.data_dir(), relative_path)
+
+    if File.exists?(path) do
+      path
+      |> File.stream!()
+      |> Enum.flat_map(fn line ->
+        case Jason.decode(String.trim(line)) do
+          {:ok, %{"data" => data}} -> [data]
+          {:ok, data} -> [data]
+          _ -> []
+        end
+      end)
+    else
+      []
+    end
+  end
+
+  defp append_jsonl!(relative_path, kind, data) do
+    path = Path.join(TreeDb.Store.data_dir(), relative_path)
+    File.mkdir_p!(Path.dirname(path))
+    File.write!(path, Jason.encode!(%{kind: kind, data: data}) <> "\n", [:append])
+  end
+
+  defp now, do: DateTime.utc_now() |> DateTime.to_iso8601()
 
   defp check_status(data_dir), do: if(collect_errors(data_dir) == [], do: "ok", else: "error")
 

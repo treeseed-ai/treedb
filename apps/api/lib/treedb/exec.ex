@@ -25,7 +25,14 @@ defmodule TreeDb.Exec do
            {:ok, cwd} <- Materializer.materialize(ctx),
            before <- Materializer.snapshot(cwd),
            started <- System.monotonic_time(:millisecond),
-           {:ok, result} <- Runner.run(command, cwd, timeout_ms, max_output, params),
+           {:ok, result} <-
+             Runner.run(
+               command,
+               cwd,
+               timeout_ms,
+               max_output,
+               backend_opts(params, ctx, workspace_id)
+             ),
            after_snapshot <- Materializer.snapshot(cwd),
            changed_paths <- Materializer.changed_paths(before, after_snapshot),
            :ok <- enforce_read_only(mode, changed_paths),
@@ -99,6 +106,14 @@ defmodule TreeDb.Exec do
     })
 
     :ok
+  end
+
+  defp backend_opts(params, ctx, workspace_id) do
+    params
+    |> Map.new()
+    |> Map.put("workspaceId", workspace_id)
+    |> Map.put("actorId", actor_id(ctx.principal))
+    |> Map.put("allowedPaths", ctx.workspace["allowedPaths"] || [])
   end
 
   defp context(workspace_id, principal, capability) do

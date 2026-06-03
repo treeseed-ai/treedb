@@ -20,4 +20,14 @@ CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-/tmp/treedb-target}" cargo test --workspac
   cd packages/ts-sdk
   npm run build
   npm test
+  npx vitest run --config ./vitest.config.ts \
+    test/utils/treedb-sdk-exports.test.ts \
+    test/utils/treedb-client.test.ts \
+    test/utils/treedb-adapters.test.ts \
+    test/utils/treedb-e2e-contract.test.ts \
+    test/utils/treedb-remote-mode.test.ts \
+    test/utils/treedb-contract-drift.test.ts \
+    test/utils/treedb-live-contract.test.ts
 )
+
+./scripts/federation-live-check.sh

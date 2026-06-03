@@ -64,6 +64,70 @@ defmodule TreeDbWeb.AdminStorageControllerTest do
     assert_public_hygiene!(backup)
   end
 
+  test "storage migration plan/apply/rollback and restore verification are logical", %{conn: conn} do
+    token = dev_token!(conn)
+
+    plan =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/admin/storage/migrations/plan", %{"targetVersion" => "test_v2"})
+      |> json!(200)
+
+    assert plan["migration"]["status"] == "planned"
+    assert Enum.all?(plan["migration"]["logs"], &(not String.starts_with?(&1, "/")))
+    assert_public_hygiene!(plan)
+
+    apply =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/admin/storage/migrations/apply", %{
+        "targetVersion" => "test_v2",
+        "backupBefore" => false
+      })
+      |> json!(200)
+
+    assert apply["migration"]["status"] == "applied"
+
+    migrations =
+      build_conn()
+      |> auth_conn(token)
+      |> get("/api/v1/admin/storage/migrations")
+      |> json!(200)
+
+    assert Enum.any?(
+             migrations["migrations"],
+             &(&1["migrationId"] == apply["migration"]["migrationId"])
+           )
+
+    rollback =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/admin/storage/migrations/rollback", %{
+        "migrationId" => apply["migration"]["migrationId"]
+      })
+      |> json!(200)
+
+    assert rollback["migration"]["status"] == "rolled_back"
+
+    backup =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/admin/storage/backup", %{"verify" => true})
+      |> json!(200)
+
+    verify =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/admin/storage/restore/verify", %{
+        "backupId" => backup["backup"]["backupId"]
+      })
+      |> json!(200)
+
+    assert verify["restore"]["verified"] == true
+    assert verify["restore"]["uri"] =~ "treedb://backup/"
+    assert_public_hygiene!(verify)
+  end
+
   test "store lock rejects live pid and replaces stale pid" do
     original = Application.get_env(:treedb, :data_dir)
 

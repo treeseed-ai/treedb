@@ -1,6 +1,6 @@
 # Git Remote Workflows Runbook
 
-Stage 3 adds explicit repository fetch and push operations.
+TreeDB provides explicit repository fetch and push operations.
 
 ## Push
 
@@ -8,7 +8,7 @@ Use `POST /api/v1/repos/:repo_id/push` with `git:push`.
 
 - Only explicit non-wildcard refspecs are supported.
 - Delete refspecs are rejected.
-- SSH push is not enabled in Stage 3.
+- SSH push is available only when explicitly enabled with credential IDs and strict known_hosts.
 - Credential-bearing URLs are rejected.
 - Public responses and audit payloads redact local/file remote paths.
 - Non-dry-run push supports local path and `file://` remotes.

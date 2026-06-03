@@ -100,6 +100,87 @@ defmodule TreeDbWeb.BlobControllerTest do
     assert delete["result"]["op"] == "delete"
   end
 
+  test "multipart upload completes through workspace blob storage", %{
+    token: token,
+    workspace_id: workspace_id
+  } do
+    create =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/workspaces/#{workspace_id}/blobs/uploads", %{
+        "path" => "assets/multipart.bin",
+        "contentType" => "application/octet-stream"
+      })
+      |> json!(200)
+
+    upload_id = create["upload"]["uploadId"]
+    assert create["upload"]["status"] == "open"
+
+    part1 =
+      build_conn()
+      |> auth_conn(token)
+      |> put_req_header("content-type", "application/octet-stream")
+      |> put("/api/v1/workspaces/#{workspace_id}/blobs/uploads/#{upload_id}/parts/1", <<1, 2>>)
+      |> json!(200)
+
+    assert part1["part"]["byteLength"] == 2
+
+    build_conn()
+    |> auth_conn(token)
+    |> put_req_header("content-type", "application/octet-stream")
+    |> put("/api/v1/workspaces/#{workspace_id}/blobs/uploads/#{upload_id}/parts/2", <<3, 4>>)
+    |> json!(200)
+
+    complete =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/workspaces/#{workspace_id}/blobs/uploads/#{upload_id}/complete", %{})
+      |> json!(200)
+
+    assert complete["upload"]["status"] == "completed"
+    assert complete["result"]["path"] == "assets/multipart.bin"
+    assert complete["result"]["byteLength"] == 4
+
+    download =
+      build_conn()
+      |> auth_conn(token)
+      |> get("/api/v1/workspaces/#{workspace_id}/blobs/download?path=assets/multipart.bin")
+
+    assert response(download, 200) == <<1, 2, 3, 4>>
+    assert_public_hygiene!(Map.delete(complete, "result"))
+  end
+
+  test "multipart upload abort marks the session without committing", %{
+    token: token,
+    workspace_id: workspace_id
+  } do
+    upload =
+      build_conn()
+      |> auth_conn(token)
+      |> post("/api/v1/workspaces/#{workspace_id}/blobs/uploads", %{
+        "path" => "assets/aborted.bin"
+      })
+      |> json!(200)
+
+    upload_id = upload["upload"]["uploadId"]
+
+    abort =
+      build_conn()
+      |> auth_conn(token)
+      |> delete("/api/v1/workspaces/#{workspace_id}/blobs/uploads/#{upload_id}")
+      |> json!(200)
+
+    assert abort["upload"]["status"] == "aborted"
+
+    read =
+      build_conn()
+      |> auth_conn(token)
+      |> get("/api/v1/workspaces/#{workspace_id}/blobs/download?path=assets/aborted.bin")
+      |> json!(404)
+
+    assert read["error"]["code"] == "not_found"
+  end
+
   test "workspace status and diff expose binary metadata without payload", %{
     token: token,
     workspace_id: workspace_id

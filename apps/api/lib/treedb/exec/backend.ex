@@ -41,8 +41,10 @@ defmodule TreeDb.Exec.Backend do
         {:ok, TreeDb.Exec.Backends.ContainerSandbox}
 
       "external_worker" ->
-        {:error,
-         %{code: "not_implemented", message: "external_worker exec backend is not implemented."}}
+        {:ok, TreeDb.Exec.Backends.ExternalWorker}
+
+      "firecracker_or_microvm" ->
+        {:ok, TreeDb.Exec.Backends.FirecrackerMicrovm}
 
       other ->
         {:error, %{code: "validation_error", message: "Unknown exec backend #{other}."}}

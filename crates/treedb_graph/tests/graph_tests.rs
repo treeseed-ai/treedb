@@ -159,7 +159,7 @@ fn parses_ctx_dsl_subset() {
     );
     assert!(parsed.ok);
     let query = parsed.query.unwrap();
-    assert_eq!(query["stage"], "research");
+    assert_eq!(query["focus"], "research");
     assert_eq!(query["relations"][0], "references");
     assert_eq!(query["budget"]["maxTokens"], 1200);
 
