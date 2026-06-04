@@ -1,7 +1,7 @@
 # TreeDB Production Risk Inventory
 
 Status: Unified production risk inventory  
-Source: `PLAN` risk register
+Source: TreeDB architecture, security, operations, and release-gate reviews
 
 | Risk | Impact | Owner area | Implementation area | Current mitigation | Required implementation item | Verification test |
 |---|---|---|---|---|---|---|

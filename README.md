@@ -70,7 +70,6 @@ The core design choices are:
     architecture/                # Current system architecture and risk docs
     runbooks/                    # Operations, recovery, release, and security runbooks
     research/                    # Historical compatibility research and design background
-  PLAN                           # Original implementation planning record
   LICENSE
 ```
 

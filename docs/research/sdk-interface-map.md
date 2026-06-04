@@ -287,7 +287,7 @@ TreeDB can store, update, index, search, snapshot, and query files containing th
 ## Breaking-Change Risks
 
 1. Replacing SDK methods with raw TreeDB endpoints would break the developer experience.
-2. Moving TreeSeed model semantics into TreeDB would violate the architecture boundary in `PLAN`.
+2. Moving TreeSeed model semantics into TreeDB would violate the repository-database boundary.
 3. Treating local path access as permanent would block remote/federated repository operation.
 4. Keeping Git shell commands as the default implementation would violate the Gitoxide/gix direction.
 5. Reusing market dispatch for TreeDB repository operations would blur product and repository-database boundaries.
