@@ -96,6 +96,9 @@ The GitHub workflow publishes Docker images only after the release gate passes.
   exact semantic-version git tag.
 - BuildKit cache is enabled per architecture for Docker layers plus Cargo and
   Mix build caches.
+- Architecture image builds attach BuildKit SBOM and max-mode provenance
+  attestations at push time so Docker Hub supply-chain attestation checks can
+  verify both software bill of materials and build provenance.
 - The published runtime image omits optional shell Git tooling; deployments that
   enable authenticated external Git transport provide that tooling in a derived
   image or controlled worker environment.

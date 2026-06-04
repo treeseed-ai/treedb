@@ -234,6 +234,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: ${{ needs.publish-plan.outputs.arch_image_prefix }}-${{ matrix.arch }}
+          sbom: true
+          provenance: mode=max
           cache-from: type=gha,scope=treedb-prod-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=treedb-prod-${{ matrix.arch }}
 
