@@ -33,10 +33,11 @@ Default workload:
 - fixture: `small-docs`
 - size: `small`
 - scenario: `all`
-- iterations: `100000`
+- iterations: unset by default
 - concurrency: `100`
-- duration: `10m`
+- duration: `10m` of measured load after setup completes
 - report format: `both`
+- reliability verifier: enabled
 - admin/destructive/exec/federation operations: enabled inside the isolated
   profiling volume
 
@@ -45,6 +46,8 @@ Reports are written to timestamped paths:
 ```text
 target/profiles/portfolio-<timestamp>.yaml
 target/profiles/portfolio-<timestamp>.md
+target/profiles/portfolio-<timestamp>-replay.jsonl
+target/profiles/portfolio-<timestamp>-failures.jsonl
 ```
 
 Check the result:
@@ -57,7 +60,6 @@ Override settings with environment variables:
 
 ```bash
 TREEDB_PROFILE_SIZE=medium \
-TREEDB_PROFILE_ITERATIONS=500 \
 TREEDB_PROFILE_CONCURRENCY=100 \
 TREEDB_PROFILE_DURATION=30m \
 TREEDB_PROFILE_OUTPUT=target/profiles/medium-c100.yaml \
@@ -90,6 +92,9 @@ scripts/profile-compose.sh graph
 scripts/profile-compose.sh binary
 scripts/profile-compose.sh admin
 scripts/profile-compose.sh soak
+scripts/profile-compose.sh mirror-federation
+scripts/profile-compose.sh connected-library
+scripts/profile-compose.sh federation-soak
 ```
 
 Modes:
@@ -103,10 +108,22 @@ Modes:
 - `binary`: binary-assets fixture focused on blob, multipart, and artifact lifecycle paths.
 - `admin`: small admin/storage diagnostic run with explicit destructive dry-run coverage.
 - `soak`: 24-hour growing portfolio run for reliability monitoring.
+- `mirror-federation`: three-node mirror-cluster profile with catalog
+  convergence, write proxy, mirror reads, and reliability verification.
+- `connected-library`: three-node connected-library profile with remote-owner
+  authorization, scoped federation reads, and default write-denial checks.
+- `federation-soak`: longer three-node federation reliability profile.
 
 The script composes `profiles/compose.profile.yaml` with `profiles/compose.profile.<mode>.yaml`,
 cleans the profiling volume by default, and writes timestamped YAML and
 Markdown reports under `target/profiles/`.
+
+Federation modes use `profiles/compose.profile.federation.yaml` plus the
+selected federation overlay. They start three production-image API nodes:
+`treedb-node-a`, `treedb-node-b`, and `treedb-node-c`, each with its own data
+volume and node identity. Node A is the profiler ingress. Node B and node C use
+parent lineage rooted at node A so live catalog sync can discover routes without
+restarting services.
 
 Options:
 
@@ -120,6 +137,39 @@ scripts/profile-compose.sh portfolio --dev-api
 Use `--dev-api` only when you want the API service to run through `mix
 phx.server` with the repository bind-mounted for development debugging. Normal
 profile modes use the production release image.
+
+Duration-based modes do not set a default iteration cap. If
+`TREEDB_PROFILE_DURATION=10m` and `TREEDB_PROFILE_ITERATIONS` is unset, the
+profiler starts its measured timer after setup and continues load until the
+measured window reaches ten minutes. If an explicit iteration cap is supplied
+along with a duration, the profiler stops at whichever limit comes first and
+records `timing.measured.durationSatisfied` in the report.
+
+Release-path CI uses the same duration semantics for federation profiles:
+`TREEDB_CI_FEDERATION_PROFILE_DURATION` defaults to `10m`, and Docker
+publishing is blocked unless the mirror and connected-library profiles satisfy
+their measured windows and pass the reliability budget.
+
+## Reliability Verifier Output
+
+Verifier mode is enabled by default for compose profiles and CI profile runs.
+The report includes:
+
+- `timing`: profile, setup, measured-load, and cleanup start/end/duration.
+- `reliabilityBudget`: pass/fail status and violations.
+- `modelState` and `reconciliation`: expected API-visible state summaries and drift.
+- `openapiValidation`: response/schema validation totals.
+- `operationChains`, `negativeTests`, `metamorphic`,
+  `endpointConsistency`, `delayedConsistency`, `permissionMatrix`, and
+  `leakDetection`.
+- `concurrency.raceInterference`: verified and unverified race accounting.
+- `replay`: sanitized request-ledger and failure replay-log paths.
+
+The default budget requires zero request errors, semantic failures, OpenAPI
+failures, reconciliation drift, unverified races, validation-probe failures,
+negative-test failures, metamorphic failures, endpoint-consistency failures,
+and delayed-consistency failures. It also fails if the measured duration is
+below 99% of the requested duration.
 
 Performance profiles enable these server-side optimization defaults unless
 overridden:
@@ -147,7 +197,10 @@ Start TreeDB, then run:
 ```
 
 `--fixture-root` must be visible to the TreeDB server and must be under
-`TREEDB_DATA_DIR`, because repository registration validates `localPath`.
+`TREEDB_DATA_DIR`. The profiler generates Git fixtures there, then imports them
+through the admin local-import API using `sourceRelativePath`; subsequent
+profiling work uses public repository, workspace, graph, search, snapshot, and
+artifact APIs.
 
 Generated repositories use a common prefix. The default is `profile-`, which
 creates names such as `profile-small-docs-small-1`. Override it with:
@@ -155,6 +208,12 @@ creates names such as `profile-small-docs-small-1`. Override it with:
 ```bash
 --repo-prefix test-
 ```
+
+Federation profiles also keep repository storage managed. Fixture repositories
+are generated under the API node's data volume for import, then registered by
+canonical `repositoryName`. Reports should contain repository IDs, repository
+names, relative paths, node IDs, and route metadata only, never absolute storage
+paths or node authorization material.
 
 ## Fixture Families And Scale
 

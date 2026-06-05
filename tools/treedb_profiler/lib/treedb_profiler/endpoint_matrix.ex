@@ -90,8 +90,13 @@ defmodule TreeDbProfiler.EndpointMatrix do
     end)
   end
 
-  def coverage(samples, opts) do
-    sample_ids = samples |> Enum.map(& &1.operation_id) |> MapSet.new()
+  def coverage(samples, opts, extra_operation_ids \\ []) do
+    sample_ids =
+      samples
+      |> Enum.map(& &1.operation_id)
+      |> Kernel.++(List.wrap(extra_operation_ids))
+      |> MapSet.new()
+
     openapi_ids = openapi_operations() |> Enum.map(& &1.operation_id) |> MapSet.new()
     matrix = load()
     matrix_ids = matrix |> Enum.map(& &1["operationId"]) |> MapSet.new()

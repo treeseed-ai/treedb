@@ -69,7 +69,7 @@ TOKEN="$(
 )"
 
 AUTH=(-H "authorization: Bearer $TOKEN" -H 'content-type: application/json')
-REPO_PATH="/var/lib/treedb/repos/bare/mvp-smoke"
+REPO_PATH="/var/lib/treedb/imports/mvp-smoke"
 
 docker compose exec -T treedb-api bash -lc "
 set -euo pipefail
@@ -94,9 +94,9 @@ git commit -m 'Initial smoke fixture'
 "
 
 repo_json="$(
-  curl -fsS -X POST "$TREEDB_URL/api/v1/repos/register" \
+  curl -fsS -X POST "$TREEDB_URL/api/v1/admin/repos/import-local" \
     "${AUTH[@]}" \
-    -d "{\"name\":\"mvp-smoke\",\"localPath\":\"$REPO_PATH\"}"
+    -d '{"repositoryName":"mvp-smoke","sourceRelativePath":"imports/mvp-smoke"}'
 )"
 repo_id="$(json_get '.repo.repoId' <<<"$repo_json")"
 

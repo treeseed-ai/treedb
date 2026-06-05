@@ -14,8 +14,11 @@ defmodule TreeDbProfiler.CLITest do
     assert opts.scenario == "full_api"
     assert opts.load_mode == "random"
     assert opts.report_format == "yaml"
-    assert opts.iterations == 1
+    assert opts.iterations == nil
+    assert opts.iterations_explicit == false
     assert opts.concurrency == 1
+    assert opts.reliability_verifier
+    assert opts.openapi_response_validation
   end
 
   test "parses duration and explicit settings" do
@@ -46,7 +49,18 @@ defmodule TreeDbProfiler.CLITest do
     assert opts.size == "large"
     assert opts.repo_prefix == "test-"
     assert opts.duration_ms == 300_000
+    assert opts.iterations == 10
+    assert opts.iterations_explicit
+    assert opts.duration_is_controlling == false
     assert opts.concurrency == 4
+  end
+
+  test "duration controls measured load when iterations are not explicit" do
+    assert {:ok, opts} = CLI.parse(["--duration", "10m"])
+    assert opts.iterations == nil
+    assert opts.duration_ms == 600_000
+    assert opts.duration_is_controlling
+    assert opts.minimum_measured_duration == 600_000
   end
 
   test "parses portfolio mode options" do

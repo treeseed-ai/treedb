@@ -184,7 +184,7 @@ defmodule TreeDb.Blobs do
   end
 
   defp base_blob(repo, ref, path) do
-    case TreeDb.Git.read_blob(repo["localPath"], ref, path) do
+    case TreeDb.Git.read_blob(TreeDb.RepositoryStorage.path!(repo), ref, path) do
       {:ok, blob} ->
         with {:ok, content_hash} <- TreeDb.Store.hash_bytes_base64(blob["contentBase64"]) do
           {:ok,

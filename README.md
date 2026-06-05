@@ -253,9 +253,9 @@ scenarios and the endpoint matrix with the default small scale workload:
 - fixture: `small-docs`
 - scenario: `all`
 - size: `small`
-- iterations: `100000`
+- iterations: unset by default for duration-controlled profiles
 - concurrency: `100`
-- duration: `10m`
+- duration: `10m` of measured load after setup completes
 - report format: `both`
 - admin/destructive/exec/federation operations: enabled inside the isolated
   profiling volume
@@ -265,6 +265,8 @@ Reports are written to timestamped paths:
 ```text
 target/profiles/portfolio-<timestamp>.yaml
 target/profiles/portfolio-<timestamp>.md
+target/profiles/portfolio-<timestamp>-replay.jsonl
+target/profiles/portfolio-<timestamp>-failures.jsonl
 ```
 
 Check a specific result:
@@ -285,10 +287,20 @@ scripts/profile-compose.sh graph
 scripts/profile-compose.sh binary
 scripts/profile-compose.sh admin
 scripts/profile-compose.sh soak
+scripts/profile-compose.sh mirror-federation
+scripts/profile-compose.sh connected-library
+scripts/profile-compose.sh federation-soak
 ```
 
 Each mode writes timestamped reports under `target/profiles/` unless
-`TREEDB_PROFILE_OUTPUT` and `TREEDB_PROFILE_MARKDOWN_OUTPUT` are set.
+`TREEDB_PROFILE_OUTPUT`, `TREEDB_PROFILE_MARKDOWN_OUTPUT`,
+`TREEDB_PROFILE_REPLAY_LOG`, and `TREEDB_PROFILE_FAILURE_REPLAY_LOG` are set.
+
+Duration-based profile modes default to no iteration cap. For example,
+`scripts/profile-compose.sh portfolio` runs ten minutes of measured load after
+fixture setup completes. If `TREEDB_PROFILE_ITERATIONS` is explicitly set along
+with a duration, the profiler stops at whichever limit comes first and reports
+whether the measured duration was satisfied.
 
 Normal profile modes run the TreeDB API from the production release image while
 keeping dev auth enabled for local token setup. Use `--dev-api` to run the API
@@ -298,11 +310,17 @@ through `mix phx.server` for development debugging:
 scripts/profile-compose.sh portfolio --dev-api
 ```
 
+Federation profile modes start three production-image TreeDB API nodes plus the
+profiler. Node A is the profiler ingress, node B and node C join through parent
+lineage, and live catalog sync is verified without service restart. The
+`mirror-federation` mode checks same-cluster write proxy and mirror reads. The
+`connected-library` mode checks remote-owner authorization and confirms writes
+are denied by default.
+
 Override any workload setting with `TREEDB_PROFILE_*` environment variables:
 
 ```bash
 TREEDB_PROFILE_SIZE=medium \
-TREEDB_PROFILE_ITERATIONS=500 \
 TREEDB_PROFILE_CONCURRENCY=100 \
 TREEDB_PROFILE_DURATION=30m \
 TREEDB_PROFILE_OUTPUT=target/profiles/medium-c100.yaml \
@@ -319,7 +337,9 @@ docker compose -f profiles/compose.profile.yaml down -v --remove-orphans
 See [Performance Profiling](docs/runbooks/performance-profiling.md) and
 [TreeDB Profiler](tools/treedb_profiler/README.md) for fixture families,
 portfolio growth mode, scenarios, concurrency behavior, and report
-interpretation.
+interpretation. Verifier profiles also include timing windows, reliability
+budget results, OpenAPI response validation, reconciliation summaries, race
+classification, and sanitized replay logs.
 
 The development service mounts:
 
@@ -474,9 +494,31 @@ Audit events are stored in TreeDB-native append-only files under `audit/events.t
 
 The federation planner is still available for dry-run scope inspection. Global search, query, context, and graph endpoints execute only after reducing requested repository/ref/path scope to the caller's effective authorized scope. Local placements execute in-process; configured remote placements use reduced-scope HTTP routing with sanitized partial-failure responses. Unauthorized repositories, paths, snippets, counts, and graph IDs are not serialized.
 
+Federation is a live routing fabric rather than a separate coordinator service.
+Any node can receive a request, resolve the repository or workspace route from
+its trusted catalog, execute locally, use a fresh mirror for reads, or proxy to
+the trusted primary. Parent lineage bootstraps discovery and catalog sync, but
+trust remains explicit and scoped. Internal federation routes require signed
+node-to-node tokens and cannot be called with only a normal user bearer token.
+
+TreeDB supports two federation access modes:
+
+- Mirror cluster: same administrative trust domain, shared or replicated auth
+  policy, write proxy enabled for trusted primaries, fresh mirrors eligible for
+  reads, and manual promotion available for HA.
+- Connected library: independently owned repositories, explicit advertisements,
+  remote-owner authorization, scoped delegated requests, and write proxy/mirror
+  access denied by default.
+
+Federation catalogs contain logical node, repository, route, capacity, and
+mirror metadata only. They must not contain local storage paths, credentials,
+tokens, hidden paths, snippets, request bodies, stdout/stderr, or binary
+payloads.
+
 ### Repositories
 
 ```http
+POST /api/v1/repos
 POST /api/v1/repos/register
 GET  /api/v1/repos
 GET  /api/v1/repos/:repo_id
@@ -488,21 +530,45 @@ POST /api/v1/repos/:repo_id/push
 POST /api/v1/repos/:repo_id/workspaces
 ```
 
-Register a repository:
+Create a managed repository:
 
 ```bash
-curl -fsS -X POST http://localhost:4000/api/v1/repos/register \
+curl -fsS -X POST http://localhost:4000/api/v1/repos \
   -H "authorization: Bearer $TREEDB_TOKEN" \
   -H 'content-type: application/json' \
   -d '{
-    "name": "demo-repository",
-    "localPath": "/var/lib/treedb/repos/bare/demo-repository.git",
-    "remoteUrl": "https://example.invalid/demo-repository.git",
-    "defaultRef": "refs/heads/main"
+    "repositoryName": "demo-repository",
+    "source": {"type": "empty"},
+    "placement": {"mode": "local"}
   }'
 ```
 
-Repository registration validates that `localPath` is absolute, stays under `$TREEDB_DATA_DIR`, exists, and is a Git repository. The same normalized input produces the same deterministic repository ID. TreeDB keeps `localPath` as internal service setup data and does not return it in public repository response objects.
+Repository names are canonical lowercase identifiers and are unique in a node's trusted catalog. TreeDB derives repository IDs from the canonical name and stores managed repositories under its configured data directory. Public APIs use repository IDs or names plus repository-relative file paths; public responses do not expose local storage paths.
+
+For controlled local imports, use the admin-only import route with a source path relative to `$TREEDB_DATA_DIR`:
+
+```bash
+curl -fsS -X POST http://localhost:4000/api/v1/admin/repos/import-local \
+  -H "authorization: Bearer $TREEDB_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{
+    "repositoryName": "demo-repository",
+    "sourceRelativePath": "imports/demo-repository"
+  }'
+```
+
+`POST /api/v1/repos/register` remains as compatibility registration for managed repositories. Normal public usage should not send absolute repository paths.
+
+Repository storage is node-local and managed:
+
+```text
+$TREEDB_DATA_DIR/repositories/<repositoryName>
+$TREEDB_DATA_DIR/mirrors/<repositoryName>
+```
+
+Clients should never address files by absolute host path. All file, blob,
+search, graph, snapshot, artifact, and workspace APIs use repository IDs or
+names plus paths relative to the repository root.
 
 Get repository status:
 

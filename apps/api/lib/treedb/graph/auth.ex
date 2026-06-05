@@ -6,7 +6,7 @@ defmodule TreeDb.Graph.Auth do
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
          ref <- params["ref"] || repo["defaultRef"] || "refs/heads/main",
          :ok <- TreeDb.Capabilities.require_ref(scope, ref),
-         {:ok, resolved} <- TreeDb.Git.resolve_ref(repo["localPath"], ref) do
+         {:ok, resolved} <- TreeDb.Git.resolve_ref(TreeDb.RepositoryStorage.path!(repo), ref) do
       {:ok,
        %{
          repo: repo,

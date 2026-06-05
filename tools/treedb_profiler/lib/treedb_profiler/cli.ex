@@ -39,6 +39,44 @@ defmodule TreeDbProfiler.CLI do
     request_sample_limit: :integer,
     request_detail_output: :string,
     state_checks: :string,
+    semantic_validation: :string,
+    race_policy: :string,
+    validation_probes: :string,
+    validation_probe_timeout_ms: :integer,
+    max_validation_probes_per_request: :integer,
+    strict_query_hit_counts: :string,
+    strict_graph_expectations: :string,
+    strict_snapshot_stability: :string,
+    reliability_verifier: :string,
+    openapi_response_validation: :string,
+    model_reconciliation: :string,
+    reconciliation_interval: :string,
+    reconciliation_sample_size: :integer,
+    operation_chains: :string,
+    negative_tests: :string,
+    metamorphic_checks: :string,
+    delayed_consistency_checks: :string,
+    delayed_check_intervals: :string,
+    restart_durability_check: :string,
+    fault_injection: :string,
+    permission_matrix: :string,
+    replay_log: :string,
+    failure_replay_log: :string,
+    request_ledger: :string,
+    full_reconciliation_on_finish: :string,
+    duration_is_controlling: :string,
+    minimum_measured_duration: :string,
+    reliability_budget: :string,
+    federation_mode: :string,
+    federation_node_a_url: :string,
+    federation_node_b_url: :string,
+    federation_node_c_url: :string,
+    federation_node_a_token: :string,
+    federation_node_b_token: :string,
+    federation_node_c_token: :string,
+    federation_exercise_promotion: :string,
+    federation_exercise_write_proxy: :string,
+    federation_exercise_connected_denials: :string,
     profile_id: :string,
     repo_prefix: :string,
     fixture_root: :string,
@@ -70,7 +108,8 @@ defmodule TreeDbProfiler.CLI do
         end
 
         if get_in(report, ["summary", "totalErrors"]) > 0 or
-             get_in(report, ["assertions", "failed"]) > 0 do
+             get_in(report, ["assertions", "failed"]) > 0 or
+             get_in(report, ["reliabilityBudget", "passed"]) == false do
           System.halt(2)
         end
 
@@ -97,6 +136,11 @@ defmodule TreeDbProfiler.CLI do
 
   defp normalize(opts) do
     profile_id = Keyword.get(opts, :profile_id) || default_profile_id()
+    duration = Keyword.get(opts, :duration)
+    duration_ms = parse_duration(duration)
+    iterations_explicit? = Keyword.has_key?(opts, :iterations)
+    iterations = Keyword.get(opts, :iterations)
+    duration_controls? = not is_nil(duration_ms) and not iterations_explicit?
 
     output =
       Keyword.get(opts, :output) ||
@@ -118,9 +162,10 @@ defmodule TreeDbProfiler.CLI do
       fixture: Keyword.get(opts, :fixture, "small-docs"),
       size: Keyword.get(opts, :size, "small"),
       scenario: Keyword.get(opts, :scenario, "full_api"),
-      iterations: Keyword.get(opts, :iterations, 1),
-      duration: Keyword.get(opts, :duration),
-      duration_ms: parse_duration(Keyword.get(opts, :duration)),
+      iterations: iterations,
+      iterations_explicit: iterations_explicit?,
+      duration: duration,
+      duration_ms: duration_ms,
       concurrency: Keyword.get(opts, :concurrency, 1),
       warmup_iterations: Keyword.get(opts, :warmup_iterations, 0),
       timeout_ms: Keyword.get(opts, :timeout_ms, 30_000),
@@ -151,6 +196,62 @@ defmodule TreeDbProfiler.CLI do
       request_sample_limit: Keyword.get(opts, :request_sample_limit, 25),
       request_detail_output: Keyword.get(opts, :request_detail_output),
       state_checks: Keyword.get(opts, :state_checks, "api"),
+      semantic_validation: parse_bool(Keyword.get(opts, :semantic_validation), true),
+      race_policy: Keyword.get(opts, :race_policy, "separate"),
+      validation_probes: parse_bool(Keyword.get(opts, :validation_probes), true),
+      validation_probe_timeout_ms: Keyword.get(opts, :validation_probe_timeout_ms, 30_000),
+      max_validation_probes_per_request: Keyword.get(opts, :max_validation_probes_per_request, 3),
+      strict_query_hit_counts: parse_bool(Keyword.get(opts, :strict_query_hit_counts), true),
+      strict_graph_expectations: parse_bool(Keyword.get(opts, :strict_graph_expectations), true),
+      strict_snapshot_stability: parse_bool(Keyword.get(opts, :strict_snapshot_stability), true),
+      reliability_verifier: parse_bool(Keyword.get(opts, :reliability_verifier), true),
+      openapi_response_validation:
+        parse_bool(Keyword.get(opts, :openapi_response_validation), true),
+      model_reconciliation: parse_bool(Keyword.get(opts, :model_reconciliation), true),
+      reconciliation_interval: parse_duration(Keyword.get(opts, :reconciliation_interval, "30s")),
+      reconciliation_sample_size: Keyword.get(opts, :reconciliation_sample_size, 100),
+      operation_chains: parse_bool(Keyword.get(opts, :operation_chains), true),
+      negative_tests: parse_bool(Keyword.get(opts, :negative_tests), true),
+      metamorphic_checks: parse_bool(Keyword.get(opts, :metamorphic_checks), true),
+      delayed_consistency_checks:
+        parse_bool(Keyword.get(opts, :delayed_consistency_checks), true),
+      delayed_check_intervals:
+        parse_duration_list(Keyword.get(opts, :delayed_check_intervals, "5s,30s")),
+      restart_durability_check: parse_bool(Keyword.get(opts, :restart_durability_check), false),
+      fault_injection: parse_bool(Keyword.get(opts, :fault_injection), false),
+      permission_matrix: parse_bool(Keyword.get(opts, :permission_matrix), true),
+      replay_log:
+        Keyword.get(opts, :replay_log) ||
+          Path.join(["..", "..", "target", "profiles", "#{profile_id}-replay.jsonl"]),
+      failure_replay_log:
+        Keyword.get(opts, :failure_replay_log) ||
+          Path.join(["..", "..", "target", "profiles", "#{profile_id}-failures.jsonl"]),
+      request_ledger: parse_bool(Keyword.get(opts, :request_ledger), true),
+      full_reconciliation_on_finish:
+        parse_bool(Keyword.get(opts, :full_reconciliation_on_finish), true),
+      duration_is_controlling:
+        parse_bool(Keyword.get(opts, :duration_is_controlling), duration_controls?),
+      minimum_measured_duration:
+        parse_duration(Keyword.get(opts, :minimum_measured_duration)) || duration_ms,
+      reliability_budget:
+        Keyword.get(
+          opts,
+          :reliability_budget,
+          Path.join([profiler_root(), "reliability_budget.yaml"])
+        ),
+      federation_mode: Keyword.get(opts, :federation_mode, "single_node"),
+      federation_node_a_url: Keyword.get(opts, :federation_node_a_url),
+      federation_node_b_url: Keyword.get(opts, :federation_node_b_url),
+      federation_node_c_url: Keyword.get(opts, :federation_node_c_url),
+      federation_node_a_token: Keyword.get(opts, :federation_node_a_token),
+      federation_node_b_token: Keyword.get(opts, :federation_node_b_token),
+      federation_node_c_token: Keyword.get(opts, :federation_node_c_token),
+      federation_exercise_promotion:
+        parse_bool(Keyword.get(opts, :federation_exercise_promotion), false),
+      federation_exercise_write_proxy:
+        parse_bool(Keyword.get(opts, :federation_exercise_write_proxy), false),
+      federation_exercise_connected_denials:
+        parse_bool(Keyword.get(opts, :federation_exercise_connected_denials), true),
       profile_id: profile_id,
       repo_prefix: repo_prefix,
       fixture_root:
@@ -189,6 +290,12 @@ defmodule TreeDbProfiler.CLI do
            validate_choice(normalized.load_mode, ["scenario", "random", "portfolio"], "load-mode"),
          :ok <-
            validate_choice(
+             normalized.federation_mode,
+             ["single_node", "mirror_cluster", "connected_library"],
+             "federation-mode"
+           ),
+         :ok <-
+           validate_choice(
              normalized.portfolio_growth_target,
              ["sparse", "steady", "aggressive"],
              "portfolio-growth-target"
@@ -205,7 +312,13 @@ defmodule TreeDbProfiler.CLI do
              ["api", "api_with_disk_diagnostics"],
              "state-checks"
            ),
-         :ok <- validate_positive(normalized.iterations, "iterations"),
+         :ok <-
+           validate_choice(
+             normalized.race_policy,
+             ["separate", "fail", "success"],
+             "race-policy"
+           ),
+         :ok <- validate_optional_positive(normalized.iterations, "iterations"),
          :ok <- validate_positive(normalized.concurrency, "concurrency"),
          :ok <- validate_non_negative(normalized.warmup_iterations, "warmup-iterations"),
          :ok <- validate_positive(normalized.portfolio_initial_repos, "portfolio-initial-repos"),
@@ -220,7 +333,25 @@ defmodule TreeDbProfiler.CLI do
              "portfolio-max-file-growth-per-repo"
            ),
          :ok <- validate_non_negative(normalized.request_sample_limit, "request-sample-limit") do
-      {:ok, normalized}
+      with :ok <-
+             validate_positive(
+               normalized.validation_probe_timeout_ms,
+               "validation-probe-timeout-ms"
+             ),
+           :ok <-
+             validate_positive(
+               normalized.max_validation_probes_per_request,
+               "max-validation-probes-per-request"
+             ),
+           :ok <-
+             validate_positive(
+               normalized.reconciliation_sample_size,
+               "reconciliation-sample-size"
+             ) do
+        {:ok, normalized}
+      end
+    else
+      error -> error
     end
   end
 
@@ -233,10 +364,14 @@ defmodule TreeDbProfiler.CLI do
   defp validate_positive(value, label),
     do: if(value > 0, do: :ok, else: {:error, "--#{label} must be positive"})
 
+  defp validate_optional_positive(nil, _label), do: :ok
+  defp validate_optional_positive(value, label), do: validate_positive(value, label)
+
   defp validate_non_negative(value, label),
     do: if(value >= 0, do: :ok, else: {:error, "--#{label} must be non-negative"})
 
   defp parse_duration(nil), do: nil
+  defp parse_duration(""), do: nil
 
   defp parse_duration(value) do
     case Regex.run(~r/^(\d+)(ms|s|m|h)?$/, value) do
@@ -247,6 +382,15 @@ defmodule TreeDbProfiler.CLI do
       [_, amount, "h"] -> String.to_integer(amount) * 3_600_000
       _ -> raise ArgumentError, "invalid duration #{inspect(value)}"
     end
+  end
+
+  defp parse_duration_list(nil), do: []
+  defp parse_duration_list(""), do: []
+
+  defp parse_duration_list(value) do
+    value
+    |> String.split(",", trim: true)
+    |> Enum.map(&parse_duration/1)
   end
 
   defp parse_bool(nil, default), do: default
@@ -265,6 +409,14 @@ defmodule TreeDbProfiler.CLI do
     "treedb-profile-#{timestamp}"
   end
 
+  defp profiler_root do
+    __ENV__.file
+    |> Path.dirname()
+    |> Path.join("..")
+    |> Path.expand()
+    |> Path.dirname()
+  end
+
   defp usage do
     """
     Usage:
@@ -278,6 +430,29 @@ defmodule TreeDbProfiler.CLI do
       --size small|medium|large|xl
       --scenario full_api|read_heavy|write_heavy|graph_context|blob_artifact|all
       --load-mode scenario|random|portfolio
+      --semantic-validation true|false
+      --race-policy separate|fail|success
+      --validation-probes true|false
+      --validation-probe-timeout-ms N
+      --max-validation-probes-per-request N
+      --reliability-verifier true|false
+      --duration-is-controlling true|false
+      --minimum-measured-duration 10m
+      --openapi-response-validation true|false
+      --model-reconciliation true|false
+      --reconciliation-interval 30s
+      --negative-tests true|false
+      --metamorphic-checks true|false
+      --permission-matrix true|false
+      --replay-log PATH
+      --failure-replay-log PATH
+      --federation-mode single_node|mirror_cluster|connected_library
+      --federation-node-a-url URL
+      --federation-node-b-url URL
+      --federation-node-c-url URL
+      --federation-exercise-promotion true|false
+      --federation-exercise-write-proxy true|false
+      --federation-exercise-connected-denials true|false
       --iterations N
       --duration 10m
       --concurrency N

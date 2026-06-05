@@ -13,6 +13,7 @@ defmodule TreeDb.Application do
     TreeDb.ConfigValidation.validate_boot!()
     :ok = validate_auth!()
     TreeDb.Store.init!(node_id: node_id())
+    TreeDb.Federation.NodeIdentity.ensure_keys!()
 
     if TreeDb.Auth.mode() == "dev" do
       {:ok, _} = TreeDb.Store.seed_dev_records(node_id(), base_url())
@@ -33,6 +34,7 @@ defmodule TreeDb.Application do
       TreeDb.Graph.RefreshCoordinator,
       TreeDb.Artifacts.Index,
       TreeDb.Audit.Writer,
+      TreeDb.Federation.CatalogSync,
       TreeDb.Auth.JwksCache,
       TreeDbWeb.Endpoint
     ]

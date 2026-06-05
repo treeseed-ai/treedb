@@ -42,9 +42,9 @@ defmodule TreeDbProfiler.RequestGeneratorTest do
   test "create repository request uses configured prefix", %{pid: pid, opts: opts} do
     request = RequestGenerator.build(:create_repository, pid, opts)
 
-    assert request.operation_id == "registerRepository"
+    assert request.operation_id == "importLocalRepository"
     assert request.operation_type == :create
-    assert request.body["name"] =~ "profile-generator-test-repo-"
+    assert request.body["repositoryName"] =~ "profile-generator-test-repo-"
     assert request.state_effect.kind == :repo_registered
   end
 

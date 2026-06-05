@@ -8,7 +8,7 @@ defmodule TreeDb.Exec.Materializer do
 
     with {:ok, base_entries} <-
            TreeDb.Git.list_tree_recursive(
-             ctx.repo["localPath"],
+             TreeDb.RepositoryStorage.path!(ctx.repo),
              ctx.workspace["baseCommitSha"],
              nil
            ),
@@ -45,7 +45,7 @@ defmodule TreeDb.Exec.Materializer do
     |> Enum.filter(&path_allowed?(ctx.workspace, &1["path"]))
     |> Enum.reduce_while(:ok, fn entry, :ok ->
       case TreeDb.Git.read_blob(
-             ctx.repo["localPath"],
+             TreeDb.RepositoryStorage.path!(ctx.repo),
              ctx.workspace["baseCommitSha"],
              entry["path"]
            ) do

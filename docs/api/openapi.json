@@ -790,6 +790,48 @@
             "bearerAuth": []
           }
         ]
+      },
+      "post": {
+        "operationId": "createRepository",
+        "summary": "Create a server-managed repository.",
+        "x-treedb-required-capabilities": [
+          "repos:write"
+        ],
+        "responses": {
+          "200": {
+            "description": "Create a server-managed repository. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbCreateRepositoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreeDbCreateRepositoryRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/repos/{repo_id}": {
@@ -2891,6 +2933,9 @@
           "403": {
             "$ref": "#/components/responses/Error"
           },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
           "409": {
             "$ref": "#/components/responses/Error"
           }
@@ -2978,6 +3023,9 @@
             "$ref": "#/components/responses/Error"
           },
           "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
             "$ref": "#/components/responses/Error"
           },
           "409": {
@@ -4326,6 +4374,581 @@
           }
         }
       }
+    },
+    "/api/v1/federation/nodes/register": {
+      "post": {
+        "operationId": "registerFederationNode",
+        "summary": "Register a federation peer node.",
+        "x-treedb-required-capabilities": [
+          "federation:write"
+        ],
+        "responses": {
+          "200": {
+            "description": "Register a federation peer node. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationPeerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreeDbFederationPeerRegisterRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/peers": {
+      "get": {
+        "operationId": "listFederationPeers",
+        "summary": "List federation peers in the trusted catalog.",
+        "x-treedb-required-capabilities": [
+          "federation:read"
+        ],
+        "responses": {
+          "200": {
+            "description": "List federation peers in the trusted catalog. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationPeersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/peers/{node_id}": {
+      "get": {
+        "operationId": "getFederationPeer",
+        "summary": "Return federation peer metadata.",
+        "x-treedb-required-capabilities": [
+          "federation:read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Return federation peer metadata. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationPeerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/peers/{node_id}/trust": {
+      "post": {
+        "operationId": "trustFederationPeer",
+        "summary": "Update federation trust states for a peer.",
+        "x-treedb-required-capabilities": [
+          "federation:trust"
+        ],
+        "responses": {
+          "200": {
+            "description": "Update federation trust states for a peer. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationPeerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreeDbFederationTrustRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/peers/{node_id}/revoke": {
+      "post": {
+        "operationId": "revokeFederationPeer",
+        "summary": "Revoke federation trust for a peer.",
+        "x-treedb-required-capabilities": [
+          "federation:trust"
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoke federation trust for a peer. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationPeerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/catalog": {
+      "get": {
+        "operationId": "getFederationCatalog",
+        "summary": "Return the local logical federation catalog.",
+        "x-treedb-required-capabilities": [],
+        "responses": {
+          "200": {
+            "description": "Return the local logical federation catalog. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationCatalogResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/federation/catalog/push": {
+      "post": {
+        "operationId": "pushFederationCatalog",
+        "summary": "Push a logical federation catalog delta.",
+        "x-treedb-required-capabilities": [
+          "federation:sync"
+        ],
+        "responses": {
+          "200": {
+            "description": "Push a logical federation catalog delta. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationSyncResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreeDbFederationCatalog"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/catalog/sync": {
+      "post": {
+        "operationId": "syncFederationCatalog",
+        "summary": "Trigger federation catalog synchronization.",
+        "x-treedb-required-capabilities": [
+          "federation:sync"
+        ],
+        "responses": {
+          "200": {
+            "description": "Trigger federation catalog synchronization. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationSyncResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/routes": {
+      "get": {
+        "operationId": "listFederationRoutes",
+        "summary": "List active federation routing records.",
+        "x-treedb-required-capabilities": [
+          "federation:read"
+        ],
+        "responses": {
+          "200": {
+            "description": "List active federation routing records. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationRoutesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/federation/proxy": {
+      "post": {
+        "operationId": "proxyInternalFederationRequest",
+        "summary": "Proxy an internal node-to-node federation request.",
+        "x-treedb-required-capabilities": [
+          "federation:sync"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proxy an internal node-to-node federation request. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbInternalFederationProxyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreeDbInternalFederationProxyResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/federation/repos/{repo_id}/mirror/export": {
+      "post": {
+        "operationId": "exportInternalFederationMirror",
+        "summary": "Export repository mirror data for a trusted node.",
+        "x-treedb-required-capabilities": [
+          "federation:sync"
+        ],
+        "responses": {
+          "200": {
+            "description": "Export repository mirror data for a trusted node. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationSyncResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RepoId"
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/federation/repos/{repo_id}/mirror/import": {
+      "post": {
+        "operationId": "importInternalFederationMirror",
+        "summary": "Import repository mirror data from a trusted node.",
+        "x-treedb-required-capabilities": [
+          "federation:sync"
+        ],
+        "responses": {
+          "200": {
+            "description": "Import repository mirror data from a trusted node. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbFederationSyncResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreeDbFederationCatalog"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RepoId"
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/federation/health": {
+      "get": {
+        "operationId": "getInternalFederationHealth",
+        "summary": "Return internal federation health for node-to-node checks.",
+        "x-treedb-required-capabilities": [],
+        "responses": {
+          "200": {
+            "description": "Return internal federation health for node-to-node checks. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbInternalFederationHealthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/admin/repos/import-local": {
+      "post": {
+        "operationId": "importLocalRepository",
+        "summary": "Import a data-dir-relative local Git repository into managed storage.",
+        "x-treedb-required-capabilities": [
+          "repos:write"
+        ],
+        "responses": {
+          "200": {
+            "description": "Import a data-dir-relative local Git repository into managed storage. response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreeDbImportLocalRepositoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreeDbImportLocalRepositoryRequest"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5151,12 +5774,44 @@
             ]
           },
           "requestedScope": {
-            "type": "object",
-            "additionalProperties": true
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "effectiveScope": {
-            "type": "object",
-            "additionalProperties": true
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "data": {
             "type": "object",
@@ -5259,6 +5914,16 @@
                 "type": "null"
               }
             ]
+          },
+          "repositoryName": {
+            "$ref": "#/components/schemas/TreeDbRepositoryName"
+          },
+          "storageKind": {
+            "type": "string",
+            "enum": [
+              "managed",
+              "legacy_local_path"
+            ]
           }
         },
         "additionalProperties": false
@@ -5351,23 +6016,24 @@
       "TreeDbRegisterRepositoryRequest": {
         "type": "object",
         "required": [
-          "name"
+          "repositoryName"
         ],
         "properties": {
-          "name": {
-            "type": "string"
+          "repositoryName": {
+            "$ref": "#/components/schemas/TreeDbRepositoryName"
           },
-          "localPath": {
-            "type": "string"
+          "name": {
+            "$ref": "#/components/schemas/TreeDbRepositoryName"
           },
           "defaultRef": {
             "type": "string"
           },
-          "remoteUrl": {
-            "type": "string"
+          "createIfMissing": {
+            "type": "boolean"
           }
         },
-        "additionalProperties": true
+        "additionalProperties": true,
+        "description": "Compatibility registration for server-managed repository storage. Absolute localPath is compatibility-only and not part of the normal public contract."
       },
       "TreeDbFetchRemoteRequest": {
         "type": "object",
@@ -5728,10 +6394,39 @@
       },
       "TreeDbStatus": {
         "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
         "additionalProperties": true
       },
       "TreeDbDiff": {
         "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string"
+          },
+          "diff": {
+            "type": "string"
+          },
+          "changedPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
         "additionalProperties": true
       },
       "TreeDbCommitRequest": {
@@ -6572,6 +7267,50 @@
         },
         "additionalProperties": false
       },
+      "TreeDbMirror": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "repositoryId": {
+            "type": "string"
+          },
+          "sourceNodeId": {
+            "type": "string"
+          },
+          "targetNodeId": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "lastSeenCommit": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "behindBy": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true
+      },
       "TreeDbMirrorRequest": {
         "type": "object",
         "required": [],
@@ -6962,9 +7701,14 @@
           "ok": {
             "const": true
           },
+          "service": {
+            "type": "string"
+          },
           "version": {
-            "type": "object",
-            "additionalProperties": true
+            "type": "string"
+          },
+          "apiVersion": {
+            "type": "string"
           }
         },
         "additionalProperties": true
@@ -7109,6 +7853,10 @@
             "items": {
               "$ref": "#/components/schemas/TreeDbAuditEvent"
             }
+          },
+          "page": {
+            "type": "object",
+            "additionalProperties": true
           }
         },
         "additionalProperties": true
@@ -7405,7 +8153,24 @@
             "const": true
           },
           "query": {
-            "$ref": "#/components/schemas/TreeDbRepositoryQueryResult"
+            "type": "string"
+          },
+          "repoId": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "page": {
+            "type": "object",
+            "additionalProperties": true
           }
         },
         "additionalProperties": true
@@ -8097,8 +8862,18 @@
           "ok": {
             "const": true
           },
+          "workspaceId": {
+            "type": "string"
+          },
           "status": {
-            "$ref": "#/components/schemas/TreeDbStatus"
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
           }
         },
         "additionalProperties": true
@@ -8112,8 +8887,17 @@
           "ok": {
             "const": true
           },
+          "workspaceId": {
+            "type": "string"
+          },
           "diff": {
-            "$ref": "#/components/schemas/TreeDbDiff"
+            "type": "string"
+          },
+          "changedPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": true
@@ -8627,6 +9411,341 @@
           },
           "health": {
             "$ref": "#/components/schemas/TreeDbHealthSummary"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbRepositoryName": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+        "description": "Canonical server-managed repository name."
+      },
+      "TreeDbRepositorySource": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "empty",
+              "git_remote",
+              "bundle"
+            ]
+          },
+          "remoteUrl": {
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "bundleId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TreeDbRepositoryPlacementPreference": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "local",
+              "auto",
+              "node"
+            ]
+          },
+          "primaryNodeId": {
+            "type": "string"
+          },
+          "mirrorCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "readPolicy": {
+            "type": "string"
+          },
+          "writePolicy": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TreeDbCreateRepositoryRequest": {
+        "type": "object",
+        "required": [
+          "repositoryName"
+        ],
+        "properties": {
+          "repositoryName": {
+            "$ref": "#/components/schemas/TreeDbRepositoryName"
+          },
+          "source": {
+            "$ref": "#/components/schemas/TreeDbRepositorySource"
+          },
+          "placement": {
+            "$ref": "#/components/schemas/TreeDbRepositoryPlacementPreference"
+          },
+          "defaultRef": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TreeDbCreateRepositoryResponse": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "repo": {
+            "$ref": "#/components/schemas/TreeDbRepository"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbFederationPeer": {
+        "type": "object",
+        "required": [
+          "nodeId",
+          "baseUrl",
+          "trustStates"
+        ],
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "relationship": {
+            "type": "string"
+          },
+          "trustStates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "health": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbFederationPeerRegisterRequest": {
+        "type": "object",
+        "required": [
+          "nodeId",
+          "baseUrl"
+        ],
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "relationship": {
+            "type": "string"
+          },
+          "trustStates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "publicKeyPem": {
+            "type": "string"
+          },
+          "canAdvertiseRepos": {
+            "type": "boolean"
+          },
+          "canReceiveQueries": {
+            "type": "boolean"
+          },
+          "canReceiveWriteProxy": {
+            "type": "boolean"
+          },
+          "canMirrorRepos": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbFederationTrustRequest": {
+        "type": "object",
+        "properties": {
+          "trustStates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TreeDbFederationCatalog": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "TreeDbFederationRoute": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "TreeDbFederationCatalogResponse": {
+        "type": "object",
+        "required": [
+          "ok",
+          "catalog"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "catalog": {
+            "$ref": "#/components/schemas/TreeDbFederationCatalog"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbFederationPeersResponse": {
+        "type": "object",
+        "required": [
+          "ok",
+          "peers"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "peers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TreeDbFederationPeer"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbFederationPeerResponse": {
+        "type": "object",
+        "required": [
+          "ok",
+          "peer"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "peer": {
+            "$ref": "#/components/schemas/TreeDbFederationPeer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbFederationRoutesResponse": {
+        "type": "object",
+        "required": [
+          "ok",
+          "routes"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TreeDbFederationRoute"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbFederationSyncResponse": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "imported": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbInternalFederationHealthResponse": {
+        "type": "object",
+        "required": [
+          "ok",
+          "nodeId"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "nodeId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "TreeDbInternalFederationProxyResponse": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "TreeDbImportLocalRepositoryRequest": {
+        "type": "object",
+        "required": [
+          "repositoryName",
+          "sourceRelativePath"
+        ],
+        "properties": {
+          "repositoryName": {
+            "$ref": "#/components/schemas/TreeDbRepositoryName"
+          },
+          "sourceRelativePath": {
+            "type": "string",
+            "description": "Path under TREEDB_DATA_DIR, never absolute."
+          },
+          "moveIntoManagedStorage": {
+            "type": "boolean"
+          },
+          "defaultRef": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TreeDbImportLocalRepositoryResponse": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "repo": {
+            "$ref": "#/components/schemas/TreeDbRepository"
           }
         },
         "additionalProperties": true

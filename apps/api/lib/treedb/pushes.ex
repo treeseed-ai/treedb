@@ -13,7 +13,7 @@ defmodule TreeDb.Pushes do
       remote_name = params["remoteName"] || "origin"
 
       input = %{
-        repoPath: repo["localPath"],
+        repoPath: TreeDb.RepositoryStorage.path!(repo),
         remoteUrl: remote_url,
         remoteName: remote_name,
         refspecs: refspecs,
@@ -92,7 +92,7 @@ defmodule TreeDb.Pushes do
       remote_name = params["remoteName"] || "origin"
 
       input = %{
-        repoPath: repo["localPath"],
+        repoPath: TreeDb.RepositoryStorage.path!(repo),
         remoteUrl: remote_url,
         remoteName: remote_name,
         refspecs: params["refspecs"] || ["+refs/heads/*:refs/remotes/#{remote_name}/*"],
@@ -146,7 +146,7 @@ defmodule TreeDb.Pushes do
 
   defp maybe_noop_fetch(repo, params, principal, repo_id) do
     if is_nil(params["remoteUrl"]) and is_nil(repo["remoteUrl"]) do
-      with {:ok, git} <- TreeDb.Git.inspect_repository(repo["localPath"]) do
+      with {:ok, git} <- TreeDb.Git.inspect_repository(TreeDb.RepositoryStorage.path!(repo)) do
         TreeDb.Audit.append("git.fetch.completed", %{
           actor_id: principal["actorId"],
           tenant_id: principal["tenantId"],

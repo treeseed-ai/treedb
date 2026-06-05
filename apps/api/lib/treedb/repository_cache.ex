@@ -19,7 +19,7 @@ defmodule TreeDb.RepositoryCache do
 
   def tree_entries(ctx) do
     get_or_load(ctx, :tree, fn ->
-      TreeDb.Git.list_tree_recursive(ctx.repo["localPath"], ctx.ref, nil)
+      TreeDb.Git.list_tree_recursive(TreeDb.RepositoryStorage.path!(ctx.repo), ctx.ref, nil)
     end)
   end
 
@@ -80,7 +80,8 @@ defmodule TreeDb.RepositoryCache do
   end
 
   defp key(ctx, kind),
-    do: {kind, ctx.repo["id"], ctx.repo["localPath"], ctx.ref, ctx.resolved_ref}
+    do:
+      {kind, ctx.repo["id"], TreeDb.RepositoryStorage.path!(ctx.repo), ctx.ref, ctx.resolved_ref}
 
   defp collect_ok(results) do
     Enum.reduce_while(results, {:ok, []}, fn

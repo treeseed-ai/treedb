@@ -1,10 +1,18 @@
 defmodule TreeDbProfiler.RequestGenerator do
   @moduledoc false
 
-  alias TreeDbProfiler.{DataGenerator, GitFixture, PortfolioState, ProfileRequest}
+  alias TreeDbProfiler.{
+    DataGenerator,
+    GitFixture,
+    Hash,
+    PortfolioState,
+    ProfileRequest,
+    SemanticExpectation
+  }
 
   @read_ops [
     :read_repository_file,
+    :list_repository_paths,
     :search_repository_files,
     :query_repository,
     :workspace_status
@@ -25,6 +33,12 @@ defmodule TreeDbProfiler.RequestGenerator do
   def candidates(portfolio_pid, opts) do
     snapshot = PortfolioState.snapshot(portfolio_pid)
     workspace? = snapshot.active_workspaces != []
+    active_workspace_count = length(snapshot.active_workspaces)
+
+    target_workspace_count =
+      min(max_active_workspaces(opts), max(Map.get(opts, :concurrency, 1), 1))
+
+    ramping_workspaces? = active_workspace_count < target_workspace_count
 
     can_create_workspace? =
       snapshot.repos != [] and length(snapshot.active_workspaces) < max_active_workspaces(opts)
@@ -35,15 +49,24 @@ defmodule TreeDbProfiler.RequestGenerator do
     base =
       []
       |> maybe_add(:create_repository, opts.portfolio_create_weight, create_repo?)
-      |> maybe_add(:create_workspace, weight(opts, 1), can_create_workspace?)
-      |> maybe_add(:write_workspace_file, weight(opts, 12), workspace?)
-      |> maybe_add(:patch_workspace_file, weight(opts, 8), workspace?)
+      |> maybe_add(
+        :create_workspace,
+        if(ramping_workspaces?, do: 24, else: weight(opts, 1)),
+        can_create_workspace?
+      )
+      |> maybe_add(
+        :write_workspace_file,
+        weight(opts, 12),
+        workspace? and not ramping_workspaces?
+      )
+      |> maybe_add(:patch_workspace_file, weight(opts, 8), workspace? and not ramping_workspaces?)
       |> maybe_add(
         :delete_workspace_file,
         weight(opts, 2),
-        workspace? and opts.include_destructive
+        workspace? and opts.include_destructive and not ramping_workspaces?
       )
       |> maybe_add(:read_repository_file, weight(opts, 20), snapshot.repos != [])
+      |> maybe_add(:list_repository_paths, weight(opts, 8), snapshot.repos != [])
       |> maybe_add(:search_repository_files, weight(opts, 12), snapshot.repos != [])
       |> maybe_add(:query_repository, weight(opts, 8), snapshot.repos != [])
       |> maybe_add(:refresh_graph, weight(opts, 4), snapshot.repos != [])
@@ -73,16 +96,18 @@ defmodule TreeDbProfiler.RequestGenerator do
     repo = GitFixture.create_repo!(root, repo_def, "#{opts.profile_id}:portfolio:#{index}")
 
     request(
-      "registerRepository",
+      "importLocalRepository",
       :create,
       :post,
-      "/api/v1/repos/register",
+      "/api/v1/admin/repos/import-local",
       "repository",
       %{
-        "name" => repo.name,
-        "localPath" => repo.path
+        "repositoryName" => repo.name,
+        "sourceRelativePath" => source_relative_path(repo.path, opts)
       },
       seed: opts.profile_id,
+      target: %{repo_name: repo.name},
+      expectation: %{repo_name: repo.name},
       effect: %{kind: :repo_registered, repo: repo}
     )
   end
@@ -107,6 +132,9 @@ defmodule TreeDbProfiler.RequestGenerator do
             "allowedPaths" => ["docs/**", "plain/**", "data/**", "assets/**", "workspace/**"]
           },
           seed: opts.profile_id,
+          target: %{repo_id: repo.repo_id},
+          expectation: %{repo_id: repo.repo_id, default_ref: repo.default_ref},
+          effect_on_status: %{200 => %{kind: :workspace_created, repo_id: repo.repo_id}},
           effect: %{kind: :workspace_created, repo_id: repo.repo_id},
           failure_effect: %{kind: :workspace_create_finished, repo_id: repo.repo_id}
         )
@@ -114,10 +142,17 @@ defmodule TreeDbProfiler.RequestGenerator do
   end
 
   def build(:write_workspace_file, portfolio_pid, opts) do
-    with_workspace(portfolio_pid, opts, fn workspace ->
+    with_reserved_workspace(portfolio_pid, opts, fn workspace ->
       counter = PortfolioState.next_counter(portfolio_pid, :file)
       path = DataGenerator.generated_path(:markdown, counter)
       content = DataGenerator.markdown(opts.profile_id, counter)
+
+      effect = %{
+        kind: :file_written,
+        workspace_id: workspace.workspace_id,
+        path: path,
+        content: content
+      }
 
       request(
         "writeWorkspaceFile",
@@ -128,60 +163,98 @@ defmodule TreeDbProfiler.RequestGenerator do
         %{"content" => content},
         expected: [200, 404, 409],
         seed: opts.profile_id,
-        effect: %{
-          kind: :file_written,
-          workspace_id: workspace.workspace_id,
-          path: path,
-          content: content
+        target: %{workspace_id: workspace.workspace_id, repo_id: workspace.repo_id, path: path},
+        expectation: semantic_content(content, path),
+        probes: [
+          %{kind: :workspace_file_content_equals},
+          %{kind: :workspace_status_mentions_path},
+          %{kind: :workspace_diff_mentions_path}
+        ],
+        race: %{acceptable_statuses: [404, 409]},
+        effect_on_status: %{200 => effect},
+        effect: effect,
+        failure_effect: %{
+          kind: :workspace_mutation_finished,
+          workspace_id: workspace.workspace_id
         }
       )
     end)
   end
 
   def build(:patch_workspace_file, portfolio_pid, opts) do
-    with_workspace(portfolio_pid, opts, fn workspace ->
-      counter = PortfolioState.next_counter(portfolio_pid, :file)
-      path = DataGenerator.generated_path(:markdown, counter)
+    case PortfolioState.reserve_workspace_file(portfolio_pid) do
+      nil ->
+        build(:write_workspace_file, portfolio_pid, opts)
 
-      content =
-        DataGenerator.markdown(opts.profile_id, counter) <> "\npatched release #{counter}\n"
+      {workspace, file} ->
+        counter = PortfolioState.next_counter(portfolio_pid, :file)
+        path = file.path
+        content = patch_content(file.content, counter)
+        patch = replace_first_line_patch(path, file.content, content)
 
-      request(
-        "patchWorkspaceFile",
-        :update,
-        :patch,
-        "/api/v1/workspaces/#{workspace.workspace_id}/files?path=#{URI.encode_www_form(path)}",
-        "workspace",
-        %{"content" => content},
-        expected: [200, 404, 409],
-        seed: opts.profile_id,
-        effect: %{
+        effect = %{
           kind: :file_written,
           workspace_id: workspace.workspace_id,
           path: path,
           content: content
         }
-      )
-    end)
+
+        request(
+          "patchWorkspaceFile",
+          :update,
+          :patch,
+          "/api/v1/workspaces/#{workspace.workspace_id}/files?path=#{URI.encode_www_form(path)}",
+          "workspace",
+          %{"patch" => patch},
+          expected: [200, 404, 409],
+          seed: opts.profile_id,
+          target: %{workspace_id: workspace.workspace_id, repo_id: workspace.repo_id, path: path},
+          expectation: semantic_content(content, path),
+          probes: [
+            %{kind: :workspace_file_content_equals},
+            %{kind: :workspace_status_mentions_path},
+            %{kind: :workspace_diff_mentions_path}
+          ],
+          race: %{acceptable_statuses: [404, 409]},
+          effect_on_status: %{200 => effect},
+          effect: effect,
+          failure_effect: %{
+            kind: :workspace_mutation_finished,
+            workspace_id: workspace.workspace_id
+          }
+        )
+    end
   end
 
   def build(:delete_workspace_file, portfolio_pid, opts) do
-    with_workspace(portfolio_pid, opts, fn workspace ->
-      counter = PortfolioState.next_counter(portfolio_pid, :file)
-      path = DataGenerator.generated_path(:delete, counter)
+    case PortfolioState.reserve_workspace_file(portfolio_pid) do
+      nil ->
+        build(:write_workspace_file, portfolio_pid, opts)
 
-      request(
-        "deleteWorkspaceFile",
-        :delete,
-        :delete,
-        "/api/v1/workspaces/#{workspace.workspace_id}/files?path=#{URI.encode_www_form(path)}",
-        "workspace",
-        nil,
-        expected: [200, 404, 409],
-        seed: opts.profile_id,
-        effect: %{kind: :file_deleted, workspace_id: workspace.workspace_id, path: path}
-      )
-    end)
+      {workspace, file} ->
+        path = file.path
+        effect = %{kind: :file_deleted, workspace_id: workspace.workspace_id, path: path}
+
+        request(
+          "deleteWorkspaceFile",
+          :delete,
+          :delete,
+          "/api/v1/workspaces/#{workspace.workspace_id}/files?path=#{URI.encode_www_form(path)}",
+          "workspace",
+          nil,
+          expected: [200, 404, 409],
+          seed: opts.profile_id,
+          target: %{workspace_id: workspace.workspace_id, repo_id: workspace.repo_id, path: path},
+          probes: [%{kind: :workspace_file_absent}],
+          race: %{acceptable_statuses: [404, 409]},
+          effect_on_status: %{200 => effect},
+          effect: effect,
+          failure_effect: %{
+            kind: :workspace_mutation_finished,
+            workspace_id: workspace.workspace_id
+          }
+        )
+    end
   end
 
   def build(:commit_workspace, portfolio_pid, opts) do
@@ -198,6 +271,11 @@ defmodule TreeDbProfiler.RequestGenerator do
         },
         expected: [200, 404, 409, 422],
         seed: opts.profile_id,
+        target: %{workspace_id: workspace.workspace_id, repo_id: workspace.repo_id},
+        race: %{acceptable_statuses: [404, 409, 422]},
+        effect_on_status: %{
+          200 => %{kind: :workspace_committed, workspace_id: workspace.workspace_id}
+        },
         effect: %{kind: :workspace_committed, workspace_id: workspace.workspace_id},
         failure_effect: %{kind: :workspace_commit_finished, workspace_id: workspace.workspace_id}
       )
@@ -215,6 +293,11 @@ defmodule TreeDbProfiler.RequestGenerator do
         %{"reason" => "portfolio lifecycle"},
         expected: [200, 404, 409],
         seed: opts.profile_id,
+        target: %{workspace_id: workspace.workspace_id, repo_id: workspace.repo_id},
+        race: %{acceptable_statuses: [404, 409]},
+        effect_on_status: %{
+          200 => %{kind: :workspace_closed, workspace_id: workspace.workspace_id}
+        },
         effect: %{kind: :workspace_closed, workspace_id: workspace.workspace_id}
       )
     end)
@@ -236,12 +319,40 @@ defmodule TreeDbProfiler.RequestGenerator do
       "/api/v1/repos/#{repo.repo_id}/files/read",
       "repository_read",
       %{"ref" => repo.default_ref, "path" => path.path, "parseFrontmatter" => true},
-      seed: opts.profile_id
+      seed: opts.profile_id,
+      target: %{repo_id: repo.repo_id, path: path.path, ref: repo.default_ref},
+      expectation: Map.take(path, [:path, :content, :sha256, :byte_length])
+    )
+  end
+
+  def build(:list_repository_paths, portfolio_pid, opts) do
+    repo = PortfolioState.choose_repo(portfolio_pid)
+
+    expected =
+      repo.readable_paths
+      |> List.first()
+      |> case do
+        nil -> %{}
+        file -> %{expected_path: file.path}
+      end
+
+    request(
+      "listRepositoryPaths",
+      :read,
+      :post,
+      "/api/v1/repos/#{repo.repo_id}/paths/list",
+      "repository_read",
+      %{"ref" => repo.default_ref, "paths" => ["docs/**", "workspace/**"], "limit" => 50},
+      seed: opts.profile_id,
+      target: %{repo_id: repo.repo_id},
+      expectation: expected
     )
   end
 
   def build(:search_repository_files, portfolio_pid, opts) do
     repo = PortfolioState.choose_repo(portfolio_pid)
+    expected = expected_search(repo)
+    term = expected[:term] || "release"
 
     request(
       "searchRepositoryFiles",
@@ -249,13 +360,17 @@ defmodule TreeDbProfiler.RequestGenerator do
       :post,
       "/api/v1/repos/#{repo.repo_id}/files/search",
       "repository_read",
-      %{"paths" => ["docs/**", "workspace/**"], "query" => "release", "limit" => 20},
-      seed: opts.profile_id
+      %{"paths" => ["docs/**", "workspace/**"], "query" => term, "limit" => 20},
+      seed: opts.profile_id,
+      target: %{repo_id: repo.repo_id, ref: repo.default_ref},
+      expectation: expected
     )
   end
 
   def build(:query_repository, portfolio_pid, opts) do
     repo = PortfolioState.choose_repo(portfolio_pid)
+    expected = expected_search(repo)
+    term = expected[:term] || "release"
 
     request(
       "queryRepository",
@@ -266,11 +381,13 @@ defmodule TreeDbProfiler.RequestGenerator do
       %{
         "ref" => repo.default_ref,
         "type" => "combined",
-        "query" => "release",
+        "query" => term,
         "paths" => ["docs/**", "workspace/**"],
         "limit" => 20
       },
-      seed: opts.profile_id
+      seed: opts.profile_id,
+      target: %{repo_id: repo.repo_id, ref: repo.default_ref},
+      expectation: expected
     )
   end
 
@@ -307,6 +424,9 @@ defmodule TreeDbProfiler.RequestGenerator do
             "incremental" => true
           },
           seed: opts.profile_id,
+          target: %{repo_id: repo.repo_id, ref: repo.default_ref},
+          race: %{acceptable_statuses: [404, 409]},
+          effect_on_status: %{200 => %{kind: :graph_refreshed, repo_id: repo.repo_id}},
           effect: %{kind: :graph_refreshed, repo_id: repo.repo_id},
           failure_effect: %{kind: :graph_refresh_finished, repo_id: repo.repo_id}
         )
@@ -327,7 +447,9 @@ defmodule TreeDbProfiler.RequestGenerator do
           "graph",
           %{"ref" => repo.default_ref, "query" => "release", "options" => %{"limit" => 20}},
           expected: [200, 404],
-          seed: opts.profile_id
+          seed: opts.profile_id,
+          target: %{repo_id: repo.repo_id, ref: repo.default_ref},
+          race: %{acceptable_statuses: [404]}
         )
     end
   end
@@ -350,7 +472,9 @@ defmodule TreeDbProfiler.RequestGenerator do
             "budget" => %{"maxNodes" => 10, "maxTokens" => 2000}
           },
           expected: [200, 404],
-          seed: opts.profile_id
+          seed: opts.profile_id,
+          target: %{repo_id: repo.repo_id, ref: repo.default_ref},
+          race: %{acceptable_statuses: [404]}
         )
     end
   end
@@ -374,6 +498,9 @@ defmodule TreeDbProfiler.RequestGenerator do
             "includeGraph" => false
           },
           seed: opts.profile_id,
+          target: %{repo_id: repo.repo_id, ref: repo.default_ref},
+          race: %{acceptable_statuses: [409]},
+          effect_on_status: %{200 => %{kind: :snapshot_built, repo_id: repo.repo_id}},
           effect: %{kind: :snapshot_built, repo_id: repo.repo_id},
           failure_effect: %{kind: :snapshot_finished, repo_id: repo.repo_id}
         )
@@ -395,6 +522,12 @@ defmodule TreeDbProfiler.RequestGenerator do
         "artifact",
         %{"snapshotId" => snapshot.snapshot_id},
         seed: opts.profile_id,
+        target: %{repo_id: snapshot.repo_id || repo.repo_id, snapshot_id: snapshot.snapshot_id},
+        expectation: %{snapshot_id: snapshot.snapshot_id},
+        race: %{acceptable_statuses: [404, 409]},
+        effect_on_status: %{
+          200 => %{kind: :artifact_exported, repo_id: snapshot.repo_id || repo.repo_id}
+        },
         effect: %{kind: :artifact_exported, repo_id: snapshot.repo_id || repo.repo_id}
       )
     end
@@ -414,7 +547,10 @@ defmodule TreeDbProfiler.RequestGenerator do
         "artifact",
         nil,
         expected: [200, 404],
-        seed: opts.profile_id
+        seed: opts.profile_id,
+        target: %{repo_id: artifact.repo_id, artifact_id: artifact.artifact_id},
+        expectation: %{artifact_id: artifact.artifact_id},
+        race: %{acceptable_statuses: [404]}
       )
     end
   end
@@ -443,6 +579,8 @@ defmodule TreeDbProfiler.RequestGenerator do
   end
 
   defp request(operation_id, type, method, path, category, body, opts) do
+    effect = Keyword.get(opts, :effect)
+
     ProfileRequest.new(%{
       id: "req_#{System.unique_integer([:positive])}",
       operation_id: operation_id,
@@ -455,10 +593,70 @@ defmodule TreeDbProfiler.RequestGenerator do
       headers: Keyword.get(opts, :headers, []),
       expected_status: List.wrap(Keyword.get(opts, :expected, 200)),
       validation_rule: validation_rule(operation_id),
-      state_effect: Keyword.get(opts, :effect),
+      target: Keyword.get(opts, :target, %{}),
+      expectation: Keyword.get(opts, :expectation, %{}),
+      postconditions: Keyword.get(opts, :postconditions, []),
+      race_context: Keyword.get(opts, :race, %{}),
+      validation_probes: Keyword.get(opts, :probes, []),
+      state_effect_on_status:
+        Keyword.get(opts, :effect_on_status, if(effect, do: %{200 => effect}, else: %{})),
+      state_effect: effect,
       failure_effect: Keyword.get(opts, :failure_effect),
       seed: Keyword.fetch!(opts, :seed)
     })
+  end
+
+  defp semantic_content(content, path) do
+    content
+    |> SemanticExpectation.content_expectation(%{path: path, byte_length: byte_size(content)})
+    |> Map.put(:sha256, Hash.sha256(content))
+  end
+
+  defp patch_content(content, counter) do
+    case String.split(content || "", "\n", parts: 2) do
+      [first, rest] -> first <> " patched-#{counter}\n" <> rest
+      [first] -> first <> " patched-#{counter}"
+      [] -> "patched-#{counter}"
+    end
+  end
+
+  defp replace_first_line_patch(path, old_content, new_content) do
+    old_first = old_content |> to_string() |> String.split("\n", parts: 2) |> List.first()
+    new_first = new_content |> to_string() |> String.split("\n", parts: 2) |> List.first()
+
+    [
+      "--- a/#{path}",
+      "+++ b/#{path}",
+      "@@ -1,1 +1,1 @@",
+      "-#{old_first}",
+      "+#{new_first}"
+    ]
+    |> Enum.join("\n")
+  end
+
+  defp expected_search(repo) do
+    file =
+      repo.readable_paths
+      |> Enum.find(&is_binary(Map.get(&1, :content)))
+
+    if file do
+      %{
+        term: file.content |> SemanticExpectation.preferred_term(),
+        expected_path: file.path,
+        content: file.content,
+        sha256: file.sha256
+      }
+    else
+      %{term: "release"}
+    end
+  end
+
+  defp source_relative_path(path, opts) do
+    data_dir = System.get_env("TREEDB_DATA_DIR") || Map.get(opts, :data_dir) || "/var/lib/treedb"
+
+    path
+    |> Path.expand()
+    |> Path.relative_to(Path.expand(data_dir))
   end
 
   defp maybe_add(values, _operation, _weight, false), do: values
@@ -486,6 +684,13 @@ defmodule TreeDbProfiler.RequestGenerator do
 
   defp with_workspace(portfolio_pid, opts, fun) do
     case PortfolioState.choose_workspace(portfolio_pid) do
+      nil -> build(:create_workspace, portfolio_pid, opts)
+      workspace -> fun.(workspace)
+    end
+  end
+
+  defp with_reserved_workspace(portfolio_pid, opts, fun) do
+    case PortfolioState.reserve_workspace(portfolio_pid) do
       nil -> build(:create_workspace, portfolio_pid, opts)
       workspace -> fun.(workspace)
     end

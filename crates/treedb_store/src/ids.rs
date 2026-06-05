@@ -19,6 +19,10 @@ pub fn payload_hash<T: Serialize>(payload: &T) -> Result<String, serde_json::Err
 }
 
 pub fn repository_id(name: &str, local_path: &str, remote_url: Option<&str>) -> String {
+    if local_path.trim().is_empty() && remote_url.unwrap_or("").trim().is_empty() {
+        return repository_id_from_name(name);
+    }
+
     format!(
         "repo_{}",
         short_hash(&format!(
@@ -28,6 +32,10 @@ pub fn repository_id(name: &str, local_path: &str, remote_url: Option<&str>) -> 
             remote_url.unwrap_or("").trim()
         ))
     )
+}
+
+pub fn repository_id_from_name(name: &str) -> String {
+    format!("repo_{}", short_hash(&name.trim().to_lowercase()))
 }
 
 pub fn capability_id(

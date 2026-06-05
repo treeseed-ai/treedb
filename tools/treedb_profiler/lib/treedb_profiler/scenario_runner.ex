@@ -3,18 +3,37 @@ defmodule TreeDbProfiler.ScenarioRunner do
 
   alias TreeDbProfiler.{
     EndpointMatrix,
+    EndpointConsistency,
+    DelayedCheckScheduler,
+    FaultInjection,
+    FederationScenario,
     Fixtures,
     HTTP,
+    LeakDetector,
+    MetamorphicChecker,
+    ModelState,
+    NegativeRequestGenerator,
+    OpenApiResponseValidator,
+    OperationChain,
+    PermissionMatrix,
     PortfolioState,
     ProfileRequest,
+    Reconciler,
+    ReliabilityBudget,
+    ReplayLog,
+    RestartDurability,
     Sampler,
     Scheduler,
     Stats,
-    SystemProfile
+    SystemProfile,
+    Validation,
+    ValidationProbe
   }
 
   def run(opts) do
-    started = DateTime.utc_now()
+    profile_window = start_window()
+    setup_window = start_window()
+    started = profile_window.started_at
     profile_id = opts.profile_id
 
     fixture =
@@ -27,7 +46,15 @@ defmodule TreeDbProfiler.ScenarioRunner do
       )
 
     client = HTTP.new(opts)
-    state = %{opts: opts, client: client, fixture: fixture, samples: [], assertions: []}
+
+    state = %{
+      opts: opts,
+      client: client,
+      fixture: fixture,
+      samples: [],
+      assertions: [],
+      timing: %{"profile" => profile_window, "setup" => setup_window}
+    }
 
     final_state =
       if opts.load_mode == "portfolio" do
@@ -37,14 +64,19 @@ defmodule TreeDbProfiler.ScenarioRunner do
         |> authenticate()
         |> capture_metrics(:before)
         |> run_setup()
+        |> end_setup_window()
         |> run_warmup()
         |> run_measured()
         |> run_post_measured_operations()
         |> capture_metrics(:after)
       end
 
+    final_state =
+      final_state
+      |> run_cleanup()
+      |> put_in([:timing, "profile"], end_window(final_state.timing["profile"]))
+
     report = build_report(final_state, started)
-    cleanup_fixture(final_state)
     report
   end
 
@@ -54,6 +86,46 @@ defmodule TreeDbProfiler.ScenarioRunner do
 
   defp repo_prefix_for(%{load_mode: "portfolio"} = opts), do: opts.portfolio_repo_prefix
   defp repo_prefix_for(opts), do: opts.repo_prefix
+
+  defp start_window do
+    %{started_at: DateTime.utc_now(), started_at_ms: System.monotonic_time(:millisecond)}
+  end
+
+  defp end_window(%{started_at: started_at, started_at_ms: started_at_ms}) do
+    ended_at = DateTime.utc_now()
+    ended_at_ms = System.monotonic_time(:millisecond)
+
+    %{
+      "startedAt" => DateTime.to_iso8601(started_at),
+      "endedAt" => DateTime.to_iso8601(ended_at),
+      "startedAtMs" => started_at_ms,
+      "endedAtMs" => ended_at_ms,
+      "durationMs" => ended_at_ms - started_at_ms
+    }
+  end
+
+  defp scheduler_window(scheduler) do
+    %{
+      "requestedDurationMs" => scheduler.requested_duration_ms,
+      "startedAt" => scheduler.started_at,
+      "endedAt" => scheduler.ended_at,
+      "startedAtMs" => scheduler.started_at_ms,
+      "endedAtMs" => scheduler.ended_at_ms,
+      "durationMs" => scheduler.duration_ms,
+      "durationSatisfied" => scheduler.duration_satisfied,
+      "minimumMeasuredDurationMs" => scheduler.minimum_measured_duration_ms,
+      "stopReason" => scheduler.stop_reason
+    }
+  end
+
+  defp end_setup_window(state),
+    do: put_in(state, [:timing, "setup"], end_window(state.timing["setup"]))
+
+  defp run_cleanup(state) do
+    window = start_window()
+    cleanup_fixture(state)
+    put_in(state, [:timing, "cleanup"], end_window(window))
+  end
 
   defp run_portfolio(state) do
     state =
@@ -66,6 +138,7 @@ defmodule TreeDbProfiler.ScenarioRunner do
 
     seed_portfolio_from_setup(portfolio_pid, state)
     state = ensure_initial_portfolio_repos(state, portfolio_pid)
+    state = put_in(state, [:timing, "setup"], end_window(state.timing["setup"]))
 
     scheduler =
       Scheduler.run(state, portfolio_pid, state.opts, fn execution_state, request ->
@@ -81,23 +154,23 @@ defmodule TreeDbProfiler.ScenarioRunner do
     |> Map.put(:portfolio_runtime, portfolio_snapshot)
     |> Map.put(:request_samples, Sampler.report(scheduler.sampler, state.opts.include_requests))
     |> Map.put(:scheduler, %{
+      "startedAt" => scheduler.started_at,
+      "endedAt" => scheduler.ended_at,
       "workerCount" => scheduler.worker_count,
       "startedAtMs" => scheduler.started_at_ms,
-      "endedAtMs" => scheduler.ended_at_ms
+      "endedAtMs" => scheduler.ended_at_ms,
+      "durationMs" => scheduler.duration_ms,
+      "requestedDurationMs" => scheduler.requested_duration_ms,
+      "minimumMeasuredDurationMs" => scheduler.minimum_measured_duration_ms,
+      "durationSatisfied" => scheduler.duration_satisfied,
+      "stopReason" => scheduler.stop_reason
     })
+    |> put_in([:timing, "measured"], scheduler_window(scheduler))
     |> run_post_measured_operations()
     |> capture_metrics(:after)
   end
 
   defp seed_portfolio_from_setup(portfolio_pid, state) do
-    if state[:workspace_id] do
-      PortfolioState.apply_effect(portfolio_pid, %{
-        kind: :workspace_created,
-        workspace_id: state.workspace_id,
-        repo_id: primary_repo(state).repo_id
-      })
-    end
-
     if state[:snapshot_id] do
       PortfolioState.apply_effect(portfolio_pid, %{
         kind: :snapshot_built,
@@ -200,21 +273,30 @@ defmodule TreeDbProfiler.ScenarioRunner do
     |> call!(:get, "/api/v1/policy/capabilities", "listCapabilities", "policy", nil, &assert_ok/1)
     |> call!(:get, "/api/v1/policy/grants", "listCapabilityGrants", "policy", nil, &assert_ok/1)
     |> register_repos()
+    |> run_federation_setup()
     |> configure_repo()
     |> create_workspace()
     |> mutate_workspace()
     |> refresh_graph_and_index()
     |> build_snapshot_artifact()
-    |> run_federation_setup()
     |> run_admin_storage()
   end
 
   defp register_repos(state) do
     Enum.reduce(state.fixture.local_repos, state, fn repo, acc ->
-      body = %{"name" => repo.name, "localPath" => repo.path}
+      body = %{
+        "repositoryName" => repo.name,
+        "sourceRelativePath" => source_relative_path(repo.path, acc.opts)
+      }
 
       {next, response} =
-        call(acc, :post, "/api/v1/repos/register", "registerRepository", "repository", body,
+        call(
+          acc,
+          :post,
+          "/api/v1/admin/repos/import-local",
+          "importLocalRepository",
+          "repository",
+          body,
           expected: 200,
           assert: fn payload ->
             assert_truthy(get_in(payload, ["repo", "repoId"]), "registered repo id")
@@ -227,6 +309,17 @@ defmodule TreeDbProfiler.ScenarioRunner do
         replace_repo(repos, repo.name, registered)
       end)
     end)
+  end
+
+  defp source_relative_path(path, opts) do
+    data_dir =
+      System.get_env("TREEDB_DATA_DIR") ||
+        opts[:data_dir] ||
+        "/var/lib/treedb"
+
+    path
+    |> Path.expand()
+    |> Path.relative_to(Path.expand(data_dir))
   end
 
   defp configure_repo(state) do
@@ -292,7 +385,7 @@ defmodule TreeDbProfiler.ScenarioRunner do
       "putRepositoryPlacement",
       "registry",
       %{
-        "primaryNodeId" => "node_local",
+        "primaryNodeId" => primary_node_id(state),
         "mirrorNodeIds" => [],
         "readPolicy" => "primary_or_mirror",
         "writePolicy" => "primary_only",
@@ -398,6 +491,8 @@ defmodule TreeDbProfiler.ScenarioRunner do
 
   defp setup_mirror_and_migration(state, repo_id) do
     mirror_id = "mirror_#{state.opts.profile_id}"
+    source_node_id = primary_node_id(state)
+    target_node_id = mirror_target_node_id(state)
 
     {state, _mirror} =
       call(
@@ -408,8 +503,8 @@ defmodule TreeDbProfiler.ScenarioRunner do
         "mirror",
         %{
           "id" => mirror_id,
-          "sourceNodeId" => "node_local",
-          "targetNodeId" => "node_local",
+          "sourceNodeId" => source_node_id,
+          "targetNodeId" => target_node_id,
           "mode" => "read_replica",
           "status" => "synced",
           "behindBy" => 0
@@ -426,8 +521,8 @@ defmodule TreeDbProfiler.ScenarioRunner do
         "createMigration",
         "migration",
         %{
-          "targetNodeId" => "node_local",
-          "sourceNodeId" => "node_local",
+          "targetNodeId" => target_node_id,
+          "sourceNodeId" => source_node_id,
           "mode" => "primary_transfer",
           "dryRun" => true,
           "requireMirrorSynced" => false
@@ -630,12 +725,11 @@ defmodule TreeDbProfiler.ScenarioRunner do
       "exec",
       %{
         "mode" => "read_only",
-        "cmd" => "printf profiler",
+        "cmd" => "pwd",
         "timeoutMs" => 10_000,
         "maxOutputBytes" => 4096
       },
-      &assert_ok_or_expected_error/1,
-      expected: [200, 403, 503]
+      &assert_ok/1
     )
   end
 
@@ -1006,27 +1100,175 @@ defmodule TreeDbProfiler.ScenarioRunner do
       )
 
   defp run_federation_setup(%{opts: %{include_federation: true}} = state) do
+    state = FederationScenario.setup(state)
     repo_id = primary_repo(state).repo_id
-    ref = state.branch_name || "refs/heads/main"
+    ref = Map.get(state, :branch_name, "refs/heads/main")
+
+    state =
+      state
+      |> call!(
+        :get,
+        "/api/v1/federation/peers",
+        "listFederationPeers",
+        "federation",
+        nil,
+        &assert_ok_or_forbidden/1
+      )
+      |> maybe_get_federation_peer()
+      |> call!(
+        :get,
+        "/api/v1/federation/routes",
+        "listFederationRoutes",
+        "federation",
+        nil,
+        &assert_ok_or_forbidden/1
+      )
+
+    {state, catalog_response} =
+      call(
+        state,
+        :get,
+        "/api/v1/federation/catalog",
+        "getFederationCatalog",
+        "federation",
+        nil,
+        expected: 200,
+        assert: &assert_ok_or_forbidden/1
+      )
+
+    state =
+      call!(
+        state,
+        :post,
+        "/api/v1/federation/catalog/push",
+        "pushFederationCatalog",
+        "federation",
+        %{"catalog" => catalog_response["catalog"] || %{}},
+        &assert_ok_or_forbidden/1
+      )
+
+    state =
+      call!(
+        state,
+        :post,
+        "/api/v1/federation/catalog/sync",
+        "syncFederationCatalog",
+        "federation",
+        %{},
+        &assert_ok_or_forbidden/1
+      )
+
+    state =
+      call!(
+        state,
+        :post,
+        "/api/v1/federation/query/plan",
+        "planFederationQuery",
+        "federation",
+        %{
+          "repoIds" => [repo_id],
+          "refs" => %{repo_id => ref},
+          "paths" => %{repo_id => ["docs/**"]},
+          "queryType" => "text",
+          "capabilities" => ["files:search"]
+        },
+        &assert_ok_or_forbidden/1
+      )
+
+    state =
+      call!(
+        state,
+        :post,
+        "/api/v1/search",
+        "federatedSearch",
+        "federation",
+        %{
+          "repoIds" => [repo_id],
+          "refs" => %{repo_id => ref},
+          "paths" => %{repo_id => ["docs/**"]},
+          "query" => "release",
+          "limit" => 20,
+          "includeErrors" => true
+        },
+        &assert_ok_or_forbidden/1
+      )
+
+    state =
+      call!(
+        state,
+        :post,
+        "/api/v1/query",
+        "federatedQuery",
+        "federation",
+        %{
+          "repoIds" => [repo_id],
+          "refs" => %{repo_id => ref},
+          "paths" => %{repo_id => ["docs/**"]},
+          "type" => "combined",
+          "query" => "release",
+          "limit" => 20,
+          "includeErrors" => true
+        },
+        &assert_ok_or_forbidden/1
+      )
+
+    state =
+      call!(
+        state,
+        :post,
+        "/api/v1/context/build",
+        "federatedContextBuild",
+        "federation",
+        %{
+          "repoIds" => [repo_id],
+          "refs" => %{repo_id => ref},
+          "paths" => %{repo_id => ["docs/**"]},
+          "query" => "release",
+          "budget" => %{"maxNodes" => 10, "maxTokens" => 2000},
+          "includeErrors" => true
+        },
+        &assert_ok_or_forbidden/1
+      )
 
     call!(
       state,
       :post,
-      "/api/v1/federation/query/plan",
-      "planFederationQuery",
+      "/api/v1/graph/query",
+      "federatedGraphQuery",
       "federation",
       %{
         "repoIds" => [repo_id],
         "refs" => %{repo_id => ref},
         "paths" => %{repo_id => ["docs/**"]},
-        "queryType" => "text",
-        "capabilities" => ["files:search"]
+        "query" => "release",
+        "options" => %{"limit" => 20},
+        "includeErrors" => true
       },
       &assert_ok_or_forbidden/1
     )
   end
 
   defp run_federation_setup(state), do: state
+
+  defp maybe_get_federation_peer(%{federation_nodes: nodes} = state) when is_list(nodes) do
+    case Enum.find(nodes, &(&1.id == "node_b")) do
+      nil ->
+        state
+
+      node ->
+        call!(
+          state,
+          :get,
+          "/api/v1/federation/peers/#{node.node_id}",
+          "getFederationPeer",
+          "federation",
+          nil,
+          &assert_ok_or_forbidden/1
+        )
+    end
+  end
+
+  defp maybe_get_federation_peer(state), do: state
 
   defp run_admin_storage(%{opts: %{include_admin: true}} = state) do
     state =
@@ -1240,15 +1482,34 @@ defmodule TreeDbProfiler.ScenarioRunner do
   end
 
   defp run_measured(state) do
-    iterations = max(state.opts.iterations, 1)
+    window = start_window()
+    iterations = measured_iterations(state.opts)
     deadline = measured_deadline(state.opts.duration_ms)
 
-    if state.opts.concurrency <= 1 do
-      run_sequential_iterations(state, iterations, deadline)
-    else
-      run_concurrent_iterations(state, iterations, deadline)
-    end
+    measured_state =
+      if state.opts.concurrency <= 1 do
+        run_sequential_iterations(state, iterations, deadline)
+      else
+        run_concurrent_iterations(state, iterations, deadline)
+      end
+
+    measured_window =
+      window
+      |> end_window()
+      |> Map.put("requestedDurationMs", state.opts.duration_ms)
+      |> Map.put("minimumMeasuredDurationMs", state.opts.minimum_measured_duration)
+      |> then(fn measured ->
+        measured
+        |> Map.put("durationSatisfied", measured_duration_satisfied?(state.opts, measured))
+        |> Map.put("stopReason", measured_stop_reason(iterations, deadline, measured))
+      end)
+
+    put_in(measured_state, [:timing, "measured"], measured_window)
   end
+
+  defp measured_iterations(%{iterations: nil, duration_ms: nil}), do: 1
+  defp measured_iterations(%{iterations: nil}), do: nil
+  defp measured_iterations(%{iterations: iterations}), do: max(iterations, 1)
 
   defp measured_deadline(nil), do: nil
   defp measured_deadline(ms), do: System.monotonic_time(:millisecond) + ms
@@ -1256,13 +1517,18 @@ defmodule TreeDbProfiler.ScenarioRunner do
   defp deadline_reached?(nil), do: false
   defp deadline_reached?(deadline), do: System.monotonic_time(:millisecond) >= deadline
 
+  defp run_sequential_iterations(state, nil, deadline) do
+    if deadline_reached?(deadline),
+      do: state,
+      else: run_sequential_iterations(run_steady_iteration(state, measured?: true), nil, deadline)
+  end
+
   defp run_sequential_iterations(state, iterations, deadline) do
-    Enum.reduce_while(1..iterations, state, fn _, acc ->
-      if deadline_reached?(deadline) do
-        {:halt, acc}
-      else
-        {:cont, run_steady_iteration(acc, measured?: true)}
-      end
+    1..iterations
+    |> Enum.reduce_while(state, fn _, acc ->
+      if deadline_reached?(deadline),
+        do: {:halt, acc},
+        else: {:cont, run_steady_iteration(acc, measured?: true)}
     end)
   end
 
@@ -1271,7 +1537,7 @@ defmodule TreeDbProfiler.ScenarioRunner do
   end
 
   defp do_run_concurrent_iterations(state, iterations, deadline, completed) do
-    if completed >= iterations or deadline_reached?(deadline) do
+    if iteration_limit_reached?(iterations, completed) or deadline_reached?(deadline) do
       state
     else
       do_run_concurrent_batch(state, iterations, deadline, completed)
@@ -1279,7 +1545,10 @@ defmodule TreeDbProfiler.ScenarioRunner do
   end
 
   defp do_run_concurrent_batch(state, iterations, deadline, completed) do
-    batch_size = min(state.opts.concurrency, iterations - completed)
+    batch_size =
+      if is_nil(iterations),
+        do: state.opts.concurrency,
+        else: min(state.opts.concurrency, iterations - completed)
 
     state =
       1..batch_size
@@ -1297,6 +1566,27 @@ defmodule TreeDbProfiler.ScenarioRunner do
       end)
 
     do_run_concurrent_iterations(state, iterations, deadline, completed + batch_size)
+  end
+
+  defp iteration_limit_reached?(nil, _completed), do: false
+  defp iteration_limit_reached?(iterations, completed), do: completed >= iterations
+
+  defp measured_duration_satisfied?(opts, measured) do
+    minimum = Map.get(opts, :minimum_measured_duration)
+
+    if minimum do
+      (measured["durationMs"] || 0) >= floor(minimum * 0.99)
+    else
+      true
+    end
+  end
+
+  defp measured_stop_reason(iterations, deadline, measured) do
+    cond do
+      not is_nil(deadline) and (measured["endedAtMs"] || 0) >= deadline -> "duration_limit"
+      is_nil(iterations) -> "completed"
+      true -> "iteration_limit"
+    end
   end
 
   defp run_steady_iteration(state, opts) do
@@ -1571,18 +1861,25 @@ defmodule TreeDbProfiler.ScenarioRunner do
   defp build_report(state, started) do
     operations = Stats.aggregate(state.samples)
     assertions = assertion_summary(state.assertions)
-    coverage = EndpointMatrix.coverage(state.samples, state.opts)
-    summary = Stats.summary(state.samples, operations)
 
-    %{
+    coverage =
+      EndpointMatrix.coverage(state.samples, state.opts, state[:covered_operation_ids] || [])
+
+    summary = Stats.summary(state.samples, operations)
+    model = ModelState.from_state(state)
+    openapi_validation = OpenApiResponseValidator.report(state.assertions)
+
+    report = %{
       "profile" => %{
         "id" => state.opts.profile_id,
         "generatedAt" => DateTime.utc_now() |> DateTime.to_iso8601(),
         "startedAt" => DateTime.to_iso8601(started),
+        "endedAt" => get_in(state, [:timing, "profile", "endedAt"]),
         "tool" => %{"name" => "treedb_profiler", "version" => TreeDbProfiler.version()}
       },
       "target" => %{"baseUrl" => state.opts.base_url},
       "environment" => SystemProfile.collect(),
+      "timing" => timing_report(state),
       "workload" => %{
         "loadMode" => state.opts.load_mode,
         "fixture" => state.opts.fixture,
@@ -1594,7 +1891,10 @@ defmodule TreeDbProfiler.ScenarioRunner do
         "portfolioMaxRepos" => state.opts.portfolio_max_repos,
         "portfolioGrowthTarget" => state.opts.portfolio_growth_target,
         "iterations" => state.opts.iterations,
+        "iterationsExplicit" => state.opts.iterations_explicit,
         "durationMs" => state.opts.duration_ms,
+        "durationIsControlling" => state.opts.duration_is_controlling,
+        "minimumMeasuredDurationMs" => state.opts.minimum_measured_duration,
         "concurrency" => state.opts.concurrency,
         "warmupIterations" => state.opts.warmup_iterations,
         "reportFormat" => state.opts.report_format,
@@ -1604,7 +1904,18 @@ defmodule TreeDbProfiler.ScenarioRunner do
         "includeAdmin" => state.opts.include_admin,
         "includeDestructive" => state.opts.include_destructive,
         "includeExec" => state.opts.include_exec,
-        "includeFederation" => state.opts.include_federation
+        "includeFederation" => state.opts.include_federation,
+        "federationMode" => state.opts.federation_mode
+      },
+      "validation" => %{
+        "semanticValidation" => state.opts.semantic_validation,
+        "validationProbes" => state.opts.validation_probes,
+        "strictQueryHitCounts" => state.opts.strict_query_hit_counts,
+        "strictGraphExpectations" => state.opts.strict_graph_expectations,
+        "strictSnapshotStability" => state.opts.strict_snapshot_stability,
+        "reliabilityVerifier" => state.opts.reliability_verifier,
+        "openapiResponseValidation" => state.opts.openapi_response_validation,
+        "modelReconciliation" => state.opts.model_reconciliation
       },
       "fixtures" => fixture_report(state.fixture),
       "coverage" => coverage,
@@ -1617,16 +1928,52 @@ defmodule TreeDbProfiler.ScenarioRunner do
       "categories" => Stats.category_aggregates(operations),
       "operationTypes" => Stats.operation_type_aggregates(operations),
       "portfolio" => state[:portfolio] || %{},
+      "federation" => state[:federation] || %{"mode" => state.opts.federation_mode},
+      "modelState" => ModelState.report(model),
+      "reconciliation" => Reconciler.final_report(state, model),
+      "operationChains" => OperationChain.report(state.samples, state.opts),
+      "negativeTests" => NegativeRequestGenerator.report(state, state.opts),
+      "metamorphic" => MetamorphicChecker.report(state.samples, state.opts),
+      "delayedConsistency" => DelayedCheckScheduler.report(state.assertions, state.opts),
+      "restartDurability" => RestartDurability.report(state.opts),
+      "faultInjection" => FaultInjection.report(state.opts),
+      "endpointConsistency" => EndpointConsistency.report(state.samples, state, state.opts),
+      "openapiValidation" => openapi_validation,
+      "replay" => ReplayLog.report(state.opts),
+      "leakDetection" => LeakDetector.report(state),
+      "permissionMatrix" => PermissionMatrix.report(state.samples, state.opts),
       "scheduler" => state[:scheduler] || %{},
+      "validationProbes" => validation_probe_report(state.assertions),
+      "concurrency" => concurrency_report(state[:portfolio_runtime], state.opts),
       "requestSamples" => state[:request_samples] || %{"failures" => [], "successes" => %{}},
       "errors" => error_report(state.samples),
       "assertions" => assertions,
       "summary" => summary
     }
+
+    Map.put(report, "reliabilityBudget", ReliabilityBudget.evaluate(report, state.opts))
+  end
+
+  defp timing_report(state) do
+    timing = state[:timing] || %{}
+
+    %{
+      "profile" => Map.get(timing, "profile", %{}),
+      "setup" => Map.get(timing, "setup", %{}),
+      "measured" =>
+        Map.merge(
+          %{
+            "requestedDurationMs" => state.opts.duration_ms,
+            "durationSatisfied" => is_nil(state.opts.duration_ms)
+          },
+          Map.get(timing, "measured", %{})
+        ),
+      "cleanup" => Map.get(timing, "cleanup", %{})
+    }
   end
 
   defp error_report(samples) do
-    errors = Enum.filter(samples, &(&1.ok != true))
+    errors = Enum.filter(samples, &(&1.ok != true and &1.assertion != :race_interference))
 
     %{
       "total" => length(errors),
@@ -1649,6 +1996,76 @@ defmodule TreeDbProfiler.ScenarioRunner do
           }
         end)
     }
+  end
+
+  defp validation_probe_report(samples_or_assertions)
+
+  defp validation_probe_report(assertions) when is_list(assertions) do
+    total = Enum.sum(Enum.map(assertions, &(Map.get(&1, :validationProbes, 0) || 0)))
+
+    failed =
+      assertions
+      |> Enum.filter(&(Map.get(&1, :validationProbes, 0) > 0 and &1.passed == false))
+      |> length()
+
+    %{
+      "total" => total,
+      "failed" => failed,
+      "byOperation" =>
+        assertions
+        |> Enum.group_by(&operation_id_for/1)
+        |> Enum.map(fn {operation, values} ->
+          probes = Enum.sum(Enum.map(values, &(Map.get(&1, :validationProbes, 0) || 0)))
+
+          failures =
+            Enum.count(values, &(Map.get(&1, :validationProbes, 0) > 0 and &1.passed == false))
+
+          {operation, %{"probes" => probes, "failed" => failures}}
+        end)
+        |> Map.new()
+    }
+  end
+
+  defp operation_id_for(assertion) do
+    assertion[:operationId] || assertion[:operation_id] || assertion["operationId"] ||
+      assertion["operation_id"] || "unknown"
+  end
+
+  defp concurrency_report(nil, opts) do
+    %{
+      "racePolicy" => opts.race_policy,
+      "raceInterference" => %{
+        "total" => 0,
+        "verified" => 0,
+        "unverified" => 0,
+        "byOperation" => %{},
+        "byCause" => %{},
+        "samples" => []
+      }
+    }
+  end
+
+  defp concurrency_report(snapshot, opts) do
+    races = Map.get(snapshot, :races, [])
+
+    %{
+      "racePolicy" => opts.race_policy,
+      "raceInterference" => %{
+        "total" => length(races),
+        "verified" => Enum.count(races, &(Map.get(&1, :raceVerified) == true)),
+        "unverified" => Enum.count(races, &(Map.get(&1, :raceVerified) != true)),
+        "byOperation" => count_by(races, & &1.operationId),
+        "byCause" => count_by(races, & &1.likelyCause),
+        "samples" => Enum.take(races, 100)
+      }
+    }
+  end
+
+  defp count_by(values, fun) do
+    values
+    |> Enum.reduce(%{}, fn value, acc ->
+      Map.update(acc, fun.(value) || "unknown", 1, &(&1 + 1))
+    end)
   end
 
   defp call!(state, method, path, operation_id, category, body, assertion_fun, opts \\ []) do
@@ -1680,6 +2097,8 @@ defmodule TreeDbProfiler.ScenarioRunner do
     expected = List.wrap(Keyword.get(opts, :expected, 200))
     assertion_fun = Keyword.get(opts, :assert, &assert_ok/1)
     {assertion, assertion_error} = run_assertion(sample, response, expected, assertion_fun)
+    openapi = openapi_result(state.opts, operation_id, sample, response)
+    {assertion, assertion_error} = merge_openapi_assertion(assertion, assertion_error, openapi)
 
     sample =
       if assertion == :passed do
@@ -1707,9 +2126,25 @@ defmodule TreeDbProfiler.ScenarioRunner do
       fixture: state.opts.fixture,
       size: state.opts.size,
       rule: get_in(EndpointMatrix.operation_map(), [operation_id, "validation", "rule"]),
+      openapiValidation: openapi,
       passed: assertion == :passed,
       error: assertion_error
     }
+
+    ReplayLog.record(
+      state.opts,
+      %{
+        id: nil,
+        operation_id: operation_id,
+        worker_id: nil,
+        seed: state.opts.seed,
+        expected_status: expected,
+        body: body,
+        precondition: %{}
+      },
+      sample,
+      assertion_record
+    )
 
     if assertion == :failed and state.opts.fail_fast do
       raise "profiler assertion failed for #{operation_id}: #{assertion_error}"
@@ -1730,8 +2165,11 @@ defmodule TreeDbProfiler.ScenarioRunner do
         req_opts
       )
 
-    {assertion, assertion_error} =
-      run_profile_assertion(sample, response, request.expected_status, request.validation_rule)
+    {assertion, assertion_error, probe_samples, probe_failures} =
+      run_profile_assertion(state, request, sample, response)
+
+    openapi = openapi_result(state.opts, request.operation_id, sample, response)
+    {assertion, assertion_error} = merge_openapi_assertion(assertion, assertion_error, openapi)
 
     sample =
       if assertion == :passed do
@@ -1752,39 +2190,99 @@ defmodule TreeDbProfiler.ScenarioRunner do
 
     assertion_record = %{
       operationId: request.operation_id,
+      requestId: request.id,
       path: request.path,
       pathTemplate: request.path_template,
       fixture: state.opts.fixture,
       size: state.opts.size,
       rule: request.validation_rule,
+      semantic: state.opts.semantic_validation,
+      validationProbes: length(probe_samples),
+      openapiValidation: openapi,
       passed: assertion == :passed,
       error: assertion_error
     }
 
-    if assertion == :failed and state.opts.fail_fast do
-      raise "profiler assertion failed for #{request.operation_id}: #{assertion_error}"
+    sample =
+      if probe_failures == [] do
+        sample
+      else
+        %{sample | assertion: :failed, ok: false, error_code: "validation_probe_failed"}
+      end
+
+    assertion_record =
+      if probe_failures == [] do
+        assertion_record
+      else
+        %{assertion_record | passed: false, error: Enum.join(probe_failures, "; ")}
+      end
+
+    if assertion_record.passed == false and state.opts.fail_fast do
+      raise "profiler assertion failed for #{request.operation_id}: #{assertion_record.error}"
     end
+
+    ReplayLog.record(state.opts, request, sample, assertion_record)
 
     {sample, response, assertion_record}
   end
 
-  defp run_profile_assertion(sample, response, expected, rule) do
+  defp openapi_result(opts, operation_id, sample, response) do
+    case OpenApiResponseValidator.validate_response(operation_id, sample.status, response,
+           enabled: opts.openapi_response_validation
+         ) do
+      :ok ->
+        %{operationId: operation_id, status: sample.status, passed: true, message: nil}
+
+      {:error, message} ->
+        %{operationId: operation_id, status: sample.status, passed: false, message: message}
+    end
+  end
+
+  defp merge_openapi_assertion(:passed, nil, %{passed: false, message: message}),
+    do: {:failed, "OpenAPI response validation failed: #{message}"}
+
+  defp merge_openapi_assertion(assertion, assertion_error, _openapi),
+    do: {assertion, assertion_error}
+
+  defp run_profile_assertion(state, request, sample, response) do
     cond do
-      sample.status not in List.wrap(expected) ->
-        {:failed, "expected status #{inspect(expected)}, got #{sample.status}"}
+      sample.status not in List.wrap(request.expected_status) ->
+        {:failed, "expected status #{inspect(request.expected_status)}, got #{sample.status}", [],
+         []}
 
       sample.status not in 200..299 ->
-        {:passed, nil}
+        {:failed, "non-success status #{sample.status} requires race classification", [], []}
+
+      not state.opts.semantic_validation ->
+        run_legacy_profile_assertion(response, request.validation_rule)
 
       true ->
-        assertion_fun = assertion_for_rule(rule)
+        ctx = %{sample: sample, response: response, state: state, request: request}
 
-        try do
-          assertion_fun.(response)
-          {:passed, nil}
-        rescue
-          error -> {:failed, Exception.message(error)}
+        case Validation.validate(request.validation_rule, ctx) do
+          :ok ->
+            probes = ValidationProbe.run(state, request, response)
+
+            if probes.failures == [] do
+              {:passed, nil, probes.samples, []}
+            else
+              {:failed, Enum.join(probes.failures, "; "), probes.samples, probes.failures}
+            end
+
+          {:error, message} ->
+            {:failed, message, [], []}
         end
+    end
+  end
+
+  defp run_legacy_profile_assertion(response, rule) do
+    assertion_fun = assertion_for_rule(rule)
+
+    try do
+      assertion_fun.(response)
+      {:passed, nil, [], []}
+    rescue
+      error -> {:failed, Exception.message(error), [], []}
     end
   end
 
@@ -1816,6 +2314,12 @@ defmodule TreeDbProfiler.ScenarioRunner do
   end
 
   defp primary_repo(state), do: hd(state.fixture.local_repos)
+
+  defp primary_node_id(%{opts: %{federation_mode: mode}}) when mode != "single_node", do: "node_a"
+  defp primary_node_id(_state), do: "node_local"
+
+  defp mirror_target_node_id(%{opts: %{federation_mode: "mirror_cluster"}}), do: "node_b"
+  defp mirror_target_node_id(state), do: primary_node_id(state)
 
   defp repo_containing_path(state, path) do
     Enum.find(state.fixture.local_repos, primary_repo(state), fn repo ->
@@ -1874,11 +2378,14 @@ defmodule TreeDbProfiler.ScenarioRunner do
   end
 
   defp assertion_summary(assertions) do
-    failures = Enum.reject(assertions, & &1.passed)
+    races = Enum.filter(assertions, &(Map.get(&1, :status) == :race_interference))
+    failures = Enum.reject(assertions, &(&1.passed or Map.get(&1, :status) == :race_interference))
 
     %{
-      "passed" => length(assertions) - length(failures),
+      "passed" => Enum.count(assertions, & &1.passed),
       "failed" => length(failures),
+      "raceInterference" => length(races),
+      "unavailable" => Enum.count(assertions, &(Map.get(&1, :status) == :unavailable)),
       "failures" => Enum.map(failures, &Map.new(&1))
     }
   end

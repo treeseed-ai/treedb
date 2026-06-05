@@ -30,6 +30,10 @@ defmodule TreeDb.Capabilities do
     "migration:read",
     "migration:write",
     "query:federated",
+    "federation:read",
+    "federation:write",
+    "federation:trust",
+    "federation:sync",
     "policy:read",
     "policy:write",
     "audit:read"

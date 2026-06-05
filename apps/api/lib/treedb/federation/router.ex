@@ -2,7 +2,7 @@ defmodule TreeDb.Federation.Router do
   @moduledoc false
 
   def route(node_id) do
-    local_node = System.get_env("TREEDB_NODE_ID") || "node_local"
+    local_node = TreeDb.Federation.NodeIdentity.node_id()
 
     if node_id == local_node do
       %{source: "local", base_url: nil}
@@ -15,16 +15,22 @@ defmodule TreeDb.Federation.Router do
   end
 
   def remote_node(node_id) do
-    TreeDb.Registry.nodes()
-    |> case do
-      {:ok, nodes} ->
-        case Enum.find(nodes, &(&1["id"] == node_id)) do
-          nil -> {:error, %{code: "federated_route_not_configured"}}
-          node -> {:ok, node}
-        end
+    case TreeDb.Store.get_federation_peer(node_id) do
+      {:ok, peer} when is_map(peer) ->
+        {:ok, %{"id" => peer["id"], "baseUrl" => peer["baseUrl"]}}
 
       _ ->
-        {:error, %{code: "federated_route_not_configured"}}
+        TreeDb.Registry.nodes()
+        |> case do
+          {:ok, nodes} ->
+            case Enum.find(nodes, &(&1["id"] == node_id)) do
+              nil -> {:error, %{code: "federated_route_not_configured"}}
+              node -> {:ok, node}
+            end
+
+          _ ->
+            {:error, %{code: "federated_route_not_configured"}}
+        end
     end
   end
 end

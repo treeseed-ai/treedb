@@ -18,6 +18,9 @@ Modes:
   binary       blob/multipart/artifact-focused workload
   admin        admin/storage diagnostics workload
   soak         long growing portfolio soak profile
+  mirror-federation      three-node mirror cluster profile
+  connected-library      three-node connected-library profile
+  federation-soak        long three-node federation soak profile
 
 Environment overrides:
   Any TREEDB_PROFILE_* variable may be set before invoking this script.
@@ -66,7 +69,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$mode" in
-  smoke|fixed|portfolio|read-heavy|write-heavy|graph|binary|admin|soak)
+  smoke|fixed|portfolio|read-heavy|write-heavy|graph|binary|admin|soak|mirror-federation|connected-library|federation-soak)
     ;;
   *)
     echo "Unknown profile mode: $mode" >&2
@@ -78,15 +81,31 @@ esac
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 default_yaml="target/profiles/${mode}-${timestamp}.yaml"
 default_md="target/profiles/${mode}-${timestamp}.md"
+default_replay="target/profiles/${mode}-${timestamp}-replay.jsonl"
+default_failures="target/profiles/${mode}-${timestamp}-failures.jsonl"
 
 export TREEDB_PROFILE_OUTPUT="${TREEDB_PROFILE_OUTPUT:-$default_yaml}"
 export TREEDB_PROFILE_MARKDOWN_OUTPUT="${TREEDB_PROFILE_MARKDOWN_OUTPUT:-$default_md}"
+export TREEDB_PROFILE_REPLAY_LOG="${TREEDB_PROFILE_REPLAY_LOG:-$default_replay}"
+export TREEDB_PROFILE_FAILURE_REPLAY_LOG="${TREEDB_PROFILE_FAILURE_REPLAY_LOG:-$default_failures}"
 export TREEDB_PROFILE_REPORT_FORMAT="${TREEDB_PROFILE_REPORT_FORMAT:-both}"
 export TREEDB_PROFILE_REPO_PREFIX="${TREEDB_PROFILE_REPO_PREFIX:-profile-${mode}-}"
 export TREEDB_PROFILE_HOST_UID="${TREEDB_PROFILE_HOST_UID:-$(id -u)}"
 export TREEDB_PROFILE_HOST_GID="${TREEDB_PROFILE_HOST_GID:-$(id -g)}"
 
-compose_files=(-f profiles/compose.profile.yaml)
+case "$mode" in
+  mirror-federation|connected-library|federation-soak)
+    compose_files=(-f profiles/compose.profile.federation.yaml)
+    ;;
+  *)
+    compose_files=(-f profiles/compose.profile.yaml)
+    ;;
+esac
+
+if [[ "$dev_api" == true && "$mode" == "mirror-federation" || "$dev_api" == true && "$mode" == "connected-library" || "$dev_api" == true && "$mode" == "federation-soak" ]]; then
+  echo "--dev-api is only supported for single-node profile modes" >&2
+  exit 1
+fi
 
 if [[ "$dev_api" == true ]]; then
   compose_files+=(-f profiles/compose.profile.dev-api.yaml)

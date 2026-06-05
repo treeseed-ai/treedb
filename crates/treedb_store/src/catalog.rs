@@ -1,5 +1,5 @@
 use crate::error::StoreError;
-use crate::ids::{capability_id, repository_id};
+use crate::ids::{capability_id, repository_id_from_name};
 use crate::log::{append_record, ensure_log, replay_latest};
 use crate::types::*;
 use chrono::Utc;
@@ -106,6 +106,10 @@ pub fn seed_dev_records(
         "migration:read",
         "migration:write",
         "query:federated",
+        "federation:read",
+        "federation:write",
+        "federation:trust",
+        "federation:sync",
         "policy:read",
         "policy:write",
         "audit:read",
@@ -195,26 +199,57 @@ pub fn put_repository(
     data_dir: &Path,
     input: RepositoryInput,
 ) -> Result<RepositoryRecord, StoreError> {
-    if input.name.trim().is_empty() {
+    let repository_name = input
+        .repository_name
+        .clone()
+        .unwrap_or_else(|| input.name.clone())
+        .trim()
+        .to_lowercase();
+
+    if repository_name.is_empty() {
         return Err(StoreError::Validation(
             "repository name is required".to_string(),
         ));
     }
-    if input.local_path.trim().is_empty() {
-        return Err(StoreError::Validation("local path is required".to_string()));
-    }
+
     let now = Utc::now();
-    let id = repository_id(&input.name, &input.local_path, input.remote_url.as_deref());
+    let local_path = input.local_path.clone().unwrap_or_default();
+    let storage_relative_path = input.storage_relative_path.clone().unwrap_or_else(|| {
+        if local_path.trim().is_empty() {
+            format!("repositories/{repository_name}")
+        } else {
+            local_path.clone()
+        }
+    });
+    let id = repository_id_from_name(&repository_name);
     let existing = get_repository(data_dir, &id)?;
+
+    if existing.is_none() {
+        for repo in list_repositories(data_dir)? {
+            let existing_name = repository_name_for(&repo);
+            if existing_name == repository_name {
+                return Err(StoreError::Conflict(
+                    "repository name already exists".to_string(),
+                ));
+            }
+        }
+    }
+
     let created_at = existing
         .as_ref()
         .map(|record| record.created_at)
         .unwrap_or(now);
     let record = RepositoryRecord {
         id: id.clone(),
-        name: input.name,
-        storage_kind: "local_path".to_string(),
-        local_path: input.local_path,
+        repository_name: repository_name.clone(),
+        name: repository_name.clone(),
+        storage_kind: if local_path.trim().is_empty() {
+            "managed".to_string()
+        } else {
+            "legacy_local_path".to_string()
+        },
+        storage_relative_path,
+        local_path,
         default_ref: input
             .default_ref
             .unwrap_or_else(|| "refs/heads/main".to_string()),
@@ -230,6 +265,17 @@ pub fn put_repository(
         &id,
         &record,
     )?;
+    put_record(
+        data_dir,
+        "catalog/repository_names.tdb",
+        "repository_name",
+        &repository_name,
+        &RepositoryNameRecord {
+            repository_name: repository_name.clone(),
+            repository_id: id,
+            created_at,
+        },
+    )?;
     Ok(record)
 }
 
@@ -242,6 +288,14 @@ pub fn get_repository(
     repo_id: &str,
 ) -> Result<Option<RepositoryRecord>, StoreError> {
     get_record(data_dir, "catalog/repositories.tdb", "repository", repo_id)
+}
+
+fn repository_name_for(repo: &RepositoryRecord) -> String {
+    if repo.repository_name.trim().is_empty() {
+        repo.name.trim().to_lowercase()
+    } else {
+        repo.repository_name.trim().to_lowercase()
+    }
 }
 
 pub fn list_nodes(data_dir: &Path) -> Result<Vec<NodeRecord>, StoreError> {

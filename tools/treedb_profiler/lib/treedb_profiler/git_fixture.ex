@@ -64,7 +64,7 @@ defmodule TreeDbProfiler.GitFixture do
       ---
       # Profiler Doc #{index}
 
-      release provenance migration fixture #{index}
+      release provenance migration fixture #{index} profile_term_#{pad(index)}
 
       #{Enum.join(sections, "\n\n")}
 
@@ -92,7 +92,10 @@ defmodule TreeDbProfiler.GitFixture do
   defp write_text!(path, repo_def, seed) do
     for index <- 1..repo_def.text do
       file = "plain/#{group(index)}/text-#{pad(index)}.txt"
-      content = "release provenance plain fixture #{repo_def.family} #{index} seed #{seed}\n"
+
+      content =
+        "release provenance plain fixture #{repo_def.family} #{index} profile_term_#{pad(index)} seed #{seed}\n"
+
       write!(path, file, content)
 
       %{
@@ -117,6 +120,7 @@ defmodule TreeDbProfiler.GitFixture do
             fixture: repo_def.family,
             size: repo_def.size,
             term: "release",
+            profileTerm: "profile_term_#{pad(index)}",
             provenance: "deterministic",
             entity: "EntityAlpha#{index}",
             seed: seed

@@ -83,6 +83,52 @@ defmodule TreeDb.Store do
   def put_mirror(input),
     do: call_json(&TreeDb.Native.put_mirror/2, data_dir(), Jason.encode!(input))
 
+  def put_federation_peer(input),
+    do: call_json(&TreeDb.Native.put_federation_peer/2, data_dir(), Jason.encode!(input))
+
+  def list_federation_peers, do: call_json(&TreeDb.Native.list_federation_peers/1, data_dir())
+
+  def get_federation_peer(node_id),
+    do: call_json(&TreeDb.Native.get_federation_peer/2, data_dir(), node_id)
+
+  def put_repository_advertisement(input),
+    do: call_json(&TreeDb.Native.put_repository_advertisement/2, data_dir(), Jason.encode!(input))
+
+  def list_repository_advertisements,
+    do: call_json(&TreeDb.Native.list_repository_advertisements/1, data_dir())
+
+  def put_federation_route(input),
+    do: call_json(&TreeDb.Native.put_federation_route/2, data_dir(), Jason.encode!(input))
+
+  def list_federation_routes,
+    do: call_json(&TreeDb.Native.list_federation_routes/1, data_dir())
+
+  def get_federation_route(repo_id),
+    do: call_json(&TreeDb.Native.get_federation_route/2, data_dir(), repo_id)
+
+  def put_node_capacity(input),
+    do: call_json(&TreeDb.Native.put_node_capacity/2, data_dir(), Jason.encode!(input))
+
+  def list_node_capacity, do: call_json(&TreeDb.Native.list_node_capacity/1, data_dir())
+
+  def put_mirror_assignment(input),
+    do: call_json(&TreeDb.Native.put_mirror_assignment/2, data_dir(), Jason.encode!(input))
+
+  def list_mirror_assignments(repo_id),
+    do: call_json(&TreeDb.Native.list_mirror_assignments/2, data_dir(), repo_id)
+
+  def put_workspace_route(input),
+    do: call_json(&TreeDb.Native.put_workspace_route/2, data_dir(), Jason.encode!(input))
+
+  def get_workspace_route(workspace_id),
+    do: call_json(&TreeDb.Native.get_workspace_route/2, data_dir(), workspace_id)
+
+  def put_idempotency_record(input),
+    do: call_json(&TreeDb.Native.put_idempotency_record/2, data_dir(), Jason.encode!(input))
+
+  def get_idempotency_record(id),
+    do: call_json(&TreeDb.Native.get_idempotency_record/2, data_dir(), id)
+
   def build_snapshot_artifact(input),
     do: call_json(&TreeDb.Native.build_snapshot_artifact/2, data_dir(), Jason.encode!(input))
 

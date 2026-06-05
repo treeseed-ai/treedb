@@ -138,6 +138,161 @@ fn list_mirrors<'a>(env: Env<'a>, data_dir: String, repo_id: String) -> Term<'a>
 }
 
 #[rustler::nif(schedule = "DirtyIo")]
+fn put_federation_peer<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<FederationPeerRecord>(input_json) {
+        Ok(input) => match treedb_store::put_federation_peer(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_federation_peers<'a>(env: Env<'a>, data_dir: String) -> Term<'a> {
+    match treedb_store::list_federation_peers(Path::new(&data_dir)) {
+        Ok(records) => ok_json(env, records),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_federation_peer<'a>(env: Env<'a>, data_dir: String, node_id: String) -> Term<'a> {
+    match treedb_store::get_federation_peer(Path::new(&data_dir), &node_id) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_repository_advertisement<'a>(
+    env: Env<'a>,
+    data_dir: String,
+    input_json: String,
+) -> Term<'a> {
+    match parse_json::<RepositoryAdvertisementRecord>(input_json) {
+        Ok(input) => {
+            match treedb_store::put_repository_advertisement(Path::new(&data_dir), input) {
+                Ok(record) => ok_json(env, record),
+                Err(error) => err_json(env, error.code(), error),
+            }
+        }
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_repository_advertisements<'a>(env: Env<'a>, data_dir: String) -> Term<'a> {
+    match treedb_store::list_repository_advertisements(Path::new(&data_dir)) {
+        Ok(records) => ok_json(env, records),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_federation_route<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<FederationRouteRecord>(input_json) {
+        Ok(input) => match treedb_store::put_federation_route(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_federation_routes<'a>(env: Env<'a>, data_dir: String) -> Term<'a> {
+    match treedb_store::list_federation_routes(Path::new(&data_dir)) {
+        Ok(records) => ok_json(env, records),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_federation_route<'a>(env: Env<'a>, data_dir: String, repo_id: String) -> Term<'a> {
+    match treedb_store::get_federation_route(Path::new(&data_dir), &repo_id) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_node_capacity<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<NodeCapacityRecord>(input_json) {
+        Ok(input) => match treedb_store::put_node_capacity(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_node_capacity<'a>(env: Env<'a>, data_dir: String) -> Term<'a> {
+    match treedb_store::list_node_capacity(Path::new(&data_dir)) {
+        Ok(records) => ok_json(env, records),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_mirror_assignment<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<MirrorAssignmentRecord>(input_json) {
+        Ok(input) => match treedb_store::put_mirror_assignment(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn list_mirror_assignments<'a>(env: Env<'a>, data_dir: String, repo_id: String) -> Term<'a> {
+    match treedb_store::list_mirror_assignments(Path::new(&data_dir), &repo_id) {
+        Ok(records) => ok_json(env, records),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_workspace_route<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<WorkspaceRouteRecord>(input_json) {
+        Ok(input) => match treedb_store::put_workspace_route(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_workspace_route<'a>(env: Env<'a>, data_dir: String, workspace_id: String) -> Term<'a> {
+    match treedb_store::get_workspace_route(Path::new(&data_dir), &workspace_id) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_idempotency_record<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
+    match parse_json::<IdempotencyRecord>(input_json) {
+        Ok(input) => match treedb_store::put_idempotency_record(Path::new(&data_dir), input) {
+            Ok(record) => ok_json(env, record),
+            Err(error) => err_json(env, error.code(), error),
+        },
+        Err(error) => err_json(env, "invalid_json", format!("{error:?}")),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_idempotency_record<'a>(env: Env<'a>, data_dir: String, id: String) -> Term<'a> {
+    match treedb_store::get_idempotency_record(Path::new(&data_dir), &id) {
+        Ok(record) => ok_json(env, record),
+        Err(error) => err_json(env, error.code(), error),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
 fn put_mirror<'a>(env: Env<'a>, data_dir: String, input_json: String) -> Term<'a> {
     match parse_json::<MirrorRecord>(input_json) {
         Ok(input) => match treedb_store::put_mirror(Path::new(&data_dir), input) {

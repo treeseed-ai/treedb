@@ -29,7 +29,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -61,7 +63,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -93,7 +97,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -125,7 +131,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -157,7 +165,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -189,7 +199,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -221,7 +233,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -253,7 +267,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -285,7 +301,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -317,7 +335,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -349,7 +369,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -384,7 +406,8 @@
         "write"
       ],
       "validation": {
-        "rule": "query_hits_expected_terms"
+        "rule": "query_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -419,7 +442,8 @@
         "search"
       ],
       "validation": {
-        "rule": "search_hits_expected_terms"
+        "rule": "search_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -453,7 +477,8 @@
         "read"
       ],
       "validation": {
-        "rule": "query_hits_expected_terms"
+        "rule": "query_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -488,7 +513,8 @@
         "write"
       ],
       "validation": {
-        "rule": "context_within_budget"
+        "rule": "context_within_budget",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -523,7 +549,8 @@
         "read"
       ],
       "validation": {
-        "rule": "query_hits_expected_terms"
+        "rule": "query_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -555,7 +582,9 @@
         "registry"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -587,7 +616,9 @@
         "registry"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -622,7 +653,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -657,7 +690,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -688,7 +723,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "repo_registered"
+        "rule": "repo_registered",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -720,7 +757,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "repo_list_contains_registered"
+        "rule": "repo_list_contains_registered",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -754,7 +793,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -788,7 +829,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -822,7 +865,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "refs_contain_expected_branches"
+        "rule": "refs_contain_expected_branches",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -856,7 +901,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -890,7 +937,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -924,7 +973,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -959,7 +1010,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -993,7 +1046,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "file_content_matches_expectation"
+        "rule": "file_content_matches_expectation",
+        "semanticLevel": "exact_payload"
       }
     },
     {
@@ -1028,7 +1082,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "blob_hash_matches_expectation"
+        "rule": "blob_hash_matches_expectation",
+        "semanticLevel": "exact_hash"
       }
     },
     {
@@ -1063,7 +1118,8 @@
         "search"
       ],
       "validation": {
-        "rule": "search_hits_expected_terms"
+        "rule": "search_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -1097,7 +1153,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "path_list_contains_expected_paths"
+        "rule": "path_list_contains_expected_paths",
+        "semanticLevel": "exact_payload"
       }
     },
     {
@@ -1131,7 +1188,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "query_hits_expected_terms"
+        "rule": "query_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -1166,7 +1224,8 @@
         "write"
       ],
       "validation": {
-        "rule": "graph_refresh_has_version"
+        "rule": "graph_refresh_has_version",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1203,7 +1262,8 @@
         "write"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1238,7 +1298,16 @@
         "repository"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation",
+        "race": {
+          "acceptableStatuses": [
+            404
+          ],
+          "causes": [
+            "graph_or_repo_changed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -1274,7 +1343,8 @@
         "search"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1310,7 +1380,8 @@
         "search"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1346,7 +1417,8 @@
         "search"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1383,7 +1455,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1419,7 +1492,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1454,7 +1528,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "graph_query_has_expected_shape"
+        "rule": "graph_query_has_expected_shape",
+        "semanticLevel": "exact_graph_expectation"
       }
     },
     {
@@ -1489,7 +1564,16 @@
         "write"
       ],
       "validation": {
-        "rule": "context_within_budget"
+        "rule": "context_within_budget",
+        "semanticLevel": "exact_graph_expectation",
+        "race": {
+          "acceptableStatuses": [
+            404
+          ],
+          "causes": [
+            "graph_or_repo_changed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -1524,7 +1608,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "query_hits_expected_terms"
+        "rule": "query_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -1561,7 +1646,8 @@
         "write"
       ],
       "validation": {
-        "rule": "search_hits_expected_terms"
+        "rule": "search_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -1597,7 +1683,8 @@
         "search-index"
       ],
       "validation": {
-        "rule": "search_hits_expected_terms"
+        "rule": "search_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -1634,7 +1721,8 @@
         "write"
       ],
       "validation": {
-        "rule": "search_hits_expected_terms"
+        "rule": "search_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -1669,7 +1757,19 @@
         "write"
       ],
       "validation": {
-        "rule": "snapshot_has_checksum"
+        "rule": "snapshot_has_checksum",
+        "semanticLevel": "stability_within_run",
+        "probes": [
+          "repeat_snapshot_build"
+        ],
+        "race": {
+          "acceptableStatuses": [
+            409
+          ],
+          "causes": [
+            "repo_changed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -1705,7 +1805,8 @@
         "snapshot"
       ],
       "validation": {
-        "rule": "snapshot_has_checksum"
+        "rule": "snapshot_has_checksum",
+        "semanticLevel": "stability_within_run"
       }
     },
     {
@@ -1741,7 +1842,21 @@
         "write"
       ],
       "validation": {
-        "rule": "artifact_has_metadata"
+        "rule": "artifact_has_metadata",
+        "semanticLevel": "stability_within_run",
+        "probes": [
+          "list_artifacts",
+          "get_artifact"
+        ],
+        "race": {
+          "acceptableStatuses": [
+            404,
+            409
+          ],
+          "causes": [
+            "snapshot_or_repo_changed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -1777,7 +1892,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "artifact_has_metadata"
+        "rule": "artifact_has_metadata",
+        "semanticLevel": "stability_within_run"
       }
     },
     {
@@ -1813,7 +1929,16 @@
         "repository"
       ],
       "validation": {
-        "rule": "artifact_has_metadata"
+        "rule": "artifact_has_metadata",
+        "semanticLevel": "stability_within_run",
+        "race": {
+          "acceptableStatuses": [
+            404
+          ],
+          "causes": [
+            "artifact_deleted_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -1849,7 +1974,8 @@
         "repository"
       ],
       "validation": {
-        "rule": "artifact_has_metadata"
+        "rule": "artifact_has_metadata",
+        "semanticLevel": "stability_within_run"
       }
     },
     {
@@ -1883,7 +2009,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -1917,7 +2045,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -1952,7 +2082,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -1988,7 +2120,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2022,7 +2156,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2056,7 +2192,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2091,7 +2229,9 @@
         "repository"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2126,7 +2266,9 @@
         "workspace"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2160,7 +2302,18 @@
         "workspace"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation",
+        "race": {
+          "acceptableStatuses": [
+            404,
+            409
+          ],
+          "causes": [
+            "workspace_closed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -2195,7 +2348,9 @@
         "workspace"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2230,7 +2385,8 @@
         "workspace"
       ],
       "validation": {
-        "rule": "file_path_matches_expectation"
+        "rule": "file_path_matches_expectation",
+        "semanticLevel": "exact_payload"
       }
     },
     {
@@ -2265,7 +2421,23 @@
         "write"
       ],
       "validation": {
-        "rule": "file_path_matches_expectation"
+        "rule": "file_path_matches_expectation",
+        "semanticLevel": "exact_payload",
+        "probes": [
+          "read_workspace_file",
+          "workspace_status",
+          "workspace_diff"
+        ],
+        "race": {
+          "acceptableStatuses": [
+            404,
+            409
+          ],
+          "causes": [
+            "workspace_closed_by_another_worker",
+            "workspace_changed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -2300,7 +2472,23 @@
         "write"
       ],
       "validation": {
-        "rule": "file_path_matches_expectation"
+        "rule": "file_path_matches_expectation",
+        "semanticLevel": "exact_payload",
+        "probes": [
+          "read_workspace_file",
+          "workspace_status",
+          "workspace_diff"
+        ],
+        "race": {
+          "acceptableStatuses": [
+            404,
+            409
+          ],
+          "causes": [
+            "workspace_closed_by_another_worker",
+            "workspace_changed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -2335,7 +2523,24 @@
         "workspace"
       ],
       "validation": {
-        "rule": "file_path_matches_expectation"
+        "rule": "file_path_matches_expectation",
+        "semanticLevel": "exact_payload",
+        "probes": [
+          "read_workspace_file_absent",
+          "workspace_status",
+          "workspace_diff"
+        ],
+        "race": {
+          "acceptableStatuses": [
+            404,
+            409
+          ],
+          "causes": [
+            "workspace_closed_by_another_worker",
+            "workspace_changed_by_another_worker",
+            "file_deleted_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -2371,7 +2576,11 @@
         "write"
       ],
       "validation": {
-        "rule": "blob_hash_matches_expectation"
+        "rule": "blob_hash_matches_expectation",
+        "semanticLevel": "exact_hash",
+        "probes": [
+          "download_workspace_blob"
+        ]
       }
     },
     {
@@ -2407,7 +2616,9 @@
         "workspace"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2442,7 +2653,8 @@
         "workspace"
       ],
       "validation": {
-        "rule": "blob_hash_matches_expectation"
+        "rule": "blob_hash_matches_expectation",
+        "semanticLevel": "exact_hash"
       }
     },
     {
@@ -2478,7 +2690,11 @@
         "write"
       ],
       "validation": {
-        "rule": "blob_hash_matches_expectation"
+        "rule": "blob_hash_matches_expectation",
+        "semanticLevel": "exact_hash",
+        "probes": [
+          "download_workspace_blob"
+        ]
       }
     },
     {
@@ -2514,7 +2730,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2551,7 +2769,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2588,7 +2808,11 @@
         "write"
       ],
       "validation": {
-        "rule": "multipart_complete_matches_hash"
+        "rule": "multipart_complete_matches_hash",
+        "semanticLevel": "exact_hash",
+        "probes": [
+          "download_workspace_blob"
+        ]
       }
     },
     {
@@ -2625,7 +2849,9 @@
         "write"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2661,7 +2887,8 @@
         "workspace"
       ],
       "validation": {
-        "rule": "search_hits_expected_terms"
+        "rule": "search_hits_expected_terms",
+        "semanticLevel": "exact_query_hit"
       }
     },
     {
@@ -2696,7 +2923,8 @@
         "workspace"
       ],
       "validation": {
-        "rule": "workspace_status_contains_mutation"
+        "rule": "workspace_status_contains_mutation",
+        "semanticLevel": "exact_state_transition"
       }
     },
     {
@@ -2731,7 +2959,8 @@
         "workspace"
       ],
       "validation": {
-        "rule": "workspace_diff_contains_mutation"
+        "rule": "workspace_diff_contains_mutation",
+        "semanticLevel": "exact_state_transition"
       }
     },
     {
@@ -2766,7 +2995,22 @@
         "write"
       ],
       "validation": {
-        "rule": "workspace_commit_visible_on_branch"
+        "rule": "workspace_commit_visible_on_branch",
+        "semanticLevel": "exact_state_transition",
+        "probes": [
+          "read_committed_files"
+        ],
+        "race": {
+          "acceptableStatuses": [
+            404,
+            409,
+            422
+          ],
+          "causes": [
+            "workspace_closed_by_another_worker",
+            "workspace_changed_by_another_worker"
+          ]
+        }
       }
     },
     {
@@ -2801,7 +3045,9 @@
         "workspace"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -2834,7 +3080,8 @@
         "workspace"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -2867,7 +3114,8 @@
         "read"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -2898,7 +3146,8 @@
         "admin"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -2930,7 +3179,8 @@
         "write"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -2962,7 +3212,8 @@
         "write"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -2994,7 +3245,8 @@
         "write"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3026,7 +3278,8 @@
         "read"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3058,7 +3311,8 @@
         "write"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3090,7 +3344,8 @@
         "destructive"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3122,7 +3377,8 @@
         "destructive"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3154,7 +3410,8 @@
         "destructive"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3186,7 +3443,8 @@
         "destructive"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3222,7 +3480,8 @@
         "destructive"
       ],
       "validation": {
-        "rule": "artifact_has_metadata"
+        "rule": "artifact_has_metadata",
+        "semanticLevel": "stability_within_run"
       }
     },
     {
@@ -3254,7 +3513,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -3286,7 +3547,9 @@
         "read"
       ],
       "validation": {
-        "rule": "ok_envelope"
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "operation has no deterministic runtime payload expectation"
       }
     },
     {
@@ -3319,7 +3582,8 @@
         "read"
       ],
       "validation": {
-        "rule": "storage_response_sanitized"
+        "rule": "storage_response_sanitized",
+        "semanticLevel": "sanitized_error"
       }
     },
     {
@@ -3351,7 +3615,8 @@
         "read"
       ],
       "validation": {
-        "rule": "metrics_shape_valid"
+        "rule": "metrics_shape_valid",
+        "semanticLevel": "exact_payload"
       }
     },
     {
@@ -3383,7 +3648,566 @@
         "read"
       ],
       "validation": {
-        "rule": "metrics_shape_valid"
+        "rule": "metrics_shape_valid",
+        "semanticLevel": "exact_payload"
+      }
+    },
+    {
+      "operationId": "createRepository",
+      "method": "POST",
+      "path": "/api/v1/repos",
+      "tags": [
+        "repository",
+        "write"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {
+        "repositoryName": "{generated_repository_name}",
+        "source": {
+          "type": "empty"
+        },
+        "placement": {
+          "mode": "local"
+        }
+      },
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "repo_registered",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        },
+        "write_heavy": {
+          "weight": 3
+        }
+      }
+    },
+    {
+      "operationId": "importLocalRepository",
+      "method": "POST",
+      "path": "/api/v1/admin/repos/import-local",
+      "tags": [
+        "admin",
+        "repository",
+        "write"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {
+        "repositoryName": "{generated_repository_name}",
+        "sourceRelativePath": "{import_source_relative_path}"
+      },
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "repo_registered",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "registerFederationNode",
+      "method": "POST",
+      "path": "/api/v1/federation/nodes/register",
+      "tags": [
+        "federation",
+        "write"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {
+        "nodeId": "{node_id}",
+        "baseUrl": "{node_base_url}",
+        "trustStates": [
+          "registered"
+        ]
+      },
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "listFederationPeers",
+      "method": "GET",
+      "path": "/api/v1/federation/peers",
+      "tags": [
+        "federation",
+        "read"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "getFederationPeer",
+      "method": "GET",
+      "path": "/api/v1/federation/peers/{node_id}",
+      "tags": [
+        "federation",
+        "read"
+      ],
+      "setup": {
+        "requires": [
+          "federation_peer"
+        ],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "trustFederationPeer",
+      "method": "POST",
+      "path": "/api/v1/federation/peers/{node_id}/trust",
+      "tags": [
+        "federation",
+        "write"
+      ],
+      "setup": {
+        "requires": [
+          "federation_peer"
+        ],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {
+        "trustStates": [
+          "trusted_for_catalog",
+          "trusted_for_query"
+        ]
+      },
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "revokeFederationPeer",
+      "method": "POST",
+      "path": "/api/v1/federation/peers/{node_id}/revoke",
+      "tags": [
+        "federation",
+        "write"
+      ],
+      "setup": {
+        "requires": [
+          "federation_peer"
+        ],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "getFederationCatalog",
+      "method": "GET",
+      "path": "/api/v1/federation/catalog",
+      "tags": [
+        "federation",
+        "read"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "federated_results_authorized_only",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "pushFederationCatalog",
+      "method": "POST",
+      "path": "/api/v1/federation/catalog/push",
+      "tags": [
+        "federation",
+        "write"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {
+        "catalog": "{federation_catalog}"
+      },
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "syncFederationCatalog",
+      "method": "POST",
+      "path": "/api/v1/federation/catalog/sync",
+      "tags": [
+        "federation",
+        "write"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "listFederationRoutes",
+      "method": "GET",
+      "path": "/api/v1/federation/routes",
+      "tags": [
+        "federation",
+        "read"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "proxyInternalFederationRequest",
+      "method": "POST",
+      "path": "/api/v1/internal/federation/proxy",
+      "tags": [
+        "federation",
+        "internal",
+        "write"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {
+        "method": "GET",
+        "path": "/api/v1/health",
+        "body": {}
+      },
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "exportInternalFederationMirror",
+      "method": "POST",
+      "path": "/api/v1/internal/federation/repos/{repo_id}/mirror/export",
+      "tags": [
+        "federation",
+        "mirror",
+        "read"
+      ],
+      "setup": {
+        "requires": [
+          "registered_repo"
+        ],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "importInternalFederationMirror",
+      "method": "POST",
+      "path": "/api/v1/internal/federation/repos/{repo_id}/mirror/import",
+      "tags": [
+        "federation",
+        "mirror",
+        "write"
+      ],
+      "setup": {
+        "requires": [
+          "registered_repo"
+        ],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {
+        "catalog": "{federation_catalog}"
+      },
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
+      }
+    },
+    {
+      "operationId": "getInternalFederationHealth",
+      "method": "GET",
+      "path": "/api/v1/internal/federation/health",
+      "tags": [
+        "federation",
+        "internal",
+        "read"
+      ],
+      "setup": {
+        "requires": [],
+        "fixtureFamilies": [
+          "small-docs",
+          "medium-mixed",
+          "binary-assets",
+          "large-history",
+          "graph-rich",
+          "workspace-heavy"
+        ]
+      },
+      "requestTemplate": {},
+      "expectedStatus": [
+        200
+      ],
+      "validation": {
+        "rule": "ok_envelope",
+        "semanticLevel": "shape_only",
+        "reason": "federation or managed-storage operation uses runtime topology state"
+      },
+      "scenarios": {
+        "full_api": {
+          "weight": 1
+        }
       }
     }
   ]

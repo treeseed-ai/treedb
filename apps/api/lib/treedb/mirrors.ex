@@ -51,89 +51,171 @@ defmodule TreeDb.Mirrors do
            ),
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
          {:ok, mirror} <- get_mirror(repo_id, mirror_id) do
-      remote_name = params["remoteName"] || "origin"
-      refspecs = params["refspecs"] || ["+refs/heads/*:refs/remotes/#{remote_name}/*"]
-      started_at = DateTime.utc_now() |> DateTime.to_iso8601()
-
-      TreeDb.Audit.append("mirror.sync.started", %{
-        actor_id: principal["actorId"],
-        tenant_id: principal["tenantId"],
-        repo_id: repo_id,
-        operation: "mirror.sync",
-        status: "started",
-        data: %{mirrorId: mirror_id, remoteName: remote_name}
-      })
-
-      input = %{
-        repoPath: repo["localPath"],
-        remoteUrl: params["remoteUrl"] || repo["remoteUrl"],
-        remoteName: remote_name,
-        refspecs: refspecs,
-        dryRun: params["dryRun"] == true
-      }
-
-      case fetch_or_dry_run(repo, input) do
-        {:ok, result} ->
-          sync_record =
-            put_sync_record(
-              mirror,
-              repo_id,
-              result,
-              started_at,
-              "synced",
-              nil,
-              params["remoteUrl"]
-            )
-
-          updated_mirror =
-            mirror
-            |> Map.put("lastSeenCommit", result["afterHead"])
-            |> Map.put("behindBy", if(result["afterHead"], do: 0, else: nil))
-            |> Map.put("status", "synced")
-
-          with {:ok, mirror} <- TreeDb.Store.put_mirror(updated_mirror),
-               {:ok, sync} <- sync_record do
-            TreeDb.Audit.append("mirror.sync.completed", %{
-              actor_id: principal["actorId"],
-              tenant_id: principal["tenantId"],
-              repo_id: repo_id,
-              operation: "mirror.sync",
-              status: "ok",
-              data: %{mirrorId: mirror_id, updatedRefs: result["updatedRefs"] || []}
-            })
-
-            {:ok, %{mirror: mirror, sync: sync}}
-          end
-
-        {:error, error} ->
-          _ =
-            put_sync_record(
-              mirror,
-              repo_id,
-              %{"remoteName" => remote_name, "refspecs" => refspecs},
-              started_at,
-              "failed",
-              error["message"] || error[:message],
-              params["remoteUrl"]
-            )
-
-          failed_mirror = mirror |> Map.put("status", "failed")
-          _ = TreeDb.Store.put_mirror(failed_mirror)
-
-          TreeDb.Audit.append("mirror.sync.failed", %{
-            actor_id: principal["actorId"],
-            tenant_id: principal["tenantId"],
-            repo_id: repo_id,
-            operation: "mirror.sync",
-            status: "error",
-            data: %{mirrorId: mirror_id, code: error["code"] || error[:code]}
-          })
-
-          {:error, error}
+      if federation_peer?(mirror["targetNodeId"]) and params["remoteUrl"] in [nil, ""] do
+        sync_federation_mirror(repo_id, mirror, principal)
+      else
+        sync_git_remote(
+          repo_id,
+          repo,
+          mirror,
+          mirror_id,
+          params,
+          principal,
+          conn_request_id(params)
+        )
       end
     else
       {:ok, nil} -> {:error, %{code: "not_found", message: "Repository not found."}}
       other -> other
+    end
+  end
+
+  defp sync_git_remote(repo_id, repo, mirror, mirror_id, params, principal, _request_id) do
+    remote_name = params["remoteName"] || "origin"
+    refspecs = params["refspecs"] || ["+refs/heads/*:refs/remotes/#{remote_name}/*"]
+    started_at = DateTime.utc_now() |> DateTime.to_iso8601()
+
+    TreeDb.Audit.append("mirror.sync.started", %{
+      actor_id: principal["actorId"],
+      tenant_id: principal["tenantId"],
+      repo_id: repo_id,
+      operation: "mirror.sync",
+      status: "started",
+      data: %{mirrorId: mirror_id, remoteName: remote_name}
+    })
+
+    input = %{
+      repoPath: TreeDb.RepositoryStorage.path!(repo),
+      remoteUrl: params["remoteUrl"] || repo["remoteUrl"],
+      remoteName: remote_name,
+      refspecs: refspecs,
+      dryRun: params["dryRun"] == true
+    }
+
+    case fetch_or_dry_run(repo, input) do
+      {:ok, result} ->
+        sync_record =
+          put_sync_record(
+            mirror,
+            repo_id,
+            result,
+            started_at,
+            "synced",
+            nil,
+            params["remoteUrl"]
+          )
+
+        updated_mirror =
+          mirror
+          |> Map.put("lastSeenCommit", result["afterHead"])
+          |> Map.put("behindBy", if(result["afterHead"], do: 0, else: nil))
+          |> Map.put("status", "synced")
+
+        with {:ok, mirror} <- TreeDb.Store.put_mirror(updated_mirror),
+             {:ok, sync} <- sync_record do
+          TreeDb.Audit.append("mirror.sync.completed", %{
+            actor_id: principal["actorId"],
+            tenant_id: principal["tenantId"],
+            repo_id: repo_id,
+            operation: "mirror.sync",
+            status: "ok",
+            data: %{mirrorId: mirror_id, updatedRefs: result["updatedRefs"] || []}
+          })
+
+          {:ok, %{mirror: mirror, sync: sync}}
+        end
+
+      {:error, error} ->
+        _ =
+          put_sync_record(
+            mirror,
+            repo_id,
+            %{"remoteName" => remote_name, "refspecs" => refspecs},
+            started_at,
+            "failed",
+            error["message"] || error[:message],
+            params["remoteUrl"]
+          )
+
+        failed_mirror = mirror |> Map.put("status", "failed")
+        _ = TreeDb.Store.put_mirror(failed_mirror)
+
+        TreeDb.Audit.append("mirror.sync.failed", %{
+          actor_id: principal["actorId"],
+          tenant_id: principal["tenantId"],
+          repo_id: repo_id,
+          operation: "mirror.sync",
+          status: "error",
+          data: %{mirrorId: mirror_id, code: error["code"] || error[:code]}
+        })
+
+        {:error, error}
+    end
+  end
+
+  defp sync_federation_mirror(repo_id, mirror, principal) do
+    started_at = DateTime.utc_now() |> DateTime.to_iso8601()
+
+    TreeDb.Audit.append("mirror.sync.started", %{
+      actor_id: principal["actorId"],
+      tenant_id: principal["tenantId"],
+      repo_id: repo_id,
+      operation: "mirror.sync",
+      status: "started",
+      data: %{mirrorId: mirror["id"], targetNodeId: mirror["targetNodeId"]}
+    })
+
+    case TreeDb.Federation.MirrorTransfer.sync_remote(repo_id, mirror["targetNodeId"]) do
+      {:ok, result} ->
+        updated_mirror =
+          mirror
+          |> Map.put("lastSeenCommit", result["lastSyncedCommit"] || mirror["lastSeenCommit"])
+          |> Map.put("behindBy", 0)
+          |> Map.put("status", "synced")
+
+        with {:ok, stored_mirror} <- TreeDb.Store.put_mirror(updated_mirror),
+             {:ok, sync} <-
+               put_sync_record(
+                 mirror,
+                 repo_id,
+                 %{
+                   "remoteName" => "federation:#{mirror["targetNodeId"]}",
+                   "refspecs" => ["+refs/*:refs/*"],
+                   "beforeHead" => mirror["lastSeenCommit"],
+                   "afterHead" => updated_mirror["lastSeenCommit"],
+                   "updatedRefs" => []
+                 },
+                 started_at,
+                 "synced",
+                 nil,
+                 nil
+               ) do
+          TreeDb.Audit.append("mirror.sync.completed", %{
+            actor_id: principal["actorId"],
+            tenant_id: principal["tenantId"],
+            repo_id: repo_id,
+            operation: "mirror.sync",
+            status: "ok",
+            data: %{mirrorId: mirror["id"], targetNodeId: mirror["targetNodeId"]}
+          })
+
+          {:ok, %{mirror: stored_mirror, sync: sync, transfer: result}}
+        end
+
+      {:error, error} ->
+        _ =
+          put_sync_record(
+            mirror,
+            repo_id,
+            %{"remoteName" => "federation:#{mirror["targetNodeId"]}", "refspecs" => []},
+            started_at,
+            "failed",
+            error["message"] || error[:message],
+            nil
+          )
+
+        _ = TreeDb.Store.put_mirror(Map.put(mirror, "status", "failed"))
+        {:error, error}
     end
   end
 
@@ -233,7 +315,7 @@ defmodule TreeDb.Mirrors do
   end
 
   defp fetch_or_dry_run(repo, %{dryRun: true} = input) do
-    with {:ok, git} <- TreeDb.Git.inspect_repository(repo["localPath"]) do
+    with {:ok, git} <- TreeDb.Git.inspect_repository(TreeDb.RepositoryStorage.path!(repo)) do
       {:ok,
        %{
          "remoteName" => input.remoteName,
@@ -286,4 +368,14 @@ defmodule TreeDb.Mirrors do
       :ok
     end
   end
+
+  defp federation_peer?(node_id) do
+    with {:ok, peer} when is_map(peer) <- TreeDb.Store.get_federation_peer(node_id) do
+      is_binary(peer["baseUrl"]) and peer["baseUrl"] != ""
+    else
+      _ -> false
+    end
+  end
+
+  defp conn_request_id(_params), do: nil
 end

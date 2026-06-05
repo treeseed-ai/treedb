@@ -35,10 +35,11 @@ The default profile runs growing portfolio mode:
 - `--fixture small-docs`
 - `--size small`
 - `--scenario all`
-- `--iterations 100000`
+- no default iteration cap
 - `--concurrency 100`
-- `--duration 10m`
+- `--duration 10m`, measured after setup completes
 - `--report-format both`
+- reliability verifier enabled
 - admin, destructive, exec, and federation operation flags enabled
 
 Reports are written to timestamped paths:
@@ -46,13 +47,14 @@ Reports are written to timestamped paths:
 ```text
 target/profiles/portfolio-<timestamp>.yaml
 target/profiles/portfolio-<timestamp>.md
+target/profiles/portfolio-<timestamp>-replay.jsonl
+target/profiles/portfolio-<timestamp>-failures.jsonl
 ```
 
 Override profile settings with environment variables:
 
 ```bash
 TREEDB_PROFILE_SIZE=medium \
-TREEDB_PROFILE_ITERATIONS=500 \
 TREEDB_PROFILE_CONCURRENCY=100 \
 TREEDB_PROFILE_DURATION=30m \
 TREEDB_PROFILE_OUTPUT=target/profiles/medium-c100.yaml \
@@ -122,9 +124,11 @@ as `profile-small-docs-small-1`.
 
 ## Fixture Root
 
-TreeDB repository registration requires `localPath` to be under
-`TREEDB_DATA_DIR`. Set `--fixture-root` to a directory that the TreeDB server can
-read and that is under its configured data directory.
+The profiler generates Git fixture repositories under `--fixture-root`, which
+must be visible to the TreeDB server and under `TREEDB_DATA_DIR`. It then imports
+those fixtures through the admin local-import API with a data-dir-relative
+`sourceRelativePath`. Normal profiler setup does not send absolute repository
+paths in public registration payloads.
 
 For a containerized server this usually means creating fixtures inside the data
 volume or running the profiler from an environment that shares that path with
@@ -142,11 +146,31 @@ In fixed fixture mode, each worker runs the selected scenario operation sequence
 one HTTP call at a time. In portfolio mode, each worker repeatedly asks the
 runtime portfolio state for one valid request, executes it, validates it, and
 applies the resulting state effect. With `--concurrency 100`, one hundred
-worker loops are active concurrently. Use `--iterations` to set an upper bound
-on generated requests and `--duration` to stop after a wall-clock budget. If
-both are provided, the profiler stops when either limit is reached. The Compose
-profile sets a high iteration bound so the 10 minute duration controls the
-default local run.
+worker loops are active concurrently. Use `--duration` for sustained measured
+load. When duration is provided and `--iterations` is omitted, the measured load
+continues until the requested duration elapses. If both are explicitly
+provided, the profiler stops when either limit is reached and the report marks
+whether the requested measured duration was satisfied.
+
+## Production Reliability Verifier
+
+Verifier mode is enabled by default. It adds strict gates around the performance
+profile:
+
+- setup, measured-load, cleanup, and total profile timing windows
+- minimum measured duration checks
+- exact semantic assertions and public hygiene checks
+- OpenAPI response validation for every response
+- model-state reconciliation summaries
+- operation-chain, negative-input, metamorphic, endpoint-consistency,
+  permission-matrix, delayed-consistency, and leak-detection report sections
+- causal race-interference accounting
+- sanitized replay logs for request ledgers and failures
+
+The profiler exits non-zero when the reliability budget is violated. The
+default budget is `tools/treedb_profiler/reliability_budget.yaml` and requires
+zero server errors, semantic failures, OpenAPI failures, reconciliation drift,
+unverified races, and short measured-duration runs.
 
 ## Load Modes
 
@@ -221,6 +245,41 @@ matrix accounts for every operation in `docs/api/openapi.json`.
 Every exercised operation has a correctness assertion. Routes that are not run
 because they require admin access, destructive behavior, exec, federation, or
 missing setup are reported explicitly in `coverage`.
+
+## Federation Profiles
+
+The profiler supports three-node federation profiles through the Compose gateway:
+
+```bash
+scripts/profile-compose.sh mirror-federation
+scripts/profile-compose.sh connected-library
+scripts/profile-compose.sh federation-soak
+```
+
+Federation profile options can also be passed directly:
+
+```text
+--federation-mode single_node|mirror_cluster|connected_library
+--federation-node-a-url URL
+--federation-node-b-url URL
+--federation-node-c-url URL
+--federation-exercise-promotion true|false
+--federation-exercise-write-proxy true|false
+--federation-exercise-connected-denials true|false
+```
+
+Mirror-cluster profiles verify that parent lineage converges into a trusted
+catalog, remote-primary writes proxy through the ingress node, fresh mirrors can
+serve reads, and mirror policy is represented in route metadata. Connected
+library profiles verify that advertised remote repositories can be read or
+queried through delegated scope while writes and mirror requests are denied by
+default.
+
+Federation assertions check node topology, catalog convergence, route
+resolution, proxy write behavior, mirror freshness, connected-library denials,
+OpenAPI response schemas, and public hygiene. Reports must not include absolute
+storage paths, user tokens, node tokens, delegated tokens, hidden paths,
+snippets, stdout/stderr, or binary payloads.
 
 ## Markdown Reports
 

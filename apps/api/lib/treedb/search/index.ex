@@ -87,7 +87,8 @@ defmodule TreeDb.Search.Index do
   end
 
   defp documents(ctx, patterns, params) do
-    with {:ok, entries} <- TreeDb.Git.list_tree_recursive(ctx.repo["localPath"], ctx.ref, nil) do
+    with {:ok, entries} <-
+           TreeDb.Git.list_tree_recursive(TreeDb.RepositoryStorage.path!(ctx.repo), ctx.ref, nil) do
       entries
       |> Enum.filter(&(&1["kind"] == "blob"))
       |> Enum.filter(&(Path.extname(&1["path"]) in @extensions))

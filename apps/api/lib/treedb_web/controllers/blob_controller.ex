@@ -2,39 +2,68 @@ defmodule TreeDbWeb.BlobController do
   use Phoenix.Controller, formats: [:json]
   import Plug.Conn
   import TreeDbWeb.ControllerHelpers
+  import TreeDbWeb.FederationProxyHelpers
 
   def read_repo(conn, %{"repo_id" => repo_id} = params),
-    do: with_principal(conn, &TreeDb.Blobs.read_repo(repo_id, params, &1))
+    do:
+      maybe_proxy_repo_read(conn, repo_id, params, fn conn ->
+        with_principal(conn, &TreeDb.Blobs.read_repo(repo_id, params, &1))
+      end)
 
   def write(conn, %{"workspace_id" => workspace_id} = params),
-    do: with_principal(conn, &TreeDb.Blobs.write_workspace(workspace_id, params, &1))
+    do:
+      maybe_proxy_workspace(conn, workspace_id, params, fn conn ->
+        with_principal(conn, &TreeDb.Blobs.write_workspace(workspace_id, params, &1))
+      end)
 
   def delete(conn, %{"workspace_id" => workspace_id} = params),
-    do: with_principal(conn, &TreeDb.Blobs.delete_workspace(workspace_id, params, &1))
+    do:
+      maybe_proxy_workspace(conn, workspace_id, params, fn conn ->
+        with_principal(conn, &TreeDb.Blobs.delete_workspace(workspace_id, params, &1))
+      end)
 
   def download(conn, %{"workspace_id" => workspace_id} = params) do
-    with {:ok, principal} <- require_principal(conn),
-         {:ok, blob} <- TreeDb.Blobs.download_workspace(workspace_id, params, principal) do
-      conn
-      |> put_resp_content_type(blob.contentType)
-      |> put_resp_header("content-disposition", ~s(attachment; filename="#{filename(blob.path)}"))
-      |> put_resp_header("x-treedb-content-hash", blob.contentHash || "")
-      |> maybe_put_header("x-treedb-object-id", blob.objectId)
-      |> put_resp_header("x-treedb-source", blob.source || "")
-      |> send_resp(200, blob.bytes)
-    else
-      {:error, error} -> error(conn, status_for(error[:code] || error["code"]), error)
-    end
+    maybe_proxy_workspace(conn, workspace_id, params, fn conn ->
+      with {:ok, principal} <- require_principal(conn),
+           {:ok, blob} <- TreeDb.Blobs.download_workspace(workspace_id, params, principal) do
+        conn
+        |> put_resp_content_type(blob.contentType)
+        |> put_resp_header(
+          "content-disposition",
+          ~s(attachment; filename="#{filename(blob.path)}")
+        )
+        |> put_resp_header("x-treedb-content-hash", blob.contentHash || "")
+        |> maybe_put_header("x-treedb-object-id", blob.objectId)
+        |> put_resp_header("x-treedb-source", blob.source || "")
+        |> send_resp(200, blob.bytes)
+      else
+        {:error, error} -> error(conn, status_for(error[:code] || error["code"]), error)
+      end
+    end)
   end
 
   def upload(conn, %{"workspace_id" => workspace_id} = params) do
-    with {:ok, principal} <- require_principal(conn),
-         {:ok, bytes, conn} <- read_limited_body(conn),
-         params <- upload_params(conn, params),
-         {:ok, payload} <- TreeDb.Blobs.upload_workspace(workspace_id, params, bytes, principal) do
-      handle_result(conn, {:ok, payload})
+    with {:ok, bytes, conn} <- read_limited_body(conn) do
+      case TreeDb.Federation.Proxy.maybe_proxy_workspace(workspace_id, conn, bytes) do
+        :local ->
+          with {:ok, principal} <- require_principal(conn),
+               params <- upload_params(conn, params),
+               {:ok, payload} <-
+                 TreeDb.Blobs.upload_workspace(workspace_id, params, bytes, principal) do
+            handle_result(conn, {:ok, payload})
+          else
+            {:error, error} -> error(conn, status_for(error[:code] || error["code"]), error)
+          end
+
+        {:proxy, status, headers, body} ->
+          send_proxy_response(conn, status, headers, body)
+
+        {:error, error} ->
+          error(conn, status_for(error[:code] || error["code"]), error)
+      end
     else
-      {:error, error} -> error(conn, status_for(error[:code] || error["code"]), error)
+      {:error, error} ->
+        error(conn, status_for(error[:code] || error["code"]), error)
     end
   end
 

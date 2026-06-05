@@ -166,7 +166,7 @@ defmodule TreeDb.Files do
          {:ok, changes} <- commit_changes(overlays),
          {:ok, result} <-
            TreeDb.Git.commit_overlay(%{
-             repoPath: ctx.repo["localPath"],
+             repoPath: TreeDb.RepositoryStorage.path!(ctx.repo),
              baseCommitSha: ctx.workspace["baseCommitSha"],
              branchName: ctx.workspace["branchName"],
              message: params["message"] || "Update repository file through TreeDB",
@@ -351,7 +351,11 @@ defmodule TreeDb.Files do
   end
 
   defp base_file(ctx, path) do
-    case TreeDb.Git.read_blob(ctx.repo["localPath"], ctx.workspace["baseCommitSha"], path) do
+    case TreeDb.Git.read_blob(
+           TreeDb.RepositoryStorage.path!(ctx.repo),
+           ctx.workspace["baseCommitSha"],
+           path
+         ) do
       {:ok, blob} ->
         with {:ok, bytes} <- Base.decode64(blob["contentBase64"]),
              {:ok, content} <- Overlay.utf8(bytes) do
@@ -382,7 +386,7 @@ defmodule TreeDb.Files do
 
   defp base_tree(ctx, path) do
     case TreeDb.Git.list_tree(
-           ctx.repo["localPath"],
+           TreeDb.RepositoryStorage.path!(ctx.repo),
            ctx.workspace["baseCommitSha"],
            empty_to_nil(path)
          ) do
@@ -395,7 +399,7 @@ defmodule TreeDb.Files do
   defp workspace_text_files(ctx, root) do
     with {:ok, base_entries} <-
            TreeDb.Git.list_tree_recursive(
-             ctx.repo["localPath"],
+             TreeDb.RepositoryStorage.path!(ctx.repo),
              ctx.workspace["baseCommitSha"],
              empty_to_nil(root)
            ),

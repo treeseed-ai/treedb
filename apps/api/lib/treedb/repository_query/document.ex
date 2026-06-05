@@ -7,7 +7,8 @@ defmodule TreeDb.RepositoryQuery.Document do
     encoding = Keyword.get(opts, :encoding, "utf8")
     parse_frontmatter = Keyword.get(opts, :parse_frontmatter, true)
 
-    with {:ok, blob} <- TreeDb.Git.read_blob(repo["localPath"], ref, entry["path"]),
+    with {:ok, blob} <-
+           TreeDb.Git.read_blob(TreeDb.RepositoryStorage.path!(repo), ref, entry["path"]),
          {:ok, bytes} <- Base.decode64(blob["contentBase64"]) do
       build(entry, blob, bytes, encoding, parse_frontmatter)
     else
@@ -17,7 +18,7 @@ defmodule TreeDb.RepositoryQuery.Document do
   end
 
   def from_path(repo, ref, path, opts \\ []) do
-    with {:ok, blob} <- TreeDb.Git.read_blob(repo["localPath"], ref, path),
+    with {:ok, blob} <- TreeDb.Git.read_blob(TreeDb.RepositoryStorage.path!(repo), ref, path),
          {:ok, bytes} <- Base.decode64(blob["contentBase64"]) do
       entry = %{
         "path" => path,

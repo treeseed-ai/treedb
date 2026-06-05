@@ -5,7 +5,7 @@ defmodule TreeDbProfiler.DataGenerator do
     """
     # Generated Portfolio Document #{index}
 
-    release provenance migration portfolio generated #{index}
+    release provenance migration portfolio generated #{index} profile_term_#{pad(index)}
 
     EntityAlpha#{index} links to System#{rem(index, 17)} and Release#{rem(index, 23)}.
 
@@ -14,7 +14,8 @@ defmodule TreeDbProfiler.DataGenerator do
   end
 
   def text(seed, index),
-    do: "release provenance migration portfolio text #{index} #{lorem(seed, index)}\n"
+    do:
+      "release provenance migration portfolio text #{index} profile_term_#{pad(index)} #{lorem(seed, index)}\n"
 
   def json(seed, index) do
     Jason.encode!(
@@ -22,6 +23,7 @@ defmodule TreeDbProfiler.DataGenerator do
         "id" => index,
         "seed" => seed,
         "term" => "release",
+        "profileTerm" => "profile_term_#{pad(index)}",
         "kind" => "portfolio",
         "entity" => "EntityAlpha#{index}"
       },
@@ -55,7 +57,13 @@ defmodule TreeDbProfiler.DataGenerator do
     end
   end
 
-  def repo_name(prefix, profile_id, index), do: "#{prefix}#{profile_id}-repo-#{pad(index)}"
+  def repo_name(prefix, profile_id, index) do
+    "#{prefix}#{profile_id}-repo-#{pad(index)}"
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9._-]/, "-")
+    |> String.replace(~r/-+/, "-")
+    |> String.trim(".-")
+  end
 
   defp chunks(seed), do: Stream.iterate(0, &(&1 + 1)) |> Stream.map(&hash_chunk(seed, &1))
   defp hash_chunk(seed, index), do: :crypto.hash(:sha256, "#{seed}:#{index}")

@@ -26,7 +26,6 @@ coordinated SDK compatibility decision.
 
 ## Safety Checks
 
-Before handoff, search for implementation-history labels and remove them from
-TreeDB implementation artifacts. Planning archives may retain historical
-wording, but public docs, tests, code, scripts, OpenAPI metadata, and generated
-types should use unified contract language.
+Before handoff, search for stale rollout or planning labels and remove them from
+TreeDB implementation artifacts. Public docs, tests, code, scripts, OpenAPI
+metadata, and generated types should use unified contract language.

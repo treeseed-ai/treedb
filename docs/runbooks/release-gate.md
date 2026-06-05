@@ -52,15 +52,18 @@ hardware so architecture-specific Rust, native NIF, release, storage, and
 container issues are caught before publishing.
 
 For pushes to `main`, `staging`, and semantic-version tags, the workflow also
-runs an architecture-local profiler job after verification. The profiler uses
-the production profile Compose setup and writes YAML plus Markdown reports as
-workflow artifacts. Pull requests and ordinary branch pushes run verification
-only.
+runs architecture-local profiler jobs after verification. The base profiler uses
+the production profile Compose setup. Federation profiler jobs run both
+three-node mirror-cluster and connected-library profiles so release publishing
+is gated on local API behavior, live catalog sync, proxy routing, mirror policy,
+connected-library access policy, OpenAPI response validation, semantic
+assertions, and reliability budgets. Pull requests and ordinary branch pushes
+run verification only.
 
 Profile behavior is controlled with GitHub repository or environment variables:
 
 - `TREEDB_CI_PROFILE_MODE`, default `portfolio`
-- `TREEDB_CI_PROFILE_DURATION`, default `2m`
+- `TREEDB_CI_PROFILE_DURATION`, default `10m`
 - `TREEDB_CI_PROFILE_CONCURRENCY`, default `25`
 - `TREEDB_CI_PROFILE_SIZE`
 - `TREEDB_CI_PROFILE_FIXTURE`
@@ -68,9 +71,23 @@ Profile behavior is controlled with GitHub repository or environment variables:
 - `TREEDB_CI_PROFILE_LOAD_MODE`
 - `TREEDB_CI_PROFILE_ITERATIONS`
 
+Federation profile behavior is controlled separately:
+
+- `TREEDB_CI_FEDERATION_PROFILE_ENABLED`, default `true` on release-path pushes
+- `TREEDB_CI_FEDERATION_PROFILE_MODES`, default
+  `mirror-federation,connected-library`
+- `TREEDB_CI_FEDERATION_PROFILE_DURATION`, default `10m`
+- `TREEDB_CI_FEDERATION_PROFILE_CONCURRENCY`, default `25`
+- `TREEDB_CI_FEDERATION_PROFILE_SIZE`, default `small`
+
+Duration means measured load after setup completes. Setup, image build, health
+waits, fixture import, catalog convergence, and report finalization are recorded
+separately and do not count toward the requested measured window.
+
 The architecture image build runs only after the matching architecture has
-completed verification and after both profiler streams have succeeded. The final
-manifest is assembled only after both architecture images are pushed.
+completed verification and after required base and federation profiler streams
+have succeeded. The final manifest is assembled only after both architecture
+images are pushed.
 
 ## Docker Hub Publishing
 

@@ -23,7 +23,11 @@ pub use catalog::{
 };
 pub use error::StoreError;
 pub use federation::{
-    get_repository_placement, list_mirrors, put_mirror, put_repository_placement,
+    get_federation_peer, get_federation_route, get_idempotency_record, get_repository_placement,
+    get_workspace_route, list_federation_peers, list_federation_routes, list_mirror_assignments,
+    list_mirrors, list_node_capacity, list_repository_advertisements, put_federation_peer,
+    put_federation_route, put_idempotency_record, put_mirror, put_mirror_assignment,
+    put_node_capacity, put_repository_advertisement, put_repository_placement, put_workspace_route,
 };
 pub use graph_jobs::{get_graph_refresh_job, put_graph_refresh_job};
 pub use ids::{hash_bytes, hash_token};

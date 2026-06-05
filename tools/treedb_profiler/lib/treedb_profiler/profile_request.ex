@@ -27,6 +27,13 @@ defmodule TreeDbProfiler.ProfileRequest do
     :headers,
     :expected_status,
     :validation_rule,
+    :target,
+    :expectation,
+    :precondition,
+    :postconditions,
+    :race_context,
+    :validation_probes,
+    :state_effect_on_status,
     :state_effect,
     :failure_effect,
     :generated_at,
@@ -38,6 +45,13 @@ defmodule TreeDbProfiler.ProfileRequest do
       attrs
       |> Map.put_new(:headers, [])
       |> Map.put_new(:body, nil)
+      |> Map.put_new(:target, %{})
+      |> Map.put_new(:expectation, %{})
+      |> Map.put_new(:precondition, %{})
+      |> Map.put_new(:postconditions, [])
+      |> Map.put_new(:race_context, %{})
+      |> Map.put_new(:validation_probes, [])
+      |> Map.put_new(:state_effect_on_status, %{})
       |> Map.put_new(:state_effect, nil)
       |> Map.put_new(:failure_effect, nil)
       |> Map.put_new(:generated_at, DateTime.utc_now() |> DateTime.to_iso8601())

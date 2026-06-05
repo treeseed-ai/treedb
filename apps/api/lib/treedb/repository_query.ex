@@ -218,7 +218,8 @@ defmodule TreeDb.RepositoryQuery do
            TreeDb.Capabilities.require_capability(ctx.principal, "files:read", ctx.repo["id"]),
          :ok <- TreeDb.Capabilities.require_ref(ctx.scope, base_ref),
          {:ok, patterns} <- PathMatch.normalize_patterns(params["paths"]),
-         {:ok, changes} <- TreeDb.Git.changed_paths(ctx.repo["localPath"], base_ref, ctx.ref),
+         {:ok, changes} <-
+           TreeDb.Git.changed_paths(TreeDb.RepositoryStorage.path!(ctx.repo), base_ref, ctx.ref),
          changes <- filter_changed_paths(changes, ctx.scope, patterns, params),
          {page_changes, page} <-
            Pagination.paginate(
@@ -265,7 +266,7 @@ defmodule TreeDb.RepositoryQuery do
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
          ref <- params["ref"] || repo["defaultRef"] || "refs/heads/main",
          :ok <- TreeDb.Capabilities.require_ref(scope, ref),
-         {:ok, resolved} <- TreeDb.Git.resolve_ref(repo["localPath"], ref) do
+         {:ok, resolved} <- TreeDb.Git.resolve_ref(TreeDb.RepositoryStorage.path!(repo), ref) do
       {:ok,
        %{
          repo: repo,

@@ -8,7 +8,8 @@ defmodule TreeDb.Graph.Builder do
 
   def build_input(ctx, params, previous_manifest) do
     with {:ok, patterns} <- PathMatch.normalize_patterns(params["paths"]),
-         {:ok, entries} <- TreeDb.Git.list_tree_recursive(ctx.repo["localPath"], ctx.ref, nil),
+         {:ok, entries} <-
+           TreeDb.Git.list_tree_recursive(TreeDb.RepositoryStorage.path!(ctx.repo), ctx.ref, nil),
          {:ok, documents} <- documents(ctx, entries, patterns, params) do
       {:ok,
        %{
@@ -31,7 +32,8 @@ defmodule TreeDb.Graph.Builder do
   end
 
   defp document(ctx, entry) do
-    with {:ok, blob} <- TreeDb.Git.read_blob(ctx.repo["localPath"], ctx.ref, entry["path"]),
+    with {:ok, blob} <-
+           TreeDb.Git.read_blob(TreeDb.RepositoryStorage.path!(ctx.repo), ctx.ref, entry["path"]),
          {:ok, bytes} <- Base.decode64(blob["contentBase64"]),
          true <- String.valid?(bytes) do
       {:ok,

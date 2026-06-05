@@ -120,7 +120,7 @@ defmodule TreeDb.Snapshots do
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
          ref <- params["ref"] || repo["defaultRef"] || "refs/heads/main",
          :ok <- TreeDb.Capabilities.require_ref(scope, ref),
-         {:ok, resolved_ref} <- TreeDb.Git.resolve_ref(repo["localPath"], ref),
+         {:ok, resolved_ref} <- TreeDb.Git.resolve_ref(TreeDb.RepositoryStorage.path!(repo), ref),
          {:ok, patterns} <- PathMatch.normalize_patterns(params["paths"] || ["**"]),
          :ok <- TreeDb.Capabilities.require_paths(scope, patterns) do
       {:ok,
@@ -146,7 +146,11 @@ defmodule TreeDb.Snapshots do
 
   defp collect_files(ctx) do
     with {:ok, entries} <-
-           TreeDb.Git.list_tree_recursive(ctx.repo["localPath"], ctx.commit_sha, nil) do
+           TreeDb.Git.list_tree_recursive(
+             TreeDb.RepositoryStorage.path!(ctx.repo),
+             ctx.commit_sha,
+             nil
+           ) do
       entries
       |> Enum.filter(&(&1["kind"] == "blob"))
       |> Enum.filter(&PathMatch.match_any?(ctx.patterns, &1["path"]))
@@ -154,7 +158,11 @@ defmodule TreeDb.Snapshots do
       |> Enum.reject(&(PathPolicy.protected?(&1["path"]) and !ctx.allow_protected))
       |> Enum.reduce_while({:ok, [], 0}, fn entry, {:ok, acc, total} ->
         with {:ok, blob} <-
-               TreeDb.Git.read_blob(ctx.repo["localPath"], ctx.commit_sha, entry["path"]),
+               TreeDb.Git.read_blob(
+                 TreeDb.RepositoryStorage.path!(ctx.repo),
+                 ctx.commit_sha,
+                 entry["path"]
+               ),
              {:ok, bytes} <- Base.decode64(blob["contentBase64"]) do
           size = byte_size(bytes)
           total = total + size

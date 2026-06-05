@@ -44,6 +44,16 @@ defmodule TreeDbWeb.ControllerHelpers do
   def status_for("federated_node_timeout"), do: 502
   def status_for("federated_partial_failure"), do: 502
   def status_for("federated_route_not_configured"), do: 502
+  def status_for("write_route_required"), do: 409
+  def status_for("federated_proxy_loop"), do: 508
+  def status_for("federated_node_auth_required"), do: 401
+  def status_for("federated_node_auth_invalid"), do: 401
+  def status_for("federated_node_auth_forbidden"), do: 403
+  def status_for("federated_mirror_stale"), do: 409
+  def status_for("federated_mirror_unavailable"), do: 502
+  def status_for("federated_catalog_rejected"), do: 422
+  def status_for("federated_delegation_forbidden"), do: 403
+  def status_for("idempotency_conflict"), do: 409
   def status_for("unsupported_transport"), do: 422
   def status_for("validation_error"), do: 422
   def status_for(_), do: 500

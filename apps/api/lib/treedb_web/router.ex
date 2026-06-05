@@ -29,6 +29,15 @@ defmodule TreeDbWeb.Router do
     post("/policy/grants", CapabilityController, :put_grant)
     get("/audit/events", AuditController, :events)
     post("/federation/query/plan", FederationController, :plan_query)
+    post("/federation/nodes/register", FederationNodeController, :register)
+    get("/federation/peers", FederationNodeController, :index)
+    get("/federation/peers/:node_id", FederationNodeController, :show)
+    post("/federation/peers/:node_id/trust", FederationNodeController, :trust)
+    post("/federation/peers/:node_id/revoke", FederationNodeController, :revoke)
+    get("/federation/catalog", FederationCatalogController, :catalog)
+    post("/federation/catalog/push", FederationCatalogController, :push)
+    post("/federation/catalog/sync", FederationCatalogController, :sync)
+    get("/federation/routes", FederationCatalogController, :routes)
     post("/search", GlobalQueryController, :search)
     post("/query", GlobalQueryController, :query)
     post("/context/build", GlobalQueryController, :context)
@@ -47,12 +56,14 @@ defmodule TreeDbWeb.Router do
     post("/admin/storage/restore/verify", AdminStorageController, :verify_restore)
     post("/admin/storage/restore", AdminStorageController, :restore)
     post("/admin/artifacts/cleanup", ArtifactController, :cleanup)
+    post("/admin/repos/import-local", RepoController, :import_local)
 
     get("/node", NodeController, :show)
     get("/registry/nodes", RegistryController, :nodes)
     get("/registry/repos/:repo_id/placement", RegistryController, :placement)
     post("/registry/repos/:repo_id/placement", RegistryController, :put_placement)
 
+    post("/repos", RepoController, :create)
     post("/repos/register", RepoController, :register)
     get("/repos", RepoController, :index)
     get("/repos/:repo_id", RepoController, :show)
@@ -126,5 +137,21 @@ defmodule TreeDbWeb.Router do
     get("/workspaces/:workspace_id/diff", FileController, :diff)
     post("/workspaces/:workspace_id/commit", FileController, :commit)
     post("/workspaces/:workspace_id/exec", ExecController, :exec)
+
+    post("/internal/federation/proxy", InternalFederationController, :proxy)
+
+    post(
+      "/internal/federation/repos/:repo_id/mirror/export",
+      InternalFederationController,
+      :mirror_export
+    )
+
+    post(
+      "/internal/federation/repos/:repo_id/mirror/import",
+      InternalFederationController,
+      :mirror_import
+    )
+
+    get("/internal/federation/health", InternalFederationController, :health)
   end
 end

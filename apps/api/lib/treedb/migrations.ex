@@ -98,11 +98,37 @@ defmodule TreeDb.Migrations do
 
   defp target_node(node_id) do
     case TreeDb.Store.get_node(node_id) do
-      {:ok, nil} -> {:error, %{code: "not_found", message: "Target node not found."}}
+      {:ok, nil} -> federation_target_node(node_id)
       {:ok, node} -> {:ok, node}
       other -> other
     end
   end
+
+  defp federation_target_node(node_id) do
+    case TreeDb.Federation.Trust.get(node_id) do
+      {:ok, peer} when is_map(peer) ->
+        states =
+          peer["trustStates"] || peer[:trustStates] || peer["trust_states"] || peer[:trust_states] ||
+            []
+
+        can_mirror? =
+          truthy?(
+            peer["canMirrorRepos"] || peer[:canMirrorRepos] || peer["can_mirror_repos"] ||
+              peer[:can_mirror_repos]
+          )
+
+        if "trusted_for_mirror" in states or can_mirror? do
+          {:ok, %{"id" => node_id, "kind" => "federation_peer"}}
+        else
+          {:error, %{code: "not_found", message: "Target node not found."}}
+        end
+
+      _ ->
+        {:error, %{code: "not_found", message: "Target node not found."}}
+    end
+  end
+
+  defp truthy?(value), do: value in [true, "true", "1", 1]
 
   defp validate_synced_mirror(_repo_id, %{"requireMirrorSynced" => false}, _placement), do: :ok
 

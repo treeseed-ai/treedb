@@ -11,10 +11,12 @@ The profiler is intentionally black-box:
 - It does not import `apps/api` modules.
 - It does not use the SDK package.
 - It creates Git repositories only as source fixtures for
-  `POST /api/v1/repos/register`.
+  managed repository creation or data-dir-relative admin import.
 
-After registration, all TreeDB state is created, updated, queried, and cleaned
-up through public API calls.
+After fixture import/creation, all TreeDB state is created, updated, queried,
+and cleaned up through public API calls. Normal profiler setup uses canonical
+repository names and repository-relative paths; reports must not retain
+absolute fixture roots or managed storage paths.
 
 ## Dynamic Expectations
 
@@ -91,6 +93,37 @@ effect before asking for the next request. Setup work such as repo registration,
 workspace creation, graph refresh, and snapshot preparation remains sequential
 and is not mixed into steady-state operation statistics.
 
+When `--duration` is supplied without an explicit `--iterations`, duration is
+the controlling limit. The measured timer starts only after setup completes.
+Reports include profile, setup, measured-load, and cleanup timing windows,
+including `timing.measured.durationSatisfied`. CI verifier profiles require a
+ten-minute measured window by default.
+
+## Production Reliability Verifier
+
+Verifier mode is enabled by default. It turns the profiler into a reliability
+gate as well as a performance tool:
+
+- exact semantic assertions compare API responses to generated expectations
+- validation probes verify state transitions through follow-up public API calls
+- OpenAPI response validation checks documented status/schema compatibility
+- model-state reconciliation compares the expected API-visible model to sampled
+  API state
+- operation chains validate full workflows such as workspace write, commit,
+  repo read, search, and query
+- negative tests describe malicious and stale requests with exact sanitized
+  error expectations
+- metamorphic and cross-endpoint checks ensure related endpoints agree
+- delayed consistency checks track operations that should remain stable after
+  the initial response
+- permission matrix checks track authorization behavior
+- leak detection records metric/resource growth warnings
+- replay logs retain sanitized request metadata and failure context
+
+Race interference is tracked separately from ordinary failures. A race is
+accepted only when the profiler can tie it to state or causal request evidence;
+unverified races fail the reliability budget.
+
 ## OpenAPI Coverage
 
 The profiler reads `docs/api/openapi.json` and verifies
@@ -104,6 +137,25 @@ such as admin-disabled, destructive-disabled, exec-disabled,
 federation-disabled, optional-unavailable, or not-selected-by-scenario.
 
 The report must keep `coverage.unaccounted` at `0`.
+
+## Federation Coverage
+
+Federation profiles run against three TreeDB API nodes and verify live
+catalog-sync behavior without restarting services. Node A is the default ingress
+for profiler traffic, while node B and node C join through configured parent
+lineage. The profiler then checks that catalogs converge, routes resolve across
+nodes, remote reads and writes follow the selected federation mode, and public
+responses remain sanitized.
+
+Mirror-cluster profiles exercise same-cluster assumptions: write proxy to
+trusted primaries, mirror reads when freshness policy allows them, and optional
+promotion checks. Connected-library profiles exercise independent-owner
+assumptions: advertised repositories are readable/queryable through reduced
+delegated scope, while writes and mirror requests are denied by default.
+
+Federation reports include node topology, catalog convergence, proxy-write
+status, mirror-read status, connected-library denial status, per-node operation
+rollups, OpenAPI validation results, and reliability-budget status.
 
 ## Workloads
 
@@ -130,5 +182,13 @@ YAML is the canonical machine-readable report. Markdown is available with:
 
 Markdown reports include summary statistics, workload configuration, portfolio
 growth, endpoint coverage, category performance, per-operation latency tables,
-slowest operations, errors, assertions, metrics deltas, and retained request
-sample counts.
+slowest operations, errors, assertions, metrics deltas, verifier sections,
+timing windows, replay-log paths, and retained request sample counts.
+
+The reliability budget lives at
+`tools/treedb_profiler/reliability_budget.yaml`. The default budget allows no
+request errors, semantic failures, OpenAPI failures, reconciliation drift,
+unverified races, validation-probe failures, negative-test failures,
+metamorphic failures, endpoint-consistency failures, or delayed-consistency
+failures. It also requires the measured duration to satisfy at least 99% of the
+requested window.

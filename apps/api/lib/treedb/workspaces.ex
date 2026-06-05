@@ -19,7 +19,8 @@ defmodule TreeDb.Workspaces do
          :ok <- require_branch_scope(repo_scope, branch_name),
          :ok <- TreeDb.Capabilities.require_paths(repo_scope, allowed_paths),
          {:ok, repo} when is_map(repo) <- TreeDb.Store.get_repository(repo_id),
-         {:ok, base_resolved} <- TreeDb.Git.resolve_ref(repo["localPath"], base_ref),
+         {:ok, base_resolved} <-
+           TreeDb.Git.resolve_ref(TreeDb.RepositoryStorage.path!(repo), base_ref),
          :ok <- ensure_branch_start(repo, branch_name, base_resolved["target"]),
          {:ok, placement} when is_map(placement) <-
            TreeDb.Store.get_repository_placement(repo_id),
@@ -63,6 +64,8 @@ defmodule TreeDb.Workspaces do
          :ok <- workspace_actor_allowed(workspace, principal),
          {:ok, _workspace, _scope} <- ensure_policy_current(workspace, principal, "files:read"),
          {:ok, closed} when is_map(closed) <- TreeDb.Store.close_workspace(workspace_id) do
+      put_workspace_route(closed, principal, "closed")
+
       TreeDb.Audit.append("workspace.closed", %{
         actor_id: actor_id(principal),
         tenant_id: tenant_id(principal),
@@ -228,7 +231,25 @@ defmodule TreeDb.Workspaces do
       policyHash: scope["policyHash"]
     }
 
-    TreeDb.Store.put_workspace(input)
+    with {:ok, workspace} <- TreeDb.Store.put_workspace(input),
+         :ok <- put_workspace_route(workspace, principal, "open") do
+      {:ok, workspace}
+    end
+  end
+
+  defp put_workspace_route(workspace, principal, status) do
+    TreeDb.Store.put_workspace_route(%{
+      workspaceId: workspace["id"],
+      repositoryId: workspace["repositoryId"],
+      nodeId: workspace["nodeId"],
+      actorId: actor_id(principal),
+      status: status,
+      createdAt: workspace["createdAt"] || DateTime.utc_now() |> DateTime.to_iso8601(),
+      updatedAt: DateTime.utc_now() |> DateTime.to_iso8601(),
+      expiresAt: workspace["expiresAt"]
+    })
+
+    :ok
   end
 
   defp normalize_mode("writable"), do: "writable"
@@ -321,7 +342,7 @@ defmodule TreeDb.Workspaces do
   defp ensure_branch_start(_repo, nil, _base_sha), do: :ok
 
   defp ensure_branch_start(repo, branch_name, base_sha) do
-    case TreeDb.Git.resolve_ref(repo["localPath"], branch_name) do
+    case TreeDb.Git.resolve_ref(TreeDb.RepositoryStorage.path!(repo), branch_name) do
       {:ok, %{"target" => ^base_sha}} ->
         :ok
 

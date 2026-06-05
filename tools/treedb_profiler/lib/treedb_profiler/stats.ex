@@ -9,9 +9,13 @@ defmodule TreeDbProfiler.Stats do
       durations = Enum.map(operation_samples, & &1.duration_ms)
       statuses = count_by(operation_samples, &Integer.to_string(&1.status || 0))
       status_classes = count_by(operation_samples, &status_class(&1.status))
-      errors = Enum.filter(operation_samples, &(&1.ok != true))
-      assertion_failures = Enum.filter(operation_samples, &(&1.assertion != :passed))
-      success = length(operation_samples) - length(errors)
+      races = Enum.filter(operation_samples, &(&1.assertion == :race_interference))
+
+      errors =
+        Enum.filter(operation_samples, &(&1.ok != true and &1.assertion != :race_interference))
+
+      assertion_failures = Enum.filter(operation_samples, &(&1.assertion == :failed))
+      success = length(operation_samples) - length(errors) - length(races)
       calls = length(operation_samples)
 
       %{
@@ -23,6 +27,7 @@ defmodule TreeDbProfiler.Stats do
         "calls" => calls,
         "success" => success,
         "errors" => length(errors),
+        "raceInterference" => length(races),
         "successRate" => rate(success, calls),
         "errorRate" => rate(length(errors), calls),
         "status" => statuses,
@@ -49,7 +54,8 @@ defmodule TreeDbProfiler.Stats do
           |> max_string(),
         "assertions" => %{
           "passed" => calls - length(assertion_failures),
-          "failed" => length(assertion_failures)
+          "failed" => length(assertion_failures),
+          "raceInterference" => length(races)
         }
       }
     end)
@@ -58,13 +64,18 @@ defmodule TreeDbProfiler.Stats do
 
   def summary(samples, operations) do
     total = length(samples)
-    errors = Enum.count(samples, &(&1.ok != true))
+    errors = Enum.count(samples, &(&1.ok != true and &1.assertion != :race_interference))
+    races = Enum.count(samples, &(&1.assertion == :race_interference))
+    assertion_failures = Enum.count(samples, &(&1.assertion == :failed))
 
     %{
       "totalCalls" => total,
       "totalErrors" => errors,
+      "assertionFailures" => assertion_failures,
+      "raceInterference" => races,
       "errorRate" => rate(errors, total),
-      "successRate" => rate(total - errors, total),
+      "successRate" => rate(total - errors - races, total),
+      "correctnessPass" => assertion_failures == 0,
       "throughputPerSecond" => throughput(samples),
       "slowestOperations" =>
         operations
@@ -157,13 +168,15 @@ defmodule TreeDbProfiler.Stats do
   defp aggregate_operation_group(name, operations, key \\ "category") do
     calls = Enum.sum(Enum.map(operations, & &1["calls"]))
     errors = Enum.sum(Enum.map(operations, & &1["errors"]))
+    races = Enum.sum(Enum.map(operations, &(&1["raceInterference"] || 0)))
 
     %{
       key => name,
       "calls" => calls,
       "success" => calls - errors,
       "errors" => errors,
-      "successRate" => rate(calls - errors, calls),
+      "raceInterference" => races,
+      "successRate" => rate(calls - errors - races, calls),
       "errorRate" => rate(errors, calls),
       "p95Max" => operations |> Enum.map(&get_in(&1, ["latencyMs", "p95"])) |> max_number()
     }

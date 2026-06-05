@@ -117,14 +117,23 @@ jobs:
           TREEDB_PROFILE_SCENARIO: ${{ vars.TREEDB_CI_PROFILE_SCENARIO }}
           TREEDB_PROFILE_LOAD_MODE: ${{ vars.TREEDB_CI_PROFILE_LOAD_MODE }}
           TREEDB_PROFILE_ITERATIONS: ${{ vars.TREEDB_CI_PROFILE_ITERATIONS }}
+          TREEDB_PROFILE_RELIABILITY_VERIFIER: ${{ vars.TREEDB_CI_PROFILE_RELIABILITY_VERIFIER }}
+          TREEDB_PROFILE_DURATION_IS_CONTROLLING: ${{ vars.TREEDB_CI_PROFILE_DURATION_IS_CONTROLLING }}
+          TREEDB_PROFILE_MINIMUM_MEASURED_DURATION: ${{ vars.TREEDB_CI_PROFILE_MINIMUM_MEASURED_DURATION }}
         run: |
           set -euo pipefail
 
           mode="${TREEDB_CI_PROFILE_MODE:-portfolio}"
-          export TREEDB_PROFILE_DURATION="${TREEDB_PROFILE_DURATION:-2m}"
+          export TREEDB_PROFILE_DURATION="${TREEDB_PROFILE_DURATION:-10m}"
+          export TREEDB_PROFILE_ITERATIONS="${TREEDB_PROFILE_ITERATIONS:-}"
+          export TREEDB_PROFILE_RELIABILITY_VERIFIER="${TREEDB_PROFILE_RELIABILITY_VERIFIER:-true}"
+          export TREEDB_PROFILE_DURATION_IS_CONTROLLING="${TREEDB_PROFILE_DURATION_IS_CONTROLLING:-true}"
+          export TREEDB_PROFILE_MINIMUM_MEASURED_DURATION="${TREEDB_PROFILE_MINIMUM_MEASURED_DURATION:-10m}"
           export TREEDB_PROFILE_CONCURRENCY="${TREEDB_PROFILE_CONCURRENCY:-25}"
           export TREEDB_PROFILE_OUTPUT="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}.yaml"
           export TREEDB_PROFILE_MARKDOWN_OUTPUT="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}.md"
+          export TREEDB_PROFILE_REPLAY_LOG="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}-replay.jsonl"
+          export TREEDB_PROFILE_FAILURE_REPLAY_LOG="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}-failures.jsonl"
           export TREEDB_PROFILE_REPORT_FORMAT="both"
 
           ./scripts/profile-compose.sh "${mode}"
@@ -134,7 +143,89 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: treedb-profile-${{ matrix.arch }}
-          path: target/profiles/ci-*-${{ matrix.arch }}.*
+          path: |
+            target/profiles/ci-*.yaml
+            target/profiles/ci-*.md
+            target/profiles/ci-*-replay.jsonl
+            target/profiles/ci-*-failures.jsonl
+          if-no-files-found: ignore
+
+  profile-federation:
+    needs: verify
+    if: >-
+      github.event_name == 'push' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/staging' ||
+        startsWith(github.ref, 'refs/tags/')
+      )
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            mode: mirror-federation
+          - arch: amd64
+            runner: ubuntu-24.04
+            mode: connected-library
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            mode: mirror-federation
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            mode: connected-library
+    runs-on: ${{ matrix.runner }}
+    name: Federation Profile (${{ matrix.arch }}, ${{ matrix.mode }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run federation profile
+        shell: bash
+        env:
+          TREEDB_CI_FEDERATION_PROFILE_DURATION: ${{ vars.TREEDB_CI_FEDERATION_PROFILE_DURATION }}
+          TREEDB_CI_FEDERATION_PROFILE_CONCURRENCY: ${{ vars.TREEDB_CI_FEDERATION_PROFILE_CONCURRENCY }}
+          TREEDB_CI_FEDERATION_PROFILE_SIZE: ${{ vars.TREEDB_CI_FEDERATION_PROFILE_SIZE }}
+          TREEDB_CI_FEDERATION_PROFILE_ENABLED: ${{ vars.TREEDB_CI_FEDERATION_PROFILE_ENABLED }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${TREEDB_CI_FEDERATION_PROFILE_ENABLED:-true}" == "false" ]]; then
+            echo "Federation profile disabled by TREEDB_CI_FEDERATION_PROFILE_ENABLED=false"
+            exit 0
+          fi
+
+          mode="${{ matrix.mode }}"
+          export TREEDB_PROFILE_DURATION="${TREEDB_CI_FEDERATION_PROFILE_DURATION:-10m}"
+          export TREEDB_PROFILE_MINIMUM_MEASURED_DURATION="${TREEDB_CI_FEDERATION_PROFILE_DURATION:-10m}"
+          export TREEDB_PROFILE_DURATION_IS_CONTROLLING="true"
+          export TREEDB_PROFILE_ITERATIONS=""
+          export TREEDB_PROFILE_CONCURRENCY="${TREEDB_CI_FEDERATION_PROFILE_CONCURRENCY:-25}"
+          export TREEDB_PROFILE_SIZE="${TREEDB_CI_FEDERATION_PROFILE_SIZE:-small}"
+          export TREEDB_PROFILE_REPORT_FORMAT="both"
+          export TREEDB_PROFILE_INCLUDE_FEDERATION="true"
+          export TREEDB_PROFILE_OUTPUT="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}.yaml"
+          export TREEDB_PROFILE_MARKDOWN_OUTPUT="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}.md"
+          export TREEDB_PROFILE_REPLAY_LOG="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}-replay.jsonl"
+          export TREEDB_PROFILE_FAILURE_REPLAY_LOG="target/profiles/ci-${mode}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.arch }}-failures.jsonl"
+
+          ./scripts/profile-compose.sh "${mode}"
+
+      - name: Upload federation profile reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: treedb-federation-profile-${{ matrix.mode }}-${{ matrix.arch }}
+          path: |
+            target/profiles/ci-*.yaml
+            target/profiles/ci-*.md
+            target/profiles/ci-*-replay.jsonl
+            target/profiles/ci-*-failures.jsonl
           if-no-files-found: ignore
 
   publish-plan:
@@ -194,9 +285,11 @@ jobs:
     needs:
       - publish-plan
       - profile
+      - profile-federation
     if: >-
       needs.publish-plan.result == 'success' &&
-      needs.profile.result == 'success'
+      needs.profile.result == 'success' &&
+      needs.profile-federation.result == 'success'
     strategy:
       fail-fast: false
       matrix:
