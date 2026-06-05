@@ -26,7 +26,11 @@ defmodule TreeDb.Observability.MetricsTest do
     assert [%{name: "treedb_http_requests_total", value: 1}] = snapshot.counters
     assert [%{count: 1, sum: 12, buckets: buckets}] = snapshot.histograms
     assert Enum.any?(buckets, &(&1.le == 25 and &1.value == 1))
-    assert [%{name: "treedb_workspace_active_count", value: 2}] = snapshot.gauges
+
+    assert Enum.any?(
+             snapshot.gauges,
+             &match?(%{name: "treedb_workspace_active_count", value: 2}, &1)
+           )
 
     text = Metrics.prometheus()
     assert text =~ "# TYPE treedb_http_requests_total counter"

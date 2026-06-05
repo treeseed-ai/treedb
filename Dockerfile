@@ -54,7 +54,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 FROM debian:bookworm-slim AS runtime-libs
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends busybox-static ca-certificates git libtinfo6 \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends ca-certificates libssl3 libtinfo6 \
   && groupadd --gid 65532 nonroot \
   && useradd --uid 65532 --gid 65532 --no-create-home --shell /usr/sbin/nologin nonroot \
   && mkdir -p /runtime/var/lib/treedb \

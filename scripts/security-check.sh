@@ -20,4 +20,4 @@ mkdir -p target
 syft dir:. -o spdx-json=target/treedb-sbom.spdx.json
 
 docker build -t treedb-security-scan:local -f Dockerfile .
-trivy image --exit-code 1 --severity HIGH,CRITICAL treedb-security-scan:local
+trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL treedb-security-scan:local

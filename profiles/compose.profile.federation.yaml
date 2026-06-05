@@ -42,7 +42,7 @@ services:
     volumes:
       - treedb-node-a-data:/var/lib/treedb
     healthcheck:
-      test: ["CMD", "/bin/busybox", "wget", "-qO-", "http://127.0.0.1:4000/api/v1/health"]
+      test: ["CMD", "/app/bin/treedb", "rpc", "IO.puts(:ok)"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -93,7 +93,7 @@ services:
       treedb-node-a:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "/bin/busybox", "wget", "-qO-", "http://127.0.0.1:4000/api/v1/health"]
+      test: ["CMD", "/app/bin/treedb", "rpc", "IO.puts(:ok)"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -146,7 +146,7 @@ services:
       treedb-node-b:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "/bin/busybox", "wget", "-qO-", "http://127.0.0.1:4000/api/v1/health"]
+      test: ["CMD", "/app/bin/treedb", "rpc", "IO.puts(:ok)"]
       interval: 5s
       timeout: 3s
       retries: 30

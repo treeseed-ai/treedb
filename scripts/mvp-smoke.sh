@@ -3,15 +3,24 @@ set -euo pipefail
 
 TREEDB_URL="${TREEDB_URL:-http://localhost:4000}"
 TREEDB_KEEP_RUNNING="${TREEDB_KEEP_RUNNING:-0}"
+TREEDB_SMOKE_COMPOSE_FILE="${TREEDB_SMOKE_COMPOSE_FILE:-profiles/compose.profile.yaml}"
 TOKEN=""
+FIXTURE_DIR=""
+
+compose() {
+  docker compose -f "$TREEDB_SMOKE_COMPOSE_FILE" "$@"
+}
 
 cleanup() {
   local status=$?
   if [[ $status -ne 0 ]]; then
-    docker compose logs --tail=120 treedb-api || true
+    compose logs --tail=120 treedb-api || true
   fi
   if [[ "$TREEDB_KEEP_RUNNING" != "1" ]]; then
-    docker compose down || true
+    compose down || true
+  fi
+  if [[ -n "$FIXTURE_DIR" ]]; then
+    rm -rf "$FIXTURE_DIR"
   fi
   exit "$status"
 }
@@ -50,8 +59,8 @@ else console.log(String(value));
   fi
 }
 
-docker compose down -v --remove-orphans >/dev/null 2>&1 || true
-docker compose up -d treedb-api
+compose down -v --remove-orphans >/dev/null 2>&1 || true
+compose up -d --build treedb-api
 
 for _ in $(seq 1 120); do
   if curl -fsS "$TREEDB_URL/api/v1/health" >/dev/null; then
@@ -71,11 +80,12 @@ TOKEN="$(
 AUTH=(-H "authorization: Bearer $TOKEN" -H 'content-type: application/json')
 REPO_PATH="/var/lib/treedb/imports/mvp-smoke"
 
-docker compose exec -T treedb-api bash -lc "
+FIXTURE_DIR="$(mktemp -d)"
+fixture_repo="$FIXTURE_DIR/imports/mvp-smoke"
+mkdir -p "$fixture_repo/docs" "$fixture_repo/plain"
+(
 set -euo pipefail
-rm -rf '$REPO_PATH'
-mkdir -p '$REPO_PATH/docs' '$REPO_PATH/plain'
-cd '$REPO_PATH'
+cd "$fixture_repo"
 git init -b main
 git config user.name 'TreeDB Smoke'
 git config user.email 'smoke@example.invalid'
@@ -91,7 +101,8 @@ DOC
 echo 'mvp provenance plain fixture' > plain/search.txt
 git add .
 git commit -m 'Initial smoke fixture'
-"
+)
+compose cp "$FIXTURE_DIR/imports" "treedb-api:/var/lib/treedb/imports"
 
 repo_json="$(
   curl -fsS -X POST "$TREEDB_URL/api/v1/admin/repos/import-local" \
