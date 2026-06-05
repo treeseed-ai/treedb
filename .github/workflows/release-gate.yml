@@ -272,7 +272,19 @@ jobs:
 
   profile-performance:
     needs: verify
-    if: github.event_name == 'workflow_dispatch' && inputs.performance_profile == 'true'
+    if: >-
+      (
+        github.event_name == 'workflow_dispatch' &&
+        inputs.performance_profile == 'true'
+      ) ||
+      (
+        github.event_name == 'push' &&
+        (
+          github.ref == 'refs/heads/main' ||
+          github.ref == 'refs/heads/staging' ||
+          startsWith(github.ref, 'refs/tags/')
+        )
+      )
     strategy:
       fail-fast: false
       matrix:
