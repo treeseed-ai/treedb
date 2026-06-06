@@ -116,28 +116,26 @@ the direct conformance surface.
 
 ## CI Workflows
 
-TreeDB SDK verification is split from the root TreeDB service release gate and
-from each other package. Each SDK package has its own release gate so package
-changes can be tested and released independently without running unrelated
-language toolchains.
+TreeDB SDK verification is integrated into the root `TreeDB Release Gate` so
+tagged service and SDK release outputs stay synchronized. `SDK Spec` runs in
+parallel with service verification. Language SDK test jobs run on both `amd64`
+and `arm64` after `SDK Spec` passes. On release-path pushes, Docker architecture
+image builds and SDK package artifact jobs both wait for all language SDK tests
+and required service profile gates, then run in parallel.
 
 | Workflow | Scope | Required For |
 | --- | --- | --- |
-| SDK Spec Release Gate | sdk-spec validation, OpenAPI coverage, manifests, matrix, docs gate | SDK spec, OpenAPI, manifest, conformance catalog, and SDK docs changes |
-| TypeScript SDK Release Gate | TypeScript generated metadata, build, tests, npm package artifact | `packages/ts-sdk` changes |
-| Python SDK Release Gate | Python generated metadata, build, pytest, twine check, dist artifacts | `packages/python-sdk` changes |
-| Rust SDK Release Gate | Rust generated metadata, fmt, clippy, tests, crate artifact | `packages/rust-sdk` changes |
-| Elixir SDK Release Gate | Elixir generated metadata, format, tests, Hex artifact | `packages/elixir-sdk` changes |
+| TreeDB Release Gate / SDK Spec | sdk-spec validation, OpenAPI coverage, manifests, matrix, docs gate | SDK spec, OpenAPI, manifest, conformance catalog, and SDK docs changes |
+| TreeDB Release Gate / TypeScript SDK Test | TypeScript generated metadata, build, tests on amd64 and arm64 | `packages/ts-sdk` changes |
+| TreeDB Release Gate / Python SDK Test | Python generated metadata, build, pytest on amd64 and arm64 | `packages/python-sdk` changes |
+| TreeDB Release Gate / Rust SDK Test | Rust generated metadata, fmt, clippy, tests on amd64 and arm64 | `packages/rust-sdk` changes |
+| TreeDB Release Gate / Elixir SDK Test | Elixir generated metadata, format, tests on amd64 and arm64 | `packages/elixir-sdk` changes |
+| TreeDB Release Gate / Package SDK jobs | npm, Python, crate, and Hex package artifacts after service profiles and SDK tests pass | release-path pushes |
 
-The root `TreeDB Release Gate` workflow remains focused on the TreeDB service,
-native crates, API contract, storage, security, containers, and operational
-checks. Branch and pull request runs are path-filtered. Tag pushes run release
-gates without custom tag-diff filtering so release-tag verification remains
-reliable.
-
-Grouped SDK workflows are no longer authoritative. Package-level release gates
-build and upload artifacts only; publishing to npm, PyPI, crates.io, and Hex is
-manual or future work.
+Branch and pull request runs are path-filtered. Tag pushes run release gates
+without custom tag-diff filtering so release-tag verification remains reliable.
+The integrated workflow builds and uploads SDK artifacts only; publishing to
+npm, PyPI, crates.io, and Hex is manual or future work.
 
 Equivalent local commands:
 

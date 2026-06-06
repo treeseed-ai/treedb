@@ -85,7 +85,7 @@ TreeDB already has a strong API and SDK foundation:
 - Existing TreeSeed SDK behavior must remain stable. TreeDB SDKs should provide generic repository/database clients that `packages/trsd-sdk` can consume instead of embedding direct TreeDB calls.
 - TypeScript must follow the same shared `sdk-spec` architecture and endpoint model as Python, Rust, and Elixir.
 - TreeDB APIs must stay generic: repo, ref, path, graph, search, context, and capability. TreeSeed model names, aliases, product concepts, market concepts, and workflow semantics must remain SDK-side or application-side.
-- The current root release gate verifies the TreeDB service repository. SDK package workflows need to become required checks for SDK changes without making the root TreeDB release gate depend on every language toolchain by default.
+- The current root release gate verifies the TreeDB service and SDK release set together so tagged API and SDK outputs remain synchronized.
 - Historical docs may refer to `packages/ts-sdk` while describing behavior that currently exists only in `packages/trsd-sdk`. Phase 1 records that mismatch and makes the future `packages/ts-sdk` naming unambiguous.
 
 ## Phase 1 — Establish the Baseline and Naming Decisions
@@ -2057,7 +2057,7 @@ target RPS was met, but not meeting that target is not a release failure by
 itself; the job fails only for profiler/runtime errors, service errors,
 assertion failures, or response validation failures.
 
-`SDK Spec Release Gate` validates the shared spec package:
+`TreeDB Release Gate / SDK Spec` validates the shared spec package:
 
 ```text
 packages/sdk-spec npm ci
@@ -2069,28 +2069,37 @@ npm test
 ./scripts/check-sdk-docs.sh
 ```
 
-Each language SDK has its own release gate and artifact-only packaging step:
+Each language SDK has architecture-matrix test jobs inside `TreeDB Release
+Gate`. These jobs depend on `SDK Spec`:
 
 ```text
-TypeScript: generated metadata check, build, unit/conformance/integration/full tests, npm pack artifact
-Python: generated metadata check, editable dev install, build, unit/adapter/generated/conformance/integration/full pytest, twine check, dist artifacts
-Rust: generated metadata check, cargo fmt --check, cargo clippy -D warnings, cargo test, cargo package artifact
-Elixir: generated metadata check, mix format --check-formatted, mix test, mix hex.build artifact
+TypeScript SDK Test (amd64/arm64): generated metadata check, build, unit/conformance/integration/full tests
+Python SDK Test (amd64/arm64): generated metadata check, editable dev install, build, unit/adapter/generated/conformance/integration/full pytest
+Rust SDK Test (amd64/arm64): generated metadata check, cargo fmt --check, cargo clippy -D warnings, cargo test
+Elixir SDK Test (amd64/arm64): generated metadata check, mix format --check-formatted, mix test
 ```
 
-Publishing to npm, PyPI, crates.io, and Hex is out of scope for Phase 13. The
-release gates only build and upload package artifacts.
+On release-path pushes, Docker architecture image builds and SDK package
+artifact jobs both wait for all language SDK tests and the required service
+profile gates. They then run in parallel. Final Docker manifest publishing
+waits for the SDK package artifacts as well as both service image families.
+Publishing to npm, PyPI, crates.io, and Hex remains out of scope; the integrated
+release gate only builds and uploads package artifacts.
 
 ### CI Check Names
 
-Required SDK-affecting checks:
+Required SDK-affecting checks inside `TreeDB Release Gate`:
 
 ```text
-SDK Spec Release Gate / SDK Spec Release Gate
-TypeScript SDK Release Gate / TypeScript SDK Release Gate
-Python SDK Release Gate / Python SDK Release Gate
-Rust SDK Release Gate / Rust SDK Release Gate
-Elixir SDK Release Gate / Elixir SDK Release Gate
+TreeDB Release Gate / SDK Spec
+TreeDB Release Gate / TypeScript SDK Test (amd64)
+TreeDB Release Gate / TypeScript SDK Test (arm64)
+TreeDB Release Gate / Python SDK Test (amd64)
+TreeDB Release Gate / Python SDK Test (arm64)
+TreeDB Release Gate / Rust SDK Test (amd64)
+TreeDB Release Gate / Rust SDK Test (arm64)
+TreeDB Release Gate / Elixir SDK Test (amd64)
+TreeDB Release Gate / Elixir SDK Test (arm64)
 ```
 
 Release-path profile checks:
@@ -2107,11 +2116,11 @@ TreeDB Release Gate / Performance Profile (...)
 Add a CI section to `packages/sdk-spec/README.md` documenting:
 
 ```text
-What each SDK workflow checks
-Which workflow is required for which change type
+What each integrated SDK job checks
+Which release-gate jobs are required for SDK-affecting changes
 How to run equivalent local commands
-The boundary between SDK workflows and the root TreeDB Release Gate
-Artifact-only packaging behavior
+SDK test dependency on SDK Spec
+Artifact-only package behavior after service profiles pass
 Tag behavior
 ```
 
@@ -2168,27 +2177,29 @@ MIX_ENV=prod mix hex.build
 
 ### Phase Complete When
 
-- `SDK Spec Release Gate` exists and validates sdk-spec, OpenAPI coverage,
+- `TreeDB Release Gate / SDK Spec` validates sdk-spec, OpenAPI coverage,
   manifests, matrix rendering, sdk-spec tests, and SDK documentation.
-- TypeScript, Python, Rust, and Elixir package release gates exist.
-- Each package release gate runs package-idiomatic generated checks, builds,
-  tests, and artifact packaging.
-- The root service release gate is path-filtered and no longer runs for
-  SDK-only branch or pull request changes.
+- TypeScript, Python, Rust, and Elixir SDK test jobs exist in `TreeDB Release
+  Gate`, run on amd64 and arm64, and depend on `SDK Spec`.
+- SDK package artifact jobs exist in `TreeDB Release Gate`, run on release-path
+  pushes after service profile gates and all SDK tests pass, and upload package
+  artifacts.
+- The root release gate is path-filtered for service and SDK changes so there
+  is one synchronized release pipeline.
 - TreeDB profile jobs remain in `TreeDB Release Gate` and block Docker release
   publishing on release-path pushes.
-- Grouped SDK workflows are removed.
+- Standalone SDK release-gate workflows are removed.
 - `packages/sdk-spec/README.md` documents workflow scope and local equivalents.
-- Root `TreeDB Release Gate` remains separate.
 
-Phase 13 is complete. GitHub Actions now use package-level release gates for
-`sdk-spec`, TypeScript, Python, Rust, and Elixir. The root `TreeDB Release Gate`
-is service-scoped and path-filtered for pull requests and branch pushes, while
-tag pushes still run release gates for reliable release verification. The old
-grouped SDK workflows were removed. The root release sequence remains
-`verify -> profile -> publish`, so required profile streams can block service
-release publishing. SDK package gates build and upload artifacts without
-publishing to external registries.
+Phase 13 is complete. GitHub Actions now use one integrated `TreeDB Release
+Gate` for service and SDK release verification. SDK Spec runs in parallel with
+service verification, language SDK tests run on amd64 and arm64 after SDK Spec
+passes, service profile streams remain release-blocking acceptance tests, and
+Docker architecture image builds plus SDK package artifact jobs run after all
+SDK tests and profile streams pass. Final Docker manifest publishing waits for
+SDK package artifacts, keeping service and SDK release outputs synchronized. SDK
+package jobs build and upload artifacts without publishing to external
+registries.
 
 ---
 
@@ -2246,21 +2257,26 @@ Root `scripts/release-gate.sh` remains focused on the TreeDB service, native
 crates used by the service, API contract, storage, security, container, and
 operational checks.
 
-SDK-affecting changes should require these GitHub checks:
+SDK-affecting changes should require the integrated `TreeDB Release Gate` SDK
+checks:
 
-- `SDK Spec Release Gate / SDK Spec Release Gate`
-- `TypeScript SDK Release Gate / TypeScript SDK Release Gate`
-- `Python SDK Release Gate / Python SDK Release Gate`
-- `Rust SDK Release Gate / Rust SDK Release Gate`
-- `Elixir SDK Release Gate / Elixir SDK Release Gate`
+- `TreeDB Release Gate / SDK Spec`
+- `TreeDB Release Gate / TypeScript SDK Test (amd64)`
+- `TreeDB Release Gate / TypeScript SDK Test (arm64)`
+- `TreeDB Release Gate / Python SDK Test (amd64)`
+- `TreeDB Release Gate / Python SDK Test (arm64)`
+- `TreeDB Release Gate / Rust SDK Test (amd64)`
+- `TreeDB Release Gate / Rust SDK Test (arm64)`
+- `TreeDB Release Gate / Elixir SDK Test (amd64)`
+- `TreeDB Release Gate / Elixir SDK Test (arm64)`
 
 For full release candidates, require:
 
-1. Root `TreeDB Release Gate`
-2. Relevant SDK package release gates
+1. Root `TreeDB Release Gate`, including SDK checks
+2. Release-path SDK package artifact jobs
 3. Root OpenAPI gate
 
-SDK package release gates build and upload artifacts only. Publishing remains a
+SDK package artifact jobs build and upload artifacts only. Publishing remains a
 manual or future step.
 
 ### Testing Work
@@ -2288,8 +2304,8 @@ packages/sdk-spec/README.md
 Document:
 
 ```text
-Root release gate scope
-SDK package workflow scope
+Integrated root release gate scope
+SDK test and package artifact job scope
 Local SDK package gate
 How a release candidate becomes ready
 How optional live checks report not configured
@@ -2300,8 +2316,9 @@ Cleanup after verification
 ### Phase Complete When
 
 - Local SDK package test script exists and is executable.
-- CI-required SDK package release gates exist.
-- Release documentation clearly separates TreeDB service gate from SDK package gates.
+- CI-required SDK jobs exist inside the integrated `TreeDB Release Gate`.
+- Release documentation clearly explains that service and SDK checks are part
+  of one synchronized release gate.
 - Full release readiness includes both service and SDK checks.
 - `docs/runbooks/sdk-release.md` documents local SDK verification, GitHub
   workflow checks, optional live integration, focused TreeSeed regression,
@@ -2309,10 +2326,10 @@ Cleanup after verification
 
 Phase 14 is complete. `scripts/test-sdk-packages.sh` provides a local full SDK
 package gate across `sdk-spec`, TypeScript, Python, Rust, and Elixir. The release
-gate runbook now explicitly separates the root TreeDB service release gate from
-package-level SDK release gates. `docs/runbooks/sdk-release.md` documents local
-SDK verification, required package release gates, artifact-only package
-behavior, focused TreeSeed regression, release candidate readiness,
+gate runbook now documents how SDK tests and package artifact jobs are integrated
+into the root `TreeDB Release Gate`. `docs/runbooks/sdk-release.md` documents
+local SDK verification, required integrated release-gate SDK jobs,
+artifact-only package behavior, focused TreeSeed regression, release candidate readiness,
 troubleshooting, and cleanup.
 
 ---
@@ -2545,7 +2562,7 @@ Spec version: 0.1.0
 Required SDKs: TypeScript, Python, Rust, Elixir
 Required SDK manifest status: implemented
 Required conformance: scenario catalog loading plus local-harness live dispatch
-Required package workflows: package-level release gates for sdk-spec, TypeScript, Python, Rust, and Elixir
+Required package workflows: integrated TreeDB Release Gate SDK Spec, SDK test, and SDK package artifact jobs
 Required documentation: complete
 Live executable conformance: local TreeDB harness
 ```
