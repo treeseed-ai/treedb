@@ -123,6 +123,7 @@ defmodule TreeDbProfiler.ReliabilityBudget do
     requested = measured["requestedDurationMs"]
     duration = measured["durationMs"] || 0
     ratio = budget["minMeasuredDurationRatio"] || 0.99
+    duration_controlled? = measured["stopReason"] in [nil, "duration_limit", "completed"]
 
     cond do
       is_nil(requested) ->
@@ -131,7 +132,7 @@ defmodule TreeDbProfiler.ReliabilityBudget do
       measured["durationSatisfied"] == false ->
         duration_violation(violations, duration, requested, ratio)
 
-      duration < requested * ratio ->
+      duration_controlled? and duration < requested * ratio ->
         duration_violation(violations, duration, requested, ratio)
 
       true ->

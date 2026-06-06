@@ -20,12 +20,27 @@ defmodule TreeDbProfiler.ReliabilityBudgetTest do
       report(%{
         "durationMs" => 30_000,
         "requestedDurationMs" => 60_000,
-        "durationSatisfied" => false
+        "durationSatisfied" => false,
+        "stopReason" => "duration_limit"
       })
 
     result = ReliabilityBudget.evaluate(report, %{reliability_budget: nil})
     refute result["passed"]
     assert Enum.any?(result["violations"], &(&1["key"] == "measured_duration"))
+  end
+
+  test "passes short iteration-limited smoke runs when minimum duration is satisfied" do
+    report =
+      report(%{
+        "durationMs" => 250,
+        "requestedDurationMs" => 60_000,
+        "durationSatisfied" => true,
+        "minimumMeasuredDurationMs" => 0,
+        "stopReason" => "iteration_limit"
+      })
+
+    assert %{"passed" => true, "violations" => []} =
+             ReliabilityBudget.evaluate(report, %{reliability_budget: nil})
   end
 
   test "fails permission matrix failures" do

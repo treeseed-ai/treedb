@@ -25,7 +25,7 @@ RUN mix deps.get \
   && mkdir -p /out \
   && cp treedb_profiler /out/treedb_profiler
 
-FROM elixir:1.17.3-otp-27-slim AS profiler
+FROM debian:bookworm-slim AS profiler
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -37,15 +37,18 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
-    curl \
     git \
-    jq \
-    openssh-client \
-    openssl \
+    libgnutls30 \
+    libstdc++6 \
+    libtinfo6 \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace/treedb
 
+COPY --from=profiler-build /usr/local/lib/erlang /usr/local/lib/erlang
+COPY --from=profiler-build /usr/local/bin/erl /usr/local/bin/erl
+COPY --from=profiler-build /usr/local/bin/escript /usr/local/bin/escript
+COPY --from=profiler-build /usr/local/bin/epmd /usr/local/bin/epmd
 COPY --from=profiler-build /out/treedb_profiler /usr/local/bin/treedb_profiler
 COPY docker-profiler-entrypoint.sh /usr/local/bin/treedb-profiler-entrypoint
 COPY tools/treedb_profiler/endpoint_matrix.yaml tools/treedb_profiler/endpoint_matrix.yaml
@@ -55,6 +58,11 @@ COPY tools/treedb_profiler/reliability_budget.yaml tools/treedb_profiler/reliabi
 COPY docs/api/openapi.json docs/api/openapi.json
 
 RUN chmod 0755 /usr/local/bin/treedb_profiler /usr/local/bin/treedb-profiler-entrypoint \
-  && mkdir -p /workspace/treedb/target/profiles
+  && mkdir -p /workspace/treedb/target/profiles /var/lib/treedb/profiler \
+  && echo "treedb-profiler:x:65532:65532:TreeDB profiler:/workspace/treedb:/usr/sbin/nologin" >> /etc/passwd \
+  && echo "treedb-profiler:x:65532:" >> /etc/group \
+  && chown -R 65532:65532 /workspace/treedb /var/lib/treedb
+
+USER 65532:65532
 
 ENTRYPOINT ["/usr/local/bin/treedb-profiler-entrypoint"]
