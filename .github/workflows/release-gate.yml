@@ -413,7 +413,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            packages/rust-sdk/target
+            /tmp/treedb-target
           key: ${{ runner.os }}-${{ matrix.arch }}-rust-sdk-${{ hashFiles('packages/rust-sdk/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.arch }}-rust-sdk-
@@ -1106,7 +1106,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            packages/rust-sdk/target
+            /tmp/treedb-target
           key: ${{ runner.os }}-rust-sdk-package-${{ hashFiles('packages/rust-sdk/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-rust-sdk-package-
@@ -1123,7 +1123,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rust-sdk-crate
-          path: packages/rust-sdk/target/package/*.crate
+          path: /tmp/treedb-target/package/*.crate
           if-no-files-found: error
 
   package-elixir-sdk:
