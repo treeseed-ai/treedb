@@ -35,5 +35,10 @@ defmodule TreeDbProfiler.Scenario do
     :ok
   end
 
-  defp path!(id), do: Path.expand("../../scenarios/#{id}.yaml", __DIR__)
+  defp path!(id) do
+    case System.get_env("TREEDB_PROFILER_ROOT") do
+      nil -> Path.expand("../../scenarios/#{id}.yaml", __DIR__)
+      root -> Path.expand("scenarios/#{id}.yaml", root)
+    end
+  end
 end

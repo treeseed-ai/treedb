@@ -20,12 +20,15 @@ The manifest starts:
 
 - `treedb-api`: local TreeDB API from the production release image, using dev
   auth for turnkey local profiling.
-- `treedb-profiler`: profiler client that connects to
-  `http://treedb-api:4000`.
+- `treedb-profiler`: separate Debian-based profiler image with
+  `/usr/local/bin/treedb_profiler` and the profiler fixtures/scenarios baked in.
+  It connects to `http://treedb-api:4000`.
 
-Both services share `treedb-data:/var/lib/treedb`. This lets the profiler create
-fixture Git repositories under `/var/lib/treedb/profiler`, then register them
-through the public API.
+Both services share `treedb-data:/var/lib/treedb`. This lets the profiler image
+create fixture Git repositories under `/var/lib/treedb/profiler`, then register
+them through the public API. Reports are written through a narrow
+`target/profiles` bind mount; Compose no longer mounts the full source tree into
+the profiler container for normal profile runs.
 
 Default workload:
 
@@ -71,6 +74,8 @@ Safety notes:
 
 - The default profile Compose manifest uses the production release image for the
   API and dev auth for local token setup.
+- The profiler runs from `Dockerfile.profiler`; profiler code and runtime data
+  are not mounted into or copied into the API service image.
 - It uses an isolated Compose data volume.
 - `docker compose -f profiles/compose.profile.yaml down -v` deletes generated profiling
   data.
@@ -130,6 +135,11 @@ selected federation overlay. They start three production-image API nodes:
 volume and node identity. Node A is the profiler ingress. Node B and node C use
 parent lineage rooted at node A so live catalog sync can discover routes without
 restarting services.
+
+Profile Compose builds API nodes from `Dockerfile` target `prod` and the
+profiler from `Dockerfile.profiler` target `profiler`. This keeps the
+production API image small and distroless while leaving the profiler image
+Debian-based and convenient for profiling utilities.
 
 Options:
 

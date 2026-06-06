@@ -33,6 +33,9 @@ on:
       - "scripts/profile-treedb.sh"
       - "scripts/profile-treedb-smoke.sh"
       - "Dockerfile"
+      - "Dockerfile.profiler"
+      - "docker-healthcheck.c"
+      - "docker-profiler-entrypoint.sh"
       - "docker-compose*.yml"
       - "compose*.yml"
       - "mix.exs"
@@ -70,6 +73,9 @@ on:
       - "scripts/profile-treedb.sh"
       - "scripts/profile-treedb-smoke.sh"
       - "Dockerfile"
+      - "Dockerfile.profiler"
+      - "docker-healthcheck.c"
+      - "docker-profiler-entrypoint.sh"
       - "docker-compose*.yml"
       - "compose*.yml"
       - "mix.exs"
@@ -470,8 +476,10 @@ jobs:
     permissions:
       contents: read
     outputs:
-      image_tag: ${{ steps.docker_tag.outputs.image_tag }}
-      arch_image_prefix: ${{ steps.docker_tag.outputs.arch_image_prefix }}
+      service_image_tag: ${{ steps.docker_tag.outputs.service_image_tag }}
+      service_arch_image_prefix: ${{ steps.docker_tag.outputs.service_arch_image_prefix }}
+      profiler_image_tag: ${{ steps.docker_tag.outputs.profiler_image_tag }}
+      profiler_arch_image_prefix: ${{ steps.docker_tag.outputs.profiler_arch_image_prefix }}
 
     steps:
       - name: Checkout
@@ -502,17 +510,23 @@ jobs:
               echo "Release tag '$tag' is not a supported semantic version." >&2
               exit 1
             fi
-            if docker buildx imagetools inspect "treeseed/treedb:${tag}" >/dev/null 2>&1; then
-              echo "Docker image treeseed/treedb:${tag} already exists." >&2
-              exit 1
-            fi
-            image_tag="treeseed/treedb:${tag}"
+            for image in treeseed/treedb treeseed/treedb-profiler; do
+              if docker buildx imagetools inspect "${image}:${tag}" >/dev/null 2>&1; then
+                echo "Docker image ${image}:${tag} already exists." >&2
+                exit 1
+              fi
+            done
+            service_image_tag="treeseed/treedb:${tag}"
+            profiler_image_tag="treeseed/treedb-profiler:${tag}"
           else
-            image_tag="treeseed/treedb:latest"
+            service_image_tag="treeseed/treedb:latest"
+            profiler_image_tag="treeseed/treedb-profiler:latest"
           fi
 
-          echo "image_tag=${image_tag}" >> "$GITHUB_OUTPUT"
-          echo "arch_image_prefix=${image_tag}" >> "$GITHUB_OUTPUT"
+          echo "service_image_tag=${service_image_tag}" >> "$GITHUB_OUTPUT"
+          echo "service_arch_image_prefix=${service_image_tag}" >> "$GITHUB_OUTPUT"
+          echo "profiler_image_tag=${profiler_image_tag}" >> "$GITHUB_OUTPUT"
+          echo "profiler_arch_image_prefix=${profiler_image_tag}" >> "$GITHUB_OUTPUT"
 
   build-publish-image:
     needs:
@@ -561,16 +575,70 @@ jobs:
           target: prod
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ needs.publish-plan.outputs.arch_image_prefix }}-${{ matrix.arch }}
+          tags: ${{ needs.publish-plan.outputs.service_arch_image_prefix }}-${{ matrix.arch }}
           sbom: true
           provenance: mode=max
           cache-from: type=gha,scope=treedb-prod-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=treedb-prod-${{ matrix.arch }}
 
+  build-publish-profiler-image:
+    needs:
+      - publish-plan
+      - profile
+      - profile-federation
+      - profile-performance
+    if: >-
+      needs.publish-plan.result == 'success' &&
+      needs.profile.result == 'success' &&
+      needs.profile-federation.result == 'success' &&
+      needs.profile-performance.result == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push profiler architecture image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.profiler
+          target: profiler
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ needs.publish-plan.outputs.profiler_arch_image_prefix }}-${{ matrix.arch }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=treedb-profiler-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=treedb-profiler-${{ matrix.arch }}
+
   publish:
     needs:
       - publish-plan
       - build-publish-image
+      - build-publish-profiler-image
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -586,14 +654,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Publish Docker manifest
+      - name: Publish Docker manifests
         shell: bash
         run: |
           set -euo pipefail
 
           docker buildx imagetools create \
-            -t "${{ needs.publish-plan.outputs.image_tag }}" \
-            "${{ needs.publish-plan.outputs.arch_image_prefix }}-amd64" \
-            "${{ needs.publish-plan.outputs.arch_image_prefix }}-arm64"
+            -t "${{ needs.publish-plan.outputs.service_image_tag }}" \
+            "${{ needs.publish-plan.outputs.service_arch_image_prefix }}-amd64" \
+            "${{ needs.publish-plan.outputs.service_arch_image_prefix }}-arm64"
 
-          docker buildx imagetools inspect "${{ needs.publish-plan.outputs.image_tag }}"
+          docker buildx imagetools create \
+            -t "${{ needs.publish-plan.outputs.profiler_image_tag }}" \
+            "${{ needs.publish-plan.outputs.profiler_arch_image_prefix }}-amd64" \
+            "${{ needs.publish-plan.outputs.profiler_arch_image_prefix }}-arm64"
+
+          docker buildx imagetools inspect "${{ needs.publish-plan.outputs.service_image_tag }}"
+          docker buildx imagetools inspect "${{ needs.publish-plan.outputs.profiler_image_tag }}"

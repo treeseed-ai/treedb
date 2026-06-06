@@ -116,6 +116,7 @@ fi
 compose_files+=(-f "profiles/compose.profile.${mode}.yaml")
 
 cd "$ROOT_DIR"
+mkdir -p target/profiles
 
 if [[ "$config_only" == true ]]; then
   docker compose "${compose_files[@]}" config

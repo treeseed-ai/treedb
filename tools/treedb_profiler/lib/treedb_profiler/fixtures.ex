@@ -158,7 +158,10 @@ defmodule TreeDbProfiler.Fixtures do
   end
 
   defp definition_file!(fixture_id) when fixture_id in @canonical do
-    Path.expand("../../fixtures/#{fixture_id}.yaml", __DIR__)
+    case System.get_env("TREEDB_PROFILER_ROOT") do
+      nil -> Path.expand("../../fixtures/#{fixture_id}.yaml", __DIR__)
+      root -> Path.expand("fixtures/#{fixture_id}.yaml", root)
+    end
   end
 
   defp definition_file!(fixture_id), do: raise("unknown fixture #{inspect(fixture_id)}")

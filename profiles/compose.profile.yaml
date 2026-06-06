@@ -51,7 +51,7 @@ services:
     volumes:
       - treedb-data:/var/lib/treedb
     healthcheck:
-      test: ["CMD", "/app/bin/treedb", "rpc", "IO.puts(:ok)"]
+      test: ["CMD", "/app/bin/treedb_healthcheck"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -60,14 +60,13 @@ services:
   treedb-profiler:
     build:
       context: ..
-      target: dev
+      dockerfile: Dockerfile.profiler
+      target: profiler
     working_dir: /workspace/treedb
     depends_on:
       treedb-api:
         condition: service_healthy
     environment:
-      ELIXIR_ERL_OPTIONS: "+fnu"
-      MIX_ENV: dev
       TREEDB_PROFILE_BASE_URL: ${TREEDB_PROFILE_BASE_URL:-http://treedb-api:4000}
       TREEDB_PROFILE_LOAD_MODE: ${TREEDB_PROFILE_LOAD_MODE:-portfolio}
       TREEDB_PROFILE_FIXTURE: ${TREEDB_PROFILE_FIXTURE:-small-docs}
@@ -130,31 +129,8 @@ services:
       TREEDB_PROFILE_HOST_UID: ${TREEDB_PROFILE_HOST_UID:-1000}
       TREEDB_PROFILE_HOST_GID: ${TREEDB_PROFILE_HOST_GID:-1000}
     volumes:
-      - ..:/workspace/treedb
+      - ../target/profiles:/workspace/treedb/target/profiles
       - treedb-data:/var/lib/treedb
-    command: >
-      sh -lc "set +e;
-      umask 000;
-      set -- ./scripts/profile-treedb.sh --base-url \"$${TREEDB_PROFILE_BASE_URL}\" --auth-mode dev --load-mode \"$${TREEDB_PROFILE_LOAD_MODE}\" --fixture \"$${TREEDB_PROFILE_FIXTURE}\" --size \"$${TREEDB_PROFILE_SIZE}\" --scenario \"$${TREEDB_PROFILE_SCENARIO}\" --concurrency \"$${TREEDB_PROFILE_CONCURRENCY}\" --timeout-ms \"$${TREEDB_PROFILE_TIMEOUT_MS}\" --fixture-root /var/lib/treedb/profiler --repo-prefix \"$${TREEDB_PROFILE_REPO_PREFIX}\" --portfolio-repo-prefix \"$${TREEDB_PROFILE_REPO_PREFIX}\" --portfolio-initial-repos \"$${TREEDB_PROFILE_PORTFOLIO_INITIAL_REPOS}\" --portfolio-max-repos \"$${TREEDB_PROFILE_PORTFOLIO_MAX_REPOS}\" --portfolio-growth-target \"$${TREEDB_PROFILE_PORTFOLIO_GROWTH_TARGET}\" --portfolio-min-repo-age-before-delete \"$${TREEDB_PROFILE_PORTFOLIO_MIN_REPO_AGE_BEFORE_DELETE}\" --report-format \"$${TREEDB_PROFILE_REPORT_FORMAT}\" --markdown-output \"$${TREEDB_PROFILE_MARKDOWN_OUTPUT}\" --include-admin \"$${TREEDB_PROFILE_INCLUDE_ADMIN}\" --include-destructive \"$${TREEDB_PROFILE_INCLUDE_DESTRUCTIVE}\" --include-exec \"$${TREEDB_PROFILE_INCLUDE_EXEC}\" --include-federation \"$${TREEDB_PROFILE_INCLUDE_FEDERATION}\" --federation-mode \"$${TREEDB_PROFILE_FEDERATION_MODE}\" --federation-exercise-promotion \"$${TREEDB_PROFILE_FEDERATION_EXERCISE_PROMOTION}\" --federation-exercise-write-proxy \"$${TREEDB_PROFILE_FEDERATION_EXERCISE_WRITE_PROXY}\" --federation-exercise-connected-denials \"$${TREEDB_PROFILE_FEDERATION_EXERCISE_CONNECTED_DENIALS}\" --reliability-verifier \"$${TREEDB_PROFILE_RELIABILITY_VERIFIER}\" --openapi-response-validation \"$${TREEDB_PROFILE_OPENAPI_RESPONSE_VALIDATION}\" --model-reconciliation \"$${TREEDB_PROFILE_MODEL_RECONCILIATION}\" --reconciliation-interval \"$${TREEDB_PROFILE_RECONCILIATION_INTERVAL}\" --reconciliation-sample-size \"$${TREEDB_PROFILE_RECONCILIATION_SAMPLE_SIZE}\" --operation-chains \"$${TREEDB_PROFILE_OPERATION_CHAINS}\" --negative-tests \"$${TREEDB_PROFILE_NEGATIVE_TESTS}\" --metamorphic-checks \"$${TREEDB_PROFILE_METAMORPHIC_CHECKS}\" --delayed-consistency-checks \"$${TREEDB_PROFILE_DELAYED_CONSISTENCY_CHECKS}\" --delayed-check-intervals \"$${TREEDB_PROFILE_DELAYED_CHECK_INTERVALS}\" --restart-durability-check \"$${TREEDB_PROFILE_RESTART_DURABILITY_CHECK}\" --fault-injection \"$${TREEDB_PROFILE_FAULT_INJECTION}\" --permission-matrix \"$${TREEDB_PROFILE_PERMISSION_MATRIX}\" --replay-log \"$${TREEDB_PROFILE_REPLAY_LOG}\" --failure-replay-log \"$${TREEDB_PROFILE_FAILURE_REPLAY_LOG}\" --output \"$${TREEDB_PROFILE_OUTPUT}\";
-      if [ -n \"$${TREEDB_PROFILE_FEDERATION_NODE_A_URL}\" ]; then set -- \"$$@\" --federation-node-a-url \"$${TREEDB_PROFILE_FEDERATION_NODE_A_URL}\"; fi;
-      if [ -n \"$${TREEDB_PROFILE_FEDERATION_NODE_B_URL}\" ]; then set -- \"$$@\" --federation-node-b-url \"$${TREEDB_PROFILE_FEDERATION_NODE_B_URL}\"; fi;
-      if [ -n \"$${TREEDB_PROFILE_FEDERATION_NODE_C_URL}\" ]; then set -- \"$$@\" --federation-node-c-url \"$${TREEDB_PROFILE_FEDERATION_NODE_C_URL}\"; fi;
-      set -- \"$$@\" --profile-purpose \"$${TREEDB_PROFILE_PROFILE_PURPOSE}\" --include-probe-samples \"$${TREEDB_PROFILE_INCLUDE_PROBE_SAMPLES}\" --include-total-throughput \"$${TREEDB_PROFILE_INCLUDE_TOTAL_THROUGHPUT}\" --performance-workload \"$${TREEDB_PROFILE_PERFORMANCE_WORKLOAD}\" --heavy-operation-rate \"$${TREEDB_PROFILE_HEAVY_OPERATION_RATE}\" --repo-growth-rate \"$${TREEDB_PROFILE_REPO_GROWTH_RATE}\" --snapshot-rate \"$${TREEDB_PROFILE_SNAPSHOT_RATE}\" --graph-refresh-rate \"$${TREEDB_PROFILE_GRAPH_REFRESH_RATE}\" --import-rate \"$${TREEDB_PROFILE_IMPORT_RATE}\";
-      if [ -n \"$${TREEDB_PROFILE_TARGET_PRIMARY_RPS}\" ]; then set -- \"$$@\" --target-primary-rps \"$${TREEDB_PROFILE_TARGET_PRIMARY_RPS}\"; fi;
-      if [ -n \"$${TREEDB_PROFILE_PROBE_SAMPLING_RATE}\" ]; then set -- \"$$@\" --probe-sampling-rate \"$${TREEDB_PROFILE_PROBE_SAMPLING_RATE}\"; fi;
-      if [ -n \"$${TREEDB_PROFILE_VALIDATION_PROBE_MODE}\" ]; then set -- \"$$@\" --validation-probe-mode \"$${TREEDB_PROFILE_VALIDATION_PROBE_MODE}\"; fi;
-      if [ -n \"$${TREEDB_PROFILE_FAIL_BELOW_PRIMARY_RPS}\" ]; then set -- \"$$@\" --fail-below-primary-rps \"$${TREEDB_PROFILE_FAIL_BELOW_PRIMARY_RPS}\"; fi;
-      if [ -n \"$${TREEDB_PROFILE_RELIABILITY_BUDGET}\" ]; then set -- \"$$@\" --reliability-budget \"$${TREEDB_PROFILE_RELIABILITY_BUDGET}\"; fi;
-      if [ -n \"$${TREEDB_PROFILE_ITERATIONS}\" ]; then
-        set -- \"$$@\" --iterations \"$${TREEDB_PROFILE_ITERATIONS}\";
-      fi;
-      if [ -n \"$${TREEDB_PROFILE_DURATION}\" ]; then
-        set -- \"$$@\" --duration \"$${TREEDB_PROFILE_DURATION}\" --duration-is-controlling \"$${TREEDB_PROFILE_DURATION_IS_CONTROLLING}\" --minimum-measured-duration \"$${TREEDB_PROFILE_MINIMUM_MEASURED_DURATION}\";
-      fi;
-      \"$$@\";
-      status=\"$$?\";
-      chown -R \"$${TREEDB_PROFILE_HOST_UID}:$${TREEDB_PROFILE_HOST_GID}\" target/profiles 2>/dev/null || true;
-      exit \"$$status\""
 
 volumes:
   treedb-data:

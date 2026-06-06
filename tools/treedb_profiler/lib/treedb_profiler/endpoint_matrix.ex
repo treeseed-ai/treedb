@@ -249,14 +249,23 @@ defmodule TreeDbProfiler.EndpointMatrix do
   defp infer_request_generator(operation_id), do: operation_id
   defp infer_state_effects(_operation_id), do: []
 
-  defp path, do: Path.expand("../../endpoint_matrix.yaml", __DIR__)
+  defp path do
+    case System.get_env("TREEDB_PROFILER_ROOT") do
+      nil -> Path.expand("../../endpoint_matrix.yaml", __DIR__)
+      root -> Path.expand("endpoint_matrix.yaml", root)
+    end
+  end
 
   defp openapi_path! do
+    env_path = System.get_env("TREEDB_OPENAPI_PATH")
+
     candidates = [
+      env_path,
       Path.expand("docs/api/openapi.json", File.cwd!()),
       Path.expand("../../docs/api/openapi.json", File.cwd!()),
       Path.expand("../../../docs/api/openapi.json", __DIR__)
     ]
+    |> Enum.reject(&is_nil/1)
 
     case Enum.find(candidates, &File.exists?/1) do
       nil -> raise "could not find docs/api/openapi.json from #{File.cwd!()}"

@@ -38,12 +38,16 @@ defmodule TreeDbProfiler.OpenApiResponseValidator do
   end
 
   defp load_spec do
+    env_path = System.get_env("TREEDB_OPENAPI_PATH")
+
     path =
       [
+        env_path,
         Path.expand("docs/api/openapi.json", File.cwd!()),
         Path.expand("../../docs/api/openapi.json", File.cwd!()),
         Path.expand("../../../docs/api/openapi.json", __DIR__)
       ]
+      |> Enum.reject(&is_nil/1)
       |> Enum.find(&File.exists?/1)
 
     if path do

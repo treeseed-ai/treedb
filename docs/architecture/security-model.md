@@ -25,11 +25,17 @@ TreeDB protects repository, workspace, graph, search, blob, artifact, federation
 | Remote credential leakage | Credentials in URL, logs, audit, or metrics | Credential IDs only, URL sanitizer, scrubber, strict logs | Git remote and observability tests | Operator command leak | Disable external transport and rotate credentials |
 | Cross-tenant access | Token or grant crosses tenant boundary | Principal tenant and policy scope resolution | Policy and federation tests | Bad grant | Revoke grant and quarantine affected workspaces |
 | Dependency vulnerability | Vulnerable crate or container dependency | `cargo audit`, Syft, Trivy | `scripts/security-check.sh` | Accepted temporary advisory | Document in accepted vulnerabilities with expiration |
-| Container vulnerability | Runtime image has high/critical issue | Trivy image scan | `scripts/security-check.sh` | Base image emergency | Patch image and rerun release gate |
-| SBOM and license risk | Unknown package inventory | Syft SBOM generation and license docs | `scripts/security-check.sh` | Transitive changes | Review generated SBOM before release |
+| Container vulnerability | Runtime image has high/critical issue | Strict Trivy scan for `treeseed/treedb`; advisory scan for `treeseed/treedb-profiler` | `scripts/security-check.sh` | Base image emergency | Patch service image and rerun release gate |
+| SBOM and license risk | Unknown package inventory | Syft SBOM generation for source, service image, and profiler image | `scripts/security-check.sh` | Transitive changes | Review generated SBOMs before release |
 
 ## Release Boundary
 
-Release readiness is gated by `scripts/release-gate.sh`. The gate runs the unified test suites, OpenAPI contract checks, storage recovery checks, strict dependency scans, SBOM generation, container image scan, and optional live contracts when credentials are configured.
+Release readiness is gated by `scripts/release-gate.sh`. The gate runs the unified test suites, OpenAPI contract checks, storage recovery checks, strict dependency scans, SBOM generation, a strict production service image scan, an advisory profiler image scan, and optional live contracts when credentials are configured.
 
 Security scanner availability is mandatory for release readiness. Missing scanner tools fail the gate.
+
+The production `treeseed/treedb` image is distroless, runs as UID/GID
+`65532:65532`, and intentionally omits package-manager, shell, Git, curl, and
+profiler tooling. The `treeseed/treedb-profiler` image is Debian-based and
+contains profiling utilities; it is scanned and SBOMed, but it is not the
+production API service runtime.

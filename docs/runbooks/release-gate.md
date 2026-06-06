@@ -41,7 +41,8 @@ package-level release gates.
 - OpenAPI server contract checks pass.
 - `cargo audit` passes.
 - Syft writes `target/treedb-sbom.spdx.json`.
-- Trivy reports no high or critical image findings.
+- Trivy reports no high or critical findings for the production service image.
+- The profiler image builds and receives an advisory vulnerability scan.
 - Container smoke verification passes.
 - Live federation check reports not configured or passes.
 - Root workflow and scripts do not require `packages/ts-sdk`, npm, Node, or a
@@ -49,11 +50,14 @@ package-level release gates.
 
 ## Scanner Policy
 
-The security scanner gate is strict. Missing `cargo-audit`, `syft`, `trivy`,
-`docker`, or `cargo` fails the release gate. Accepted vulnerability records,
-when needed, live in `docs/security/accepted-vulnerabilities.md` and must
-include package or image, advisory ID, severity, reason, mitigation, owner, and
-expiration date.
+The security scanner gate is strict for the production `treeseed/treedb`
+service image. Missing `cargo-audit`, `syft`, `trivy`, `docker`, or `cargo`
+fails the release gate. The Debian-based `treeseed/treedb-profiler` image is
+also built, SBOMed, and scanned, but that scan is advisory because the image is
+an operational profiling utility rather than the production API runtime.
+Accepted vulnerability records, when needed, live in
+`docs/security/accepted-vulnerabilities.md` and must include package or image,
+advisory ID, severity, reason, mitigation, owner, and expiration date.
 
 ## Optional Live Checks
 
@@ -79,7 +83,11 @@ failure by itself. The performance profile blocks release only for profiler
 execution errors, service errors, assertion failures, or response validation
 failures.
 
-Profile behavior is controlled with GitHub repository or environment variables:
+Profile Compose starts API nodes from the stripped `treeseed/treedb` production
+image target and runs profiling from the separate Debian-based
+`treeseed/treedb-profiler` image. The service image does not contain profiler
+tooling. Profile behavior is controlled with GitHub repository or environment
+variables:
 
 - `TREEDB_CI_PROFILE_MODE`, default `portfolio`
 - `TREEDB_CI_PROFILE_DURATION`, default `10m`
@@ -104,9 +112,10 @@ waits, fixture import, catalog convergence, and report finalization are recorded
 separately and do not count toward the requested measured window.
 
 The architecture image build runs only after the matching architecture has
-completed verification and after required base and federation profiler streams
-have succeeded. The final manifest is assembled only after both architecture
-images are pushed.
+completed verification and after required base, federation, and performance
+profiler streams have succeeded. The final service and profiler manifests are
+assembled only after both architecture images for both image families are
+pushed.
 
 ## SDK Release Relationship
 
@@ -137,32 +146,35 @@ verification and required profile streams.
 
 The GitHub workflow publishes Docker images only after the release gate passes.
 
-- Pushes to `main` publish `treeseed/treedb:latest`.
-- Git tags publish `treeseed/treedb:<tag>`.
+- Pushes to `main` publish `treeseed/treedb:latest` and
+  `treeseed/treedb-profiler:latest`.
+- Git tags publish `treeseed/treedb:<tag>` and
+  `treeseed/treedb-profiler:<tag>`.
 - Release tags must be semantic versions without a `v` prefix, such as
   `0.1.0` or `1.2.3-alpha.1`.
 - Build metadata tags such as `1.2.3+build.5` are not used for Docker
   publishing because Docker tags cannot preserve `+` while keeping the image tag
   identical to the git tag.
-- Existing Docker Hub version tags are not overwritten.
+- Existing Docker Hub version tags are not overwritten for either image.
 - Images are built as a multi-architecture manifest for `linux/amd64` and
   `linux/arm64`.
 - Architecture images are built on native GitHub-hosted runners
   (`ubuntu-24.04` for `linux/amd64` and `ubuntu-24.04-arm` for `linux/arm64`)
   and then combined into the published manifest. The workflow does not use QEMU
   for release builds.
-- Architecture-specific Docker Hub tags are named after the final manifest tag:
-  `latest-amd64` and `latest-arm64` for `main`, or `<semver>-amd64` and
-  `<semver>-arm64` for version tags. The manifest tag remains `latest` or the
-  exact semantic-version git tag.
+- Architecture-specific Docker Hub tags are named after the final manifest tag
+  for each image: `latest-amd64` and `latest-arm64` for `main`, or
+  `<semver>-amd64` and `<semver>-arm64` for version tags. The manifest tags
+  remain `latest` or the exact semantic-version git tag.
 - BuildKit cache is enabled per architecture for Docker layers plus Cargo and
   Mix build caches.
 - Architecture image builds attach BuildKit SBOM and max-mode provenance
   attestations at push time so Docker Hub supply-chain attestation checks can
   verify both software bill of materials and build provenance.
-- The published runtime image omits optional shell Git tooling; deployments that
-  enable authenticated external Git transport provide that tooling in a derived
-  image or controlled worker environment.
+- The published service runtime image is distroless and omits package-manager,
+  shell, Git, curl, and profiler tooling. The published profiler image is a
+  separate Debian-based utility image and is not used as the API service
+  runtime.
 - Publishing uses the GitHub `production` environment secrets
   `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
 

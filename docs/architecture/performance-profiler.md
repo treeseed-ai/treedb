@@ -3,6 +3,13 @@
 The TreeDB profiler is a standalone Elixir escript located at
 `tools/treedb_profiler`.
 
+Release profiles run the escript from the separate Debian-based
+`treeseed/treedb-profiler` image. API nodes run from the stripped distroless
+`treeseed/treedb` service image. The profiler image includes fixtures,
+scenarios, the endpoint matrix, the reliability budget, and OpenAPI metadata so
+normal profile Compose runs do not bind-mount the repository source into the
+profiler container.
+
 ## Design
 
 The profiler is intentionally black-box:
@@ -159,6 +166,10 @@ The profiler reads `docs/api/openapi.json` and verifies
 operation. The endpoint matrix adds setup state, request templates, tags,
 expected statuses, scenario weights, and validation rules that OpenAPI cannot
 derive by itself.
+
+Packaged profiler runs can set `TREEDB_PROFILER_ROOT` and `TREEDB_OPENAPI_PATH`
+to point at the baked-in profiler data directory and OpenAPI file. Local source
+runs continue to use source-relative defaults.
 
 Routes not executed by the selected scenario are reported with explicit status,
 such as admin-disabled, destructive-disabled, exec-disabled,

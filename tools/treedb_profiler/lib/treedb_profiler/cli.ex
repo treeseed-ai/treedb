@@ -495,11 +495,17 @@ defmodule TreeDbProfiler.CLI do
   end
 
   defp profiler_root do
-    __ENV__.file
-    |> Path.dirname()
-    |> Path.join("..")
-    |> Path.expand()
-    |> Path.dirname()
+    case System.get_env("TREEDB_PROFILER_ROOT") do
+      nil ->
+        __ENV__.file
+        |> Path.dirname()
+        |> Path.join("..")
+        |> Path.expand()
+        |> Path.dirname()
+
+      root ->
+        Path.expand(root)
+    end
   end
 
   defp usage do
