@@ -1,0 +1,57 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: files.tree_read_write_patch_delete
+    capabilityId: files.lifecycle
+    title: Read tree data and mutate workspace files.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/workspaces/{workspace_id}/tree
+      - GET /api/v1/workspaces/{workspace_id}/files
+      - PUT /api/v1/workspaces/{workspace_id}/files
+      - PATCH /api/v1/workspaces/{workspace_id}/files
+      - DELETE /api/v1/workspaces/{workspace_id}/files
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: read_tree
+        action: files.tree
+        description: Read a workspace tree through the SDK facade.
+      - name: write_patch_delete_file
+        action: files.writePatchDelete
+        description: Write, patch, and delete a workspace file through the SDK facade.
+    assertions:
+      - File paths remain repository-relative.
+      - File writes and patches use OpenAPI-aligned request payloads.
+      - Delete results are exposed without transport-specific wrappers.
+  - id: files.search_status_diff_commit
+    capabilityId: files.lifecycle
+    title: Search, inspect status, diff, and commit workspace changes.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/workspaces/{workspace_id}/search
+      - GET /api/v1/workspaces/{workspace_id}/status
+      - GET /api/v1/workspaces/{workspace_id}/diff
+      - POST /api/v1/workspaces/{workspace_id}/commit
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: search_workspace
+        action: files.search
+        description: Search workspace files through the SDK facade.
+      - name: inspect_status_diff_commit
+        action: files.statusDiffCommit
+        description: Read status, diff changes, and commit through the SDK facade.
+    assertions:
+      - Search results preserve paths and snippets returned by TreeDB.
+      - Status and diff responses remain generic TreeDB data.
+      - Commit results expose the server response without TreeSeed semantics.

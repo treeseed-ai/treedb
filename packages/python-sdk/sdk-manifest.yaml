@@ -1,0 +1,51 @@
+sdk: treedb-python
+language: python
+version: 0.1.0
+sdkSpecVersion: 0.1.0
+openapiVersion: 0.10.0
+
+testLayout:
+  unit: partial
+  adapters: partial
+  generated: partial
+  conformance: partial
+  integration: partial
+
+modules:
+  Client: partial
+  Auth: partial
+  Repositories: partial
+  Workspaces: partial
+  Files: partial
+  Blobs: partial
+  Query: partial
+  Graph: partial
+  Context: partial
+  Federation: partial
+  Registry: partial
+  Snapshots: partial
+  Artifacts: partial
+  Mirrors: partial
+  Migrations: partial
+  Exec: partial
+  Observability: partial
+
+capabilities:
+  health.basic: partial
+  auth.whoami: partial
+  repositories.lifecycle: partial
+  workspaces.lifecycle: partial
+  files.lifecycle: partial
+  blobs.binary: partial
+  blobs.multipart: partial
+  query.repository: partial
+  graph.repository: partial
+  context.repository: partial
+  federation.global_query: partial
+  registry.routing: partial
+  snapshots.lifecycle: partial
+  artifacts.lifecycle: partial
+  mirrors.lifecycle: partial
+  migrations.lifecycle: partial
+  exec.workspace: partial
+  observability.health_metrics: partial

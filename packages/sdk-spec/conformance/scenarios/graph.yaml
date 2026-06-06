@@ -1,0 +1,42 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: graph.refresh
+    capabilityId: graph.repository
+    title: Refresh repository graph indexes.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/graph/refresh
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: refresh_graph
+        action: graph.refresh
+        description: Refresh repository graph data through the SDK facade.
+    assertions:
+      - Refresh request uses OpenAPI-aligned repository identifiers.
+      - Refresh result is exposed as generic graph data.
+  - id: graph.query
+    capabilityId: graph.repository
+    title: Query repository graph data.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/graph/query
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: query_graph
+        action: graph.query
+        description: Query repository graph data through the SDK facade.
+    assertions:
+      - Graph query payload remains OpenAPI-aligned.
+      - Nodes and edges are exposed without product-specific interpretation.

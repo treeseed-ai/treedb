@@ -1,0 +1,65 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: registry.local_node
+    capabilityId: registry.routing
+    title: Read local node identity.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/node
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: read_local_node
+        action: registry.localNode
+        description: Read local node data through the SDK facade.
+    assertions:
+      - Node data is exposed as generic registry data.
+      - No deployment-specific secrets are surfaced.
+  - id: registry.nodes
+    capabilityId: registry.routing
+    title: Read registry node inventory.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/registry/nodes
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: list_nodes
+        action: registry.nodes
+        description: List registry nodes through the SDK facade.
+    assertions:
+      - Node inventory preserves server-owned metadata.
+      - SDK does not infer placement policy beyond TreeDB response data.
+  - id: registry.repo_placement
+    capabilityId: registry.routing
+    title: Read and update repository placement.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/registry/repos/{repo_id}/placement
+      - POST /api/v1/registry/repos/{repo_id}/placement
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: get_placement
+        action: registry.getPlacement
+        description: Read repository placement through the SDK facade.
+      - name: set_placement
+        action: registry.setPlacement
+        description: Update repository placement through the SDK facade.
+    assertions:
+      - Placement records remain generic TreeDB routing data.
+      - Permission failures preserve TreeDbApiError-compatible fields.

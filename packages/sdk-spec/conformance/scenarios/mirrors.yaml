@@ -1,0 +1,48 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: mirrors.create_health_promote
+    capabilityId: mirrors.lifecycle
+    title: Create, health-check, and promote repository mirrors.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/repos/{repo_id}/mirrors
+      - POST /api/v1/repos/{repo_id}/mirrors
+      - POST /api/v1/repos/{repo_id}/mirrors/{mirror_id}/health
+      - POST /api/v1/repos/{repo_id}/mirrors/{mirror_id}/promote
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: create_mirror
+        action: mirrors.upsert
+        description: Create or update a repository mirror through the SDK facade.
+      - name: health_promote_mirror
+        action: mirrors.healthPromote
+        description: Check mirror health and promote through the SDK facade.
+    assertions:
+      - Mirror configuration remains generic TreeDB data.
+      - Health and promote responses preserve server-owned status metadata.
+  - id: mirrors.sync
+    capabilityId: mirrors.lifecycle
+    title: Sync repository mirrors.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/mirrors/{mirror_id}/sync
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: sync_mirror
+        action: mirrors.sync
+        description: Sync a repository mirror through the SDK facade.
+    assertions:
+      - Sync results expose sanitized remote metadata.
+      - Sync errors preserve TreeDbApiError-compatible fields.

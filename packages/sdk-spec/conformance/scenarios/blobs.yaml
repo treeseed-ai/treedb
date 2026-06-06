@@ -1,0 +1,61 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: blobs.read_write_download_upload
+    capabilityId: blobs.binary
+    title: Binary blob helpers preserve byte payloads.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/blobs/read
+      - POST /api/v1/workspaces/{workspace_id}/blobs/write
+      - POST /api/v1/workspaces/{workspace_id}/blobs/delete
+      - GET /api/v1/workspaces/{workspace_id}/blobs/download
+      - PUT /api/v1/workspaces/{workspace_id}/blobs/upload
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: read_write_blob
+        action: blobs.readWrite
+        description: Read and write binary blob content through the SDK facade.
+      - name: upload_download_delete_blob
+        action: blobs.uploadDownloadDelete
+        description: Upload, download, and delete blob content through the SDK facade.
+    assertions:
+      - Upload accepts binary-safe body values.
+      - Download returns binary-safe body values.
+      - SDK does not coerce payloads through UTF-8 text.
+  - id: blobs.multipart_upload
+    capabilityId: blobs.multipart
+    title: Multipart upload helpers expose create, part upload, complete, and abort behavior.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/workspaces/{workspace_id}/blobs/uploads
+      - PUT /api/v1/workspaces/{workspace_id}/blobs/uploads/{upload_id}/parts/{part_number}
+      - POST /api/v1/workspaces/{workspace_id}/blobs/uploads/{upload_id}/complete
+      - DELETE /api/v1/workspaces/{workspace_id}/blobs/uploads/{upload_id}
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: create_upload
+        action: blobs.multipartCreate
+        description: Create a multipart upload through the SDK facade.
+      - name: upload_part
+        action: blobs.multipartPutPart
+        description: Upload a numbered part through the SDK facade.
+      - name: complete_or_abort
+        action: blobs.multipartCompleteAbort
+        description: Complete or abort the multipart upload through the SDK facade.
+    assertions:
+      - Create returns an upload id.
+      - Part upload preserves part numbers.
+      - Complete accepts uploaded parts.
+      - Abort is exposed for unfinished sessions.

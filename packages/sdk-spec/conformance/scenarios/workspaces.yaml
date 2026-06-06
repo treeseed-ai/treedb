@@ -1,0 +1,32 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: workspaces.create_get_close
+    capabilityId: workspaces.lifecycle
+    title: Create, inspect, and close a workspace.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/workspaces
+      - GET /api/v1/workspaces/{workspace_id}
+      - POST /api/v1/workspaces/{workspace_id}/close
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: create_workspace
+        action: workspaces.create
+        description: Create a workspace from a repository.
+      - name: inspect_workspace
+        action: workspaces.get
+        description: Inspect workspace metadata through the SDK facade.
+      - name: close_workspace
+        action: workspaces.close
+        description: Close the workspace through the SDK facade.
+    assertions:
+      - Workspace IDs are preserved across create, get, and close operations.
+      - Closed workspace state is surfaced without transport-specific wrappers.
+      - Workspace errors preserve TreeDbApiError-compatible fields.

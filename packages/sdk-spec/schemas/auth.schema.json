@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "status", "auth", "rules"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "auth": {
+      "type": "object",
+      "required": ["providers", "bearerToken", "authProvider", "effectiveScope", "productionIdentity"],
+      "additionalProperties": true,
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "bearerToken": {
+          "type": "object",
+          "required": ["header", "scheme"],
+          "additionalProperties": true,
+          "properties": {
+            "header": { "type": "string" },
+            "scheme": { "type": "string" }
+          }
+        },
+        "authProvider": {
+          "type": "object",
+          "required": ["description", "requiredBehaviors"],
+          "additionalProperties": true,
+          "properties": {
+            "description": { "type": "string" },
+            "requiredBehaviors": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "effectiveScope": {
+          "type": "object",
+          "required": ["endpoint", "capabilityId"],
+          "additionalProperties": true,
+          "properties": {
+            "endpoint": {
+              "type": "string",
+              "pattern": "^(GET|POST|PUT|PATCH|DELETE) /api/v1/.+"
+            },
+            "capabilityId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+            }
+          }
+        },
+        "productionIdentity": {
+          "type": "object",
+          "required": ["requestJsonAllowed"],
+          "additionalProperties": true,
+          "properties": {
+            "requestJsonAllowed": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

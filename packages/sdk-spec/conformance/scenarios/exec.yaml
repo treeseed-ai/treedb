@@ -1,0 +1,47 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: exec.read_only
+    capabilityId: exec.workspace
+    title: Execute read-only workspace commands within policy boundaries.
+    kind: black_box
+    required: true
+    serverRequired: conditional
+    endpointRefs:
+      - POST /api/v1/workspaces/{workspace_id}/exec
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: run_read_only_command
+        action: exec.run
+        description: Execute a read-only command through the SDK facade.
+    assertions:
+      - Command execution respects workspace policy boundaries.
+      - Output is sanitized and does not expose hidden host paths or credentials.
+      - Execution failures preserve TreeDbApiError-compatible fields.
+  - id: exec.write_limited
+    capabilityId: exec.workspace
+    title: Execute write-limited workspace commands within policy boundaries.
+    kind: black_box
+    required: true
+    serverRequired: conditional
+    endpointRefs:
+      - POST /api/v1/workspaces/{workspace_id}/exec
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: run_write_limited_command
+        action: exec.run
+        description: Execute a write-limited command through the SDK facade.
+      - name: run_denied_command
+        action: exec.runDenied
+        description: Exercise denied command behavior through the SDK facade.
+    assertions:
+      - Write-limited commands respect TreeDB policy boundaries.
+      - Denied operations surface TreeDbApiError-compatible errors.
+      - Output is sanitized and does not expose hidden host paths or credentials.

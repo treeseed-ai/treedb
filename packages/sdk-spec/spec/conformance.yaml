@@ -1,0 +1,29 @@
+version: 0.1.0
+status: draft
+
+scenarioMetadata:
+  requiredFields:
+    - id
+    - capabilityId
+    - title
+    - kind
+    - required
+    - serverRequired
+    - endpointRefs
+    - fixtures
+    - steps
+    - assertions
+  idFormat: lowercase dotted identifiers
+  capabilityIdSource: spec/capabilities.yaml
+
+fixtureLayout:
+  repos: conformance/fixtures/repos
+  requests: conformance/fixtures/requests
+  expected: conformance/fixtures/expected
+
+scenarios: []
+
+rules:
+  - Scenario IDs must be unique.
+  - Scenario IDs must be tied to capability IDs.
+  - Fixtures must not contain credentials, local machine paths, or product-specific TreeSeed semantics.

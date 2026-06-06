@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "status",
+    "layers",
+    "requiredModules",
+    "requiredPorts",
+    "languageSdks",
+    "downstreamConsumers",
+    "canonicalDirectories",
+    "modules",
+    "ports",
+    "coreConcepts"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "layers": {
+      "type": "object",
+      "required": ["generated", "core", "facade", "conformance"],
+      "additionalProperties": true
+    },
+    "requiredModules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "requiredPorts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "languageSdks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "downstreamConsumers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["package", "role", "architectureOwner"],
+        "additionalProperties": true,
+        "properties": {
+          "package": { "type": "string" },
+          "role": { "type": "string" },
+          "architectureOwner": { "type": "boolean" }
+        }
+      }
+    },
+    "canonicalDirectories": {
+      "type": "object",
+      "required": ["generated", "core", "facade", "conformance"],
+      "additionalProperties": { "type": "string" }
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "layer", "ownsPorts", "capabilityIds", "description"],
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string" },
+          "layer": { "type": "string", "enum": ["generated", "core", "facade", "conformance"] },
+          "ownsPorts": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "capabilityIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+            },
+            "minItems": 1
+          },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "ports": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "ownerModules", "required"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "ownerModules": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
+    "coreConcepts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "ownerModule", "required"],
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string" },
+          "ownerModule": { "type": "string" },
+          "required": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

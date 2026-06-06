@@ -1,0 +1,103 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: query.read_file
+    capabilityId: query.repository
+    title: Read repository file content.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/files/read
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: read_file
+        action: query.readFile
+        description: Read repository file content through the SDK facade.
+    assertions:
+      - File content and metadata are exposed as generic TreeDB query data.
+      - Path arguments remain repository-relative.
+  - id: query.paths_list
+    capabilityId: query.repository
+    title: List repository paths.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/paths/list
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: list_paths
+        action: query.listPaths
+        description: List repository paths through the SDK facade.
+    assertions:
+      - Path list results preserve server ordering and pagination metadata when returned.
+      - Hidden paths are not synthesized by the SDK.
+  - id: query.search_filter_sort
+    capabilityId: query.repository
+    title: Search repository files with filters and sort options.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/files/search
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: search_files
+        action: query.searchFiles
+        description: Search repository files through the SDK facade.
+    assertions:
+      - Search filters and sort options map to OpenAPI-aligned payloads.
+      - Results preserve path and match metadata returned by TreeDB.
+  - id: query.changed_paths
+    capabilityId: query.repository
+    title: Query changed repository paths.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/query
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: query_changed_paths
+        action: query.repository
+        description: Run a repository query for changed paths through the SDK facade.
+    assertions:
+      - Query payload remains generic TreeDB query data.
+      - Changed path results preserve server-owned metadata.
+  - id: query.pagination
+    capabilityId: query.repository
+    title: Repository query pagination preserves opaque cursors.
+    kind: black_box
+    required: true
+    serverRequired: conditional
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/query
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: request_first_page
+        action: query.repository
+        description: Request a paginated repository query through the SDK facade.
+      - name: request_next_page
+        action: query.nextPage
+        description: Use the returned cursor to request the next page.
+    assertions:
+      - nextCursor is exposed without decoding.
+      - hasMore is preserved when returned.
+      - Iterator helpers stop when nextCursor is absent.

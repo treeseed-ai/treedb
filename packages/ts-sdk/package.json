@@ -1,0 +1,59 @@
+{
+  "name": "@treedb/ts-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generic TypeScript SDK for TreeDB.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "types": "./dist/treedb/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/treedb/index.d.ts",
+      "default": "./dist/treedb/index.js"
+    },
+    "./treedb": {
+      "types": "./dist/treedb/index.d.ts",
+      "default": "./dist/treedb/index.js"
+    },
+    "./treedb/client": {
+      "types": "./dist/treedb/client/index.d.ts",
+      "default": "./dist/treedb/client/index.js"
+    },
+    "./treedb/types": {
+      "types": "./dist/treedb/types/index.d.ts",
+      "default": "./dist/treedb/types/index.js"
+    },
+    "./treedb/adapters": {
+      "types": "./dist/treedb/adapters/index.d.ts",
+      "default": "./dist/treedb/adapters/index.js"
+    },
+    "./treedb/conformance": {
+      "types": "./dist/treedb/conformance/index.d.ts",
+      "default": "./dist/treedb/conformance/index.js"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist",
+    "sdk-manifest.yaml"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:treedb-unit": "vitest run --config ./vitest.config.ts test/unit test/adapters test/generated",
+    "test:treedb-conformance": "vitest run --config ./vitest.config.ts test/conformance",
+    "test:treedb-integration": "vitest run --config ./vitest.config.ts test/integration",
+    "treedb:generate": "node scripts/generate-treedb-openapi-types.mjs",
+    "treedb:check-generated": "node scripts/check-treedb-generated-types.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2",
+    "yaml": "^2.8.1"
+  }
+}

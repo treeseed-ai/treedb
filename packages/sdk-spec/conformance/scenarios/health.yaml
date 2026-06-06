@@ -1,0 +1,27 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: health.basic
+    capabilityId: health.basic
+    title: Read service health and version.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/health
+      - GET /api/v1/version
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: read_health
+        action: client.health
+        description: Read basic service health through the SDK facade.
+      - name: read_version
+        action: client.version
+        description: Read service version through the SDK facade.
+    assertions:
+      - Health response is exposed without transport-specific wrappers.
+      - Version response is exposed through the same client configuration.

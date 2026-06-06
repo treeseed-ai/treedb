@@ -1,0 +1,42 @@
+version: 0.1.0
+status: draft
+
+concepts:
+  TreeDbPage:
+    fields:
+      items:
+        required: true
+        description: Result items for the current page.
+      nextCursor:
+        required: false
+        description: Opaque cursor for the next page when present.
+      hasMore:
+        required: false
+        description: Boolean indicating whether more results may be fetched.
+      cursor:
+        required: false
+        description: Cursor used to request the current or next page when the API exposes it.
+      limit:
+        required: false
+        description: Requested or applied page size when the API exposes it.
+  TreeDbCursor:
+    encoding: opaque
+    sdkBehavior:
+      - expose raw cursor values
+      - provide idiomatic iterator helper where the language supports it
+      - do not decode cursor internals in public SDK behavior
+      - do not synthesize server-owned cursor values
+
+pageFields:
+  - items
+  - limit
+  - hasMore
+  - cursor
+  - nextCursor
+
+rules:
+  - Cursor values are server-owned opaque strings.
+  - Missing nextCursor means no known next page.
+  - SDKs must preserve page metadata returned by TreeDB.
+  - SDK iterators must stop cleanly when hasMore is false or nextCursor is absent.
+  - SDK iterators must expose request failures as TreeDbApiError-compatible failures.

@@ -1,0 +1,16 @@
+{
+  "name": "@treedb/sdk-spec",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate-spec.mjs",
+    "check-openapi-coverage": "node scripts/check-openapi-coverage.mjs",
+    "check-sdk-manifests": "node scripts/check-sdk-manifest.mjs",
+    "render-capability-matrix": "node scripts/render-capability-matrix.mjs",
+    "test": "npm run validate && npm run check-openapi-coverage"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "yaml": "^2.7.0"
+  }
+}

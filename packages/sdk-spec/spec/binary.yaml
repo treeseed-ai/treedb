@@ -1,0 +1,57 @@
+version: 0.1.0
+status: draft
+
+concepts:
+  BinaryBody:
+    description: Language-idiomatic byte container for raw blob content.
+    allowedForms:
+      - bytes
+      - byte_array
+      - stream
+      - array_buffer
+  MultipartUpload:
+    description: Upload session with upload id, part numbers, completion, and abort behavior.
+    requiredFields:
+      - uploadId
+      - partNumber
+      - completedParts
+
+binaryModes:
+  - base64_json
+  - raw_upload
+  - raw_download
+  - multipart
+
+operations:
+  blobRead:
+    capabilityId: blobs.binary
+    endpoints:
+      - POST /api/v1/repos/{repo_id}/blobs/read
+  blobWrite:
+    capabilityId: blobs.binary
+    endpoints:
+      - POST /api/v1/workspaces/{workspace_id}/blobs/write
+      - PUT /api/v1/workspaces/{workspace_id}/blobs/upload
+  blobDelete:
+    capabilityId: blobs.binary
+    endpoints:
+      - POST /api/v1/workspaces/{workspace_id}/blobs/delete
+  blobDownload:
+    capabilityId: blobs.binary
+    endpoints:
+      - GET /api/v1/workspaces/{workspace_id}/blobs/download
+  multipartUpload:
+    capabilityId: blobs.multipart
+    endpoints:
+      - POST /api/v1/workspaces/{workspace_id}/blobs/uploads
+      - PUT /api/v1/workspaces/{workspace_id}/blobs/uploads/{upload_id}/parts/{part_number}
+      - POST /api/v1/workspaces/{workspace_id}/blobs/uploads/{upload_id}/complete
+      - DELETE /api/v1/workspaces/{workspace_id}/blobs/uploads/{upload_id}
+
+rules:
+  - SDKs must support binary-safe upload and download.
+  - SDKs must not coerce binary payloads through UTF-8 text strings.
+  - SDKs must not log binary payload snippets.
+  - SDKs must preserve content type, byte length, and digest metadata when returned by TreeDB.
+  - Multipart helpers must expose create, put part, complete, and abort operations.
+  - Multipart part numbers must be stable integers passed through to TreeDB without SDK renumbering.

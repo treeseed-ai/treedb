@@ -1,0 +1,303 @@
+version: 0.1.0
+status: draft
+
+layers:
+  generated:
+    description: OpenAPI-generated or OpenAPI-validated schemas and low-level operation shapes.
+    public: false
+  core:
+    description: Shared TreeDB SDK behavior across all public modules.
+    public: partial
+  facade:
+    description: Idiomatic language-specific API built on the core layer.
+    public: true
+  conformance:
+    description: Shared adapter surface for sdk-spec conformance scenarios.
+    public: false
+
+requiredModules:
+  - Client
+  - Auth
+  - Repositories
+  - Workspaces
+  - Files
+  - Blobs
+  - Query
+  - Graph
+  - Context
+  - Federation
+  - Registry
+  - Snapshots
+  - Artifacts
+  - Mirrors
+  - Migrations
+  - Exec
+  - Observability
+
+requiredPorts:
+  - transport
+  - auth_provider
+  - repository_adapter
+  - workspace_adapter
+  - file_adapter
+  - blob_adapter
+  - query_adapter
+  - graph_adapter
+  - context_adapter
+  - federation_adapter
+  - registry_adapter
+  - snapshot_adapter
+  - artifact_adapter
+  - mirror_adapter
+  - migration_adapter
+  - exec_adapter
+
+requiredCoreConcepts:
+  - TreeDbClientConfig
+  - Transport
+  - AuthProvider
+  - TreeDbApiError
+  - TreeDbPage
+  - TreeDbCursor
+  - BinaryBody
+  - MultipartUpload
+  - CapabilityMatrix
+  - ConformanceAdapter
+
+languageSdks:
+  - typescript
+  - python
+  - rust
+  - elixir
+
+downstreamConsumers:
+  - package: packages/trsd-sdk
+    role: TreeSeed integration reference and future TreeDB SDK consumer.
+    architectureOwner: false
+
+canonicalDirectories:
+  generated: generated/
+  core: core/
+  facade: facade/
+  conformance: conformance/
+
+modules:
+  - name: Client
+    layer: core
+    ownsPorts:
+      - transport
+    capabilityIds:
+      - health.basic
+    description: Base client configuration, transport binding, health, and version access.
+  - name: Auth
+    layer: core
+    ownsPorts:
+      - auth_provider
+    capabilityIds:
+      - auth.whoami
+    description: Bearer auth, auth providers, and effective scope access.
+  - name: Repositories
+    layer: core
+    ownsPorts:
+      - repository_adapter
+    capabilityIds:
+      - repositories.lifecycle
+    description: Repository registration, creation, listing, status, refs, and remotes.
+  - name: Workspaces
+    layer: core
+    ownsPorts:
+      - workspace_adapter
+    capabilityIds:
+      - workspaces.lifecycle
+    description: Workspace create, inspect, and close behavior.
+  - name: Files
+    layer: core
+    ownsPorts:
+      - file_adapter
+    capabilityIds:
+      - files.lifecycle
+    description: Workspace file tree, read, write, patch, delete, search, status, diff, and commit behavior.
+  - name: Blobs
+    layer: core
+    ownsPorts:
+      - blob_adapter
+    capabilityIds:
+      - blobs.binary
+      - blobs.multipart
+    description: Binary blob read, write, delete, upload, download, and multipart behavior.
+  - name: Query
+    layer: core
+    ownsPorts:
+      - query_adapter
+    capabilityIds:
+      - query.repository
+    description: Repository read, path list, file search, and query behavior.
+  - name: Graph
+    layer: core
+    ownsPorts:
+      - graph_adapter
+    capabilityIds:
+      - graph.repository
+    description: Repository graph refresh and graph query behavior.
+  - name: Context
+    layer: core
+    ownsPorts:
+      - context_adapter
+    capabilityIds:
+      - context.repository
+    description: Context build and context query parse behavior.
+  - name: Federation
+    layer: core
+    ownsPorts:
+      - federation_adapter
+    capabilityIds:
+      - federation.global_query
+    description: Federated planning, search, query, graph, and context behavior.
+  - name: Registry
+    layer: core
+    ownsPorts:
+      - registry_adapter
+    capabilityIds:
+      - registry.routing
+    description: Node inventory and repository placement/routing behavior.
+  - name: Snapshots
+    layer: core
+    ownsPorts:
+      - snapshot_adapter
+    capabilityIds:
+      - snapshots.lifecycle
+    description: Repository snapshot build and retrieval behavior.
+  - name: Artifacts
+    layer: core
+    ownsPorts:
+      - artifact_adapter
+    capabilityIds:
+      - artifacts.lifecycle
+    description: Artifact export, list, get, and delete behavior.
+  - name: Mirrors
+    layer: core
+    ownsPorts:
+      - mirror_adapter
+    capabilityIds:
+      - mirrors.lifecycle
+    description: Repository mirror list, upsert, sync, health, and promote behavior.
+  - name: Migrations
+    layer: core
+    ownsPorts:
+      - migration_adapter
+    capabilityIds:
+      - migrations.lifecycle
+    description: Repository placement migration create and get behavior.
+  - name: Exec
+    layer: core
+    ownsPorts:
+      - exec_adapter
+    capabilityIds:
+      - exec.workspace
+    description: Workspace-scoped command execution behavior.
+  - name: Observability
+    layer: core
+    ownsPorts:
+      - transport
+    capabilityIds:
+      - observability.health_metrics
+    description: Readiness, health, deep health, and metrics behavior.
+
+ports:
+  - id: transport
+    ownerModules:
+      - Client
+      - Observability
+    required: true
+  - id: auth_provider
+    ownerModules:
+      - Auth
+    required: true
+  - id: repository_adapter
+    ownerModules:
+      - Repositories
+    required: true
+  - id: workspace_adapter
+    ownerModules:
+      - Workspaces
+    required: true
+  - id: file_adapter
+    ownerModules:
+      - Files
+    required: true
+  - id: blob_adapter
+    ownerModules:
+      - Blobs
+    required: true
+  - id: query_adapter
+    ownerModules:
+      - Query
+    required: true
+  - id: graph_adapter
+    ownerModules:
+      - Graph
+    required: true
+  - id: context_adapter
+    ownerModules:
+      - Context
+    required: true
+  - id: federation_adapter
+    ownerModules:
+      - Federation
+    required: true
+  - id: registry_adapter
+    ownerModules:
+      - Registry
+    required: true
+  - id: snapshot_adapter
+    ownerModules:
+      - Snapshots
+    required: true
+  - id: artifact_adapter
+    ownerModules:
+      - Artifacts
+    required: true
+  - id: mirror_adapter
+    ownerModules:
+      - Mirrors
+    required: true
+  - id: migration_adapter
+    ownerModules:
+      - Migrations
+    required: true
+  - id: exec_adapter
+    ownerModules:
+      - Exec
+    required: true
+
+coreConcepts:
+  - name: TreeDbClientConfig
+    ownerModule: Client
+    required: true
+  - name: Transport
+    ownerModule: Client
+    required: true
+  - name: AuthProvider
+    ownerModule: Auth
+    required: true
+  - name: TreeDbApiError
+    ownerModule: Client
+    required: true
+  - name: TreeDbPage
+    ownerModule: Query
+    required: true
+  - name: TreeDbCursor
+    ownerModule: Query
+    required: true
+  - name: BinaryBody
+    ownerModule: Blobs
+    required: true
+  - name: MultipartUpload
+    ownerModule: Blobs
+    required: true
+  - name: CapabilityMatrix
+    ownerModule: Client
+    required: true
+  - name: ConformanceAdapter
+    ownerModule: Client
+    required: true

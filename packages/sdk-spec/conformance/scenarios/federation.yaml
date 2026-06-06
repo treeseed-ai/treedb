@@ -1,0 +1,85 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: federation.plan
+    capabilityId: federation.global_query
+    title: Plan a federated query.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/federation/query/plan
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: plan_query
+        action: federation.plan
+        description: Plan a federated query through the SDK facade.
+    assertions:
+      - Planning response is exposed as generic federation data.
+      - Hidden routes and unauthorized scopes are not synthesized by the SDK.
+  - id: federation.global_search
+    capabilityId: federation.global_query
+    title: Run global search.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/search
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: global_search
+        action: federation.search
+        description: Run global search through the SDK facade.
+    assertions:
+      - Search request remains OpenAPI-aligned.
+      - Results preserve authorized repository and path metadata.
+  - id: federation.global_query
+    capabilityId: federation.global_query
+    title: Run global query, graph, and context requests.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/query
+      - POST /api/v1/context/build
+      - POST /api/v1/graph/query
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: global_query
+        action: federation.query
+        description: Run a global query through the SDK facade.
+      - name: global_context_graph
+        action: federation.contextGraph
+        description: Run global context and graph operations through the SDK facade.
+    assertions:
+      - Global responses preserve reduced authorized scopes.
+      - Context and graph outputs remain generic TreeDB data.
+  - id: federation.partial_failure
+    capabilityId: federation.global_query
+    title: Surface sanitized federated partial failures.
+    kind: black_box
+    required: true
+    serverRequired: conditional
+    endpointRefs:
+      - POST /api/v1/query
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: partial_failure_query
+        action: federation.query
+        description: Run a federated query with a partial downstream failure.
+    assertions:
+      - Partial failures expose TreeDbApiError-compatible metadata when fatal.
+      - Non-fatal partial failures are sanitized and do not expose hidden paths or credentials.

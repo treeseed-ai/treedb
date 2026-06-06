@@ -1,0 +1,27 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: snapshots.build_get
+    capabilityId: snapshots.lifecycle
+    title: Build and retrieve repository snapshots.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/snapshots/build
+      - GET /api/v1/repos/{repo_id}/snapshots/{snapshot_id}
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: build_snapshot
+        action: snapshots.build
+        description: Build a repository snapshot through the SDK facade.
+      - name: get_snapshot
+        action: snapshots.get
+        description: Retrieve snapshot metadata through the SDK facade.
+    assertions:
+      - Snapshot IDs are preserved between build and get operations.
+      - Snapshot metadata remains generic TreeDB data.

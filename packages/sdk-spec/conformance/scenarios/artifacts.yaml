@@ -1,0 +1,47 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: artifacts.export
+    capabilityId: artifacts.lifecycle
+    title: Export repository artifacts.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/artifacts/export
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: export_artifact
+        action: artifacts.export
+        description: Export repository artifact data through the SDK facade.
+    assertions:
+      - Export request uses generic repository and artifact options.
+      - Export response preserves artifact identifiers returned by TreeDB.
+  - id: artifacts.list_get_delete
+    capabilityId: artifacts.lifecycle
+    title: List, read, and delete repository artifacts.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/repos/{repo_id}/artifacts
+      - GET /api/v1/repos/{repo_id}/artifacts/{artifact_id}
+      - DELETE /api/v1/repos/{repo_id}/artifacts/{artifact_id}
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: list_artifacts
+        action: artifacts.list
+        description: List repository artifacts through the SDK facade.
+      - name: get_delete_artifact
+        action: artifacts.getDelete
+        description: Read and delete an artifact through the SDK facade.
+    assertions:
+      - Artifact metadata remains generic TreeDB data.
+      - Delete result is exposed without transport-specific wrappers.

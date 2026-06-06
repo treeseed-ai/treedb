@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "status", "concepts", "binaryModes", "operations", "rules"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "concepts": {
+      "type": "object",
+      "required": ["BinaryBody", "MultipartUpload"],
+      "additionalProperties": true,
+      "properties": {
+        "BinaryBody": {
+          "type": "object",
+          "required": ["description", "allowedForms"],
+          "additionalProperties": true,
+          "properties": {
+            "description": { "type": "string" },
+            "allowedForms": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "MultipartUpload": {
+          "type": "object",
+          "required": ["description", "requiredFields"],
+          "additionalProperties": true,
+          "properties": {
+            "description": { "type": "string" },
+            "requiredFields": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "binaryModes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["capabilityId", "endpoints"],
+        "additionalProperties": true,
+        "properties": {
+          "capabilityId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "endpoints": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^(GET|POST|PUT|PATCH|DELETE) /api/v1/.+"
+            }
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

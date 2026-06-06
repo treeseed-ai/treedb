@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "status", "errorType", "fields", "networkError", "stableCodes", "rules"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "errorType": { "type": "string" },
+    "fields": {
+      "type": "object",
+      "required": ["status", "code", "message", "details", "payload"],
+      "additionalProperties": true
+    },
+    "networkError": {
+      "type": "object",
+      "required": ["status", "code"],
+      "additionalProperties": true,
+      "properties": {
+        "status": { "type": "integer" },
+        "code": { "type": "string" }
+      }
+    },
+    "stableCodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

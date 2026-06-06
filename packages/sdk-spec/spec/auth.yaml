@@ -1,0 +1,33 @@
+version: 0.1.0
+status: draft
+
+auth:
+  providers:
+    - static_bearer_token
+    - async_bearer_token
+    - request_hook
+  bearerToken:
+    header: Authorization
+    scheme: Bearer
+    redaction: required
+  authProvider:
+    description: Language-idiomatic abstraction that supplies bearer credentials.
+    requiredBehaviors:
+      - may resolve tokens lazily
+      - may refresh tokens before requests
+      - must not expose token values in logs or errors
+      - must attach credentials through transport headers only
+  effectiveScope:
+    endpoint: GET /api/v1/policy/effective-scope
+    capabilityId: auth.whoami
+  productionIdentity:
+    requestJsonAllowed: false
+
+rules:
+  - SDKs must support bearer token authentication.
+  - SDKs may support custom auth providers when they produce TreeDB-compatible bearer credentials.
+  - Bearer tokens must be sent through Authorization headers only.
+  - SDKs must not log bearer tokens.
+  - Production identity must not be supplied through request JSON.
+  - Connected authentication and permission integrations must remain generic.
+  - packages/trsd-sdk is a downstream example only and does not define the TreeDB auth contract.

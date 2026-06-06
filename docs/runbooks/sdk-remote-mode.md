@@ -1,26 +1,80 @@
-# SDK Remote Mode Runbook
+# SDK Portfolio-Backed Content Runbook
+
+TreeDB-backed TreeSeed content treats TreeDB as a portfolio of repositories.
+TreeSeed configures the service, auth, optional ref/workspace context, content
+path maps, and repository hints. It does not configure one global repository id.
 
 ## Required Inputs
 
 - TreeDB base URL
-- Bearer token
-- Repository ID
-- SDK model registry or model definitions
-- Content path map for no-clone content models
+- Bearer token when the TreeDB service requires auth
+- Optional ref, such as `refs/heads/main`
+- Optional workspace ID for write operations
+- Content path map for TreeSeed content models
+- Optional repository hints to narrow portfolio discovery
+
+Supported environment variables:
+
+```text
+TREESEED_TREEDB_BASE_URL
+TREESEED_TREEDB_TOKEN
+TREESEED_TREEDB_REF
+TREESEED_TREEDB_WORKSPACE_ID
+```
+
+There is intentionally no repository-id environment variable. Repository ids are
+discovered internally by portfolio APIs only when repo-scoped TreeDB endpoints
+require them.
+
+## Configuration Example
+
+```ts
+const sdk = new AgentSdk({
+  treeDb: {
+    baseUrl: process.env.TREESEED_TREEDB_BASE_URL,
+    token: process.env.TREESEED_TREEDB_TOKEN,
+    ref: process.env.TREESEED_TREEDB_REF,
+    workspaceId: process.env.TREESEED_TREEDB_WORKSPACE_ID,
+    contentPathMap: {
+      page: 'src/content/pages/**',
+      knowledge: {
+        paths: ['src/content/knowledge/**'],
+        repositoryHints: [{ purpose: 'project_content' }]
+      }
+    },
+    repositoryHints: [
+      { purpose: 'project_content', name: 'project-content' }
+    ]
+  }
+});
+```
 
 ## Smoke Check
 
 SDK live checks are run by the independent SDK package workflow. The top-level
 TreeDB release gate does not invoke SDK scripts or require an SDK checkout.
 
+For TreeSeed focused regression, build `packages/ts-sdk` first because
+`packages/trsd-sdk` consumes `@treedb/ts-sdk` through `file:../ts-sdk` and the
+exports point at `dist`.
+
 ## Mutating Check
+
+Use a workspace ID for content writes. Without a workspace, writes may proceed
+only when repository discovery resolves exactly one candidate. If multiple
+repositories match a write target, the SDK must fail clearly and require
+stronger repository hints or a workspace.
 
 Use a test repository or an isolated branch policy for mutating checks.
 
 ## Troubleshooting
 
-- `missing_repo_id`: set `repoId` on `treeDb` or `TreeDbClientOptions`.
-- `missing_content_path_mapping`: add `contentPathMap` for absolute model paths in no-clone mode.
+- `missing_treedb_base_url`: configure `TREESEED_TREEDB_BASE_URL` or pass
+  `treeDb.baseUrl`.
+- `missing_content_path_mapping`: add `contentPathMap` for model paths that
+  cannot be derived locally.
+- `ambiguous_repository_selection`: add stronger `repositoryHints` or supply a
+  `workspaceId` for writes.
 - `permission_denied`: verify TreeDB token capabilities and path/ref scopes.
-- `timeout`: increase `timeoutMs` or inspect TreeDB/server network health.
+- `timeout`: increase timeout settings or inspect TreeDB/server network health.
 - `network_error`: verify base URL and connectivity.

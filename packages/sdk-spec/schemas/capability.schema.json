@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "status", "capabilities"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "coverage": {
+      "type": "object",
+      "required": ["mode", "openApiSource", "endpointFormat", "requiredLanguageSdks"],
+      "additionalProperties": true,
+      "properties": {
+        "mode": { "type": "string" },
+        "openApiSource": { "type": "string" },
+        "endpointFormat": { "type": "string" },
+        "requiredLanguageSdks": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "type", "required", "module", "summary", "endpoints", "conformanceScenarios"],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "status": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["sdk", "admin", "internal", "downstream"]
+          },
+          "required": { "type": "boolean" },
+          "module": { "type": "string" },
+          "summary": { "type": "string" },
+          "endpoints": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^(GET|POST|PUT|PATCH|DELETE) /api/v1/.+"
+            }
+          },
+          "conformanceScenarios": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

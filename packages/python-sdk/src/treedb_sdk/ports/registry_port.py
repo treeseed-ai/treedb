@@ -1,0 +1,9 @@
+from __future__ import annotations
+
+from typing import Any, Protocol
+
+
+class RegistryPort(Protocol):
+    def local_node(self) -> Any: ...
+    def nodes(self) -> Any: ...
+    def get_placement(self, repo_id: str) -> Any: ...

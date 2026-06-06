@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "status", "coverageMode", "groups"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "coverageMode": { "type": "string", "enum": ["advisory", "required"] },
+    "groups": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^(GET|POST|PUT|PATCH|DELETE) /api/v1/.+"
+        }
+      }
+    }
+  }
+}

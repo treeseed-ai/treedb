@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "status", "concepts", "pageFields", "rules"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "concepts": {
+      "type": "object",
+      "required": ["TreeDbPage", "TreeDbCursor"],
+      "additionalProperties": true,
+      "properties": {
+        "TreeDbPage": {
+          "type": "object",
+          "required": ["fields"],
+          "additionalProperties": true,
+          "properties": {
+            "fields": { "type": "object" }
+          }
+        },
+        "TreeDbCursor": {
+          "type": "object",
+          "required": ["encoding", "sdkBehavior"],
+          "additionalProperties": true,
+          "properties": {
+            "encoding": { "type": "string" },
+            "sdkBehavior": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "pageFields": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

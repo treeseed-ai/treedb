@@ -1,0 +1,30 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: observability.health_metrics
+    capabilityId: observability.health_metrics
+    title: Read readiness, health, deep health, and metrics.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - GET /api/v1/health
+      - GET /api/v1/ready
+      - GET /api/v1/health/deep
+      - GET /api/v1/metrics
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: read_health
+        action: observability.health
+        description: Read service health through the SDK facade.
+      - name: read_ready_deep_metrics
+        action: observability.readyDeepMetrics
+        description: Read readiness, deep health, and metrics through the SDK facade.
+    assertions:
+      - Observability responses are exposed without transport-specific wrappers.
+      - Metrics payloads are returned without SDK interpretation.
+      - Health endpoints share the same client configuration and auth behavior.

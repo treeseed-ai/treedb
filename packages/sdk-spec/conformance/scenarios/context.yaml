@@ -1,0 +1,42 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: context.build
+    capabilityId: context.repository
+    title: Build repository context.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/context/build
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: build_context
+        action: context.build
+        description: Build repository context through the SDK facade.
+    assertions:
+      - Context build request maps to the OpenAPI endpoint.
+      - Context output is exposed as generic TreeDB context data.
+  - id: context.parse_ctx
+    capabilityId: context.repository
+    title: Parse context query requests.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/context/parse-ctx
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: parse_context
+        action: context.parse
+        description: Parse context query input through the SDK facade.
+    assertions:
+      - Parse request stays generic and OpenAPI-aligned.
+      - Parse result preserves server-owned diagnostics.

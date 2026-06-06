@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "status",
+    "sharedTestRoots",
+    "optionalTestRoots",
+    "testRootPolicy",
+    "requiredTestCategories",
+    "languageRoots",
+    "targetLayouts",
+    "manifestRequirements",
+    "rules"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "sharedTestRoots": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "optionalTestRoots": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "testRootPolicy": {
+      "type": "object",
+      "required": ["requiredStatusValues", "compatibility"],
+      "additionalProperties": true,
+      "properties": {
+        "requiredStatusValues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["implemented", "partial", "planned", "not_applicable"]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "compatibility": {
+          "type": "object",
+          "required": ["requiredForTreeDbLanguageSdks", "allowedForDownstreamConsumers", "description"],
+          "additionalProperties": true,
+          "properties": {
+            "requiredForTreeDbLanguageSdks": { "type": "boolean" },
+            "allowedForDownstreamConsumers": { "type": "boolean" },
+            "description": { "type": "string" }
+          }
+        }
+      }
+    },
+    "requiredTestCategories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "description",
+          "required",
+          "serverRequired",
+          "allowedToUseNetwork",
+          "fixtureSource",
+          "minimumExpectation"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "description": { "type": "string" },
+          "required": { "type": "boolean" },
+          "serverRequired": {
+            "oneOf": [
+              { "type": "boolean" },
+              { "type": "string", "enum": ["conditional"] }
+            ]
+          },
+          "allowedToUseNetwork": { "type": "boolean" },
+          "fixtureSource": { "type": "string" },
+          "minimumExpectation": { "type": "string" }
+        }
+      }
+    },
+    "languageRoots": {
+      "type": "object",
+      "required": ["typescript", "python", "rust", "elixir"],
+      "additionalProperties": { "type": "string" }
+    },
+    "targetLayouts": {
+      "type": "object",
+      "required": ["typescript", "python", "rust", "elixir"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["package", "root", "requiredRoots"],
+        "additionalProperties": true,
+        "properties": {
+          "package": { "type": "string" },
+          "root": { "type": "string" },
+          "requiredRoots": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "manifestRequirements": {
+      "type": "object",
+      "required": ["testLayout", "rules"],
+      "additionalProperties": true,
+      "properties": {
+        "testLayout": {
+          "type": "object",
+          "required": ["requiredRoots", "optionalRoots", "validStatuses"],
+          "additionalProperties": true,
+          "properties": {
+            "requiredRoots": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "optionalRoots": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            },
+            "validStatuses": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["implemented", "partial", "planned", "not_applicable"]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

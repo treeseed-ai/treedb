@@ -1,0 +1,27 @@
+version: 0.1.0
+status: draft
+
+scenarios:
+  - id: migrations.create_get
+    capabilityId: migrations.lifecycle
+    title: Create and retrieve repository placement migrations.
+    kind: black_box
+    required: true
+    serverRequired: true
+    endpointRefs:
+      - POST /api/v1/repos/{repo_id}/migrations
+      - GET /api/v1/repos/{repo_id}/migrations/{migration_id}
+    fixtures:
+      repos: []
+      requests: []
+      expected: []
+    steps:
+      - name: create_migration
+        action: migrations.create
+        description: Create a repository placement migration through the SDK facade.
+      - name: get_migration
+        action: migrations.get
+        description: Retrieve migration status through the SDK facade.
+    assertions:
+      - Migration IDs are preserved between create and get operations.
+      - Migration status remains generic TreeDB data.

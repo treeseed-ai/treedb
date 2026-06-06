@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["sdk", "language", "version", "sdkSpecVersion", "openapiVersion", "testLayout", "capabilities", "modules"],
+  "additionalProperties": true,
+  "properties": {
+    "sdk": { "type": "string" },
+    "language": { "type": "string", "enum": ["typescript", "python", "rust", "elixir"] },
+    "version": { "type": "string" },
+    "sdkSpecVersion": { "type": "string" },
+    "openapiVersion": { "type": "string" },
+    "testLayout": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["implemented", "partial", "planned", "not_applicable"]
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["implemented", "partial", "planned", "not_applicable"]
+      }
+    }
+  }
+}

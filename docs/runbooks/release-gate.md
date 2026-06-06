@@ -8,8 +8,18 @@ Run the release gate from the repository root:
 
 The gate is complete only when the command exits successfully.
 
-The root release gate verifies only the TreeDB service repository. The TypeScript
-SDK package is ignored by the top-level checkout and has independent CI/CD.
+## Scope
+
+The root release gate verifies the TreeDB service repository: Elixir service
+tests, native Rust crates used by the service, OpenAPI contract checks, security
+scanners, storage recovery, smoke tests, container behavior, and optional live
+federation checks.
+
+The root release gate does not own the full multi-language SDK toolchain. SDK
+package verification is handled by the SDK workflows and local SDK package gate.
+
+The root release gate verifies only the TreeDB service repository. The
+TypeScript, Python, Rust, and Elixir SDK packages have independent SDK CI/CD.
 
 ## Checklist
 
@@ -88,6 +98,35 @@ The architecture image build runs only after the matching architecture has
 completed verification and after required base and federation profiler streams
 have succeeded. The final manifest is assembled only after both architecture
 images are pushed.
+
+## SDK Release Relationship
+
+SDK-affecting changes should require these GitHub checks:
+
+- `SDK Spec / validate-sdk-spec`
+- `SDK Packages / typescript-sdk`
+- `SDK Packages / python-sdk`
+- `SDK Packages / rust-sdk`
+- `SDK Packages / elixir-sdk`
+- `SDK Conformance / typescript-conformance`
+- `SDK Conformance / python-conformance`
+- `SDK Conformance / rust-conformance`
+- `SDK Conformance / elixir-conformance`
+
+For a full release candidate, require both:
+
+1. Root `TreeDB Release Gate`
+2. SDK package verification
+
+Local SDK package verification is:
+
+```bash
+./scripts/test-sdk-packages.sh
+```
+
+`SDK Integration` is optional and secret-backed in Phase 14. It verifies live or
+not-configured SDK integration behavior, but executable live conformance remains
+later work.
 
 ## Docker Hub Publishing
 

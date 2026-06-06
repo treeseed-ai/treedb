@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "status", "scenarios"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "scenarioMetadata": {
+      "type": "object",
+      "required": ["requiredFields", "idFormat", "capabilityIdSource"],
+      "additionalProperties": true
+    },
+    "fixtureLayout": {
+      "type": "object",
+      "required": ["repos", "requests", "expected"],
+      "additionalProperties": { "type": "string" }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "capabilityId",
+          "title",
+          "kind",
+          "required",
+          "serverRequired",
+          "endpointRefs",
+          "fixtures",
+          "steps",
+          "assertions"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "capabilityId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "title": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "enum": ["black_box"]
+          },
+          "required": { "type": "boolean" },
+          "serverRequired": {
+            "oneOf": [
+              { "type": "boolean" },
+              { "type": "string", "enum": ["conditional"] }
+            ]
+          },
+          "endpointRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(GET|POST|PUT|PATCH|DELETE) /api/v1/.+"
+            }
+          },
+          "fixtures": {
+            "type": "object",
+            "required": ["repos", "requests", "expected"],
+            "additionalProperties": true,
+            "properties": {
+              "repos": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "requests": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "expected": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["name", "action", "description"],
+              "additionalProperties": true,
+              "properties": {
+                "name": { "type": "string" },
+                "action": { "type": "string" },
+                "description": { "type": "string" }
+              }
+            }
+          },
+          "assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

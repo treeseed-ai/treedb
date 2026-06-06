@@ -1,0 +1,67 @@
+version: 0.1.0
+status: draft
+
+errorType: TreeDbApiError
+
+fields:
+  status:
+    type: integer
+    description: HTTP status code, or 0 for network-level failures.
+  code:
+    type: string
+    description: Stable TreeDB error code.
+  message:
+    type: string
+    description: Human-readable diagnostic message.
+  details:
+    type: object
+    description: Optional structured diagnostics.
+  payload:
+    type: object
+    description: Original error envelope or transport payload when available.
+
+networkError:
+  status: 0
+  code: network_error
+  retryable: unknown
+
+stableCodes:
+  - authentication_required
+  - invalid_token
+  - token_expired
+  - token_not_yet_valid
+  - invalid_issuer
+  - invalid_audience
+  - invalid_signature
+  - auth_not_configured
+  - permission_denied
+  - workspace_revoked
+  - not_found
+  - conflict
+  - payload_too_large
+  - unsupported_media_type
+  - validation_error
+  - graph_not_ready
+  - network_error
+  - timeout
+  - partial_failure
+  - federated_node_unavailable
+  - federated_node_timeout
+  - federated_partial_failure
+  - federated_scope_empty
+  - federated_route_not_configured
+  - unsupported_transport
+  - push_rejected
+  - credential_not_configured
+  - sandbox_unavailable
+  - sandbox_policy_denied
+  - storage_compaction_failed
+  - backup_failed
+  - service_unavailable
+
+rules:
+  - SDKs must preserve TreeDB error codes without language-specific remapping.
+  - SDKs must expose network failures as TreeDbApiError-compatible failures with status 0 and code network_error.
+  - SDKs may add idiomatic helpers but must keep status, code, message, details, and payload available.
+  - SDKs must not log bearer tokens, credentials, hidden paths, local filesystem paths, or binary payload snippets in error messages.
+  - SDKs must preserve original response payloads when safe and available.
