@@ -46,9 +46,11 @@ The profiler has three purposes:
 - `soak`: long-running mixed mode for reliability and resource trend
   monitoring.
 
-Performance mode is intentionally separate from the release correctness gate.
-It is used to compare throughput and tune server resources without weakening
-reliability profiles.
+Performance mode is part of the release profile gate on `main`, `staging`, and
+release tags, but its release-blocking budget is error-focused. Throughput
+targets are reported for comparison and tuning; missing the RPS target does not
+fail the release unless it is accompanied by request, assertion, validation, or
+other reliability-budget errors.
 
 ## Canonical Fixtures
 

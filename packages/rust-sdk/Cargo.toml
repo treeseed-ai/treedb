@@ -2,7 +2,7 @@
 name = "treedb-sdk"
 version = "0.1.0"
 edition = "2024"
-license = "UNLICENSED"
+license = "Apache-2.0"
 description = "Generic Rust SDK for TreeDB."
 publish = false
 

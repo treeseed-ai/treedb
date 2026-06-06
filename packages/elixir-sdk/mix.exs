@@ -9,7 +9,8 @@ defmodule TreeDbSdk.MixProject do
       start_permanent: Mix.env() == :prod,
       description: "Generic Elixir SDK for TreeDB.",
       package: [
-        licenses: ["UNLICENSED"],
+        licenses: ["Apache-2.0"],
+        links: %{"Repository" => "https://github.com/treeseed-ai/treedb"},
         files: ["lib", "mix.exs", "README.md", "sdk-manifest.yaml"]
       ],
       deps: deps()

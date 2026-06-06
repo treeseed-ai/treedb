@@ -43,6 +43,20 @@ jobs:
         run: python -m pip install --upgrade pip
         working-directory: packages/python-sdk
 
+      - name: Validate package metadata source
+        run: |
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          pyproject = Path("pyproject.toml")
+          license_value = tomllib.loads(pyproject.read_text())["project"]["license"]
+          print(f"project.license = {license_value!r}")
+          if license_value != "Apache-2.0":
+              raise SystemExit("packages/python-sdk/pyproject.toml must use Apache-2.0")
+          PY
+        working-directory: packages/python-sdk
+
       - name: Install package and dev dependencies
         run: python -m pip install -e ".[dev]"
         working-directory: packages/python-sdk

@@ -41,8 +41,11 @@ Default workload:
 - duration: `10m` of measured load after setup completes
 - report format: `both`
 - reliability verifier: enabled
-- admin/destructive/exec/federation operations: enabled inside the isolated
+- admin/destructive/federation operations: enabled inside the isolated
   profiling volume
+- workspace exec operations: disabled by default for release profiles because
+  API nodes use the distroless production image with no shell or sandbox helper
+  tools. Enable exec only for an explicitly exec-capable development runtime.
 
 Reports are written to timestamped paths:
 
@@ -79,9 +82,10 @@ Safety notes:
 - It uses an isolated Compose data volume.
 - `docker compose -f profiles/compose.profile.yaml down -v` deletes generated profiling
   data.
-- The Compose profile enables destructive routes so it can exercise the full
-  local endpoint matrix. It runs against the isolated Compose data volume, not
-  shared production data.
+- The Compose profile enables destructive routes so it can exercise local admin
+  and lifecycle behavior. Workspace exec routes are disabled for release-image
+  profiles because the production service image is distroless. It runs against
+  the isolated Compose data volume, not shared production data.
 
 ## Repeatable Compose Profiles
 
@@ -110,7 +114,7 @@ Modes:
 - `fixed`: deterministic fixed-fixture baseline across all canonical fixture families.
 - `portfolio`: 10-minute growing portfolio run with concurrency `100`.
 - `read-heavy`: medium mixed fixture focused on reads, search, query, and federation reads.
-- `write-heavy`: workspace-heavy fixture focused on writes, patches, commits, blobs, snapshots, and exec.
+- `write-heavy`: workspace-heavy fixture focused on writes, patches, commits, blobs, and snapshots.
 - `graph`: graph-rich fixture focused on graph refresh/query/context/search-index paths.
 - `binary`: binary-assets fixture focused on blob, multipart, and artifact lifecycle paths.
 - `admin`: small admin/storage diagnostic run with explicit destructive dry-run coverage.
