@@ -4,9 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use serde_json::json;
-use treedx::{
-    Transport, TreeDxClient, TreeDxConfig, TreeDxRequest, TreeDxResponse, TreeDxResult,
-};
+use treedx::{Transport, TreeDxClient, TreeDxConfig, TreeDxRequest, TreeDxResponse, TreeDxResult};
 
 #[derive(Default)]
 pub struct MockTransport {

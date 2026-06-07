@@ -1,6 +1,4 @@
-use treedx::generated::openapi_types::{
-    TREEDX_OPENAPI_OPERATION_COUNT, TREEDX_OPENAPI_OPERATIONS,
-};
+use treedx::generated::openapi_types::{TREEDX_OPENAPI_OPERATION_COUNT, TREEDX_OPENAPI_OPERATIONS};
 
 #[test]
 fn generated_operation_count_matches_openapi_baseline() {
