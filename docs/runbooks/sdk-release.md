@@ -123,6 +123,40 @@ matches the package version. Branch pushes build and upload artifacts but do
 not publish immutable package versions. The integrated release gate uses tags
 without a `v` prefix, matching the Docker publishing policy.
 
+## Release Version Bump
+
+Git does not provide a native hook that runs before `git tag`, so use the
+checked-in release helper instead of creating tags by hand:
+
+```bash
+scripts/release-tag.sh 0.1.2
+git push origin HEAD
+git push origin 0.1.2
+```
+
+The helper updates the service version and all public SDK package versions,
+creates a release commit, and then creates the matching tag. It refuses to run
+from a dirty worktree so unrelated edits do not land in the release commit.
+
+To install a local shorthand:
+
+```bash
+git config alias.release-tag '!scripts/release-tag.sh'
+```
+
+Then run:
+
+```bash
+git release-tag 0.1.2
+```
+
+If a worktree already contains intentional release fixes, update only the
+version files and commit everything together:
+
+```bash
+scripts/bump-release-version.mjs 0.1.2
+```
+
 ## Package Registry Setup
 
 Create a GitHub environment named `production`. Add these environment secrets:
