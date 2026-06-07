@@ -193,7 +193,13 @@ defmodule TreeDxProfiler.ReliabilityBudget do
 
   defp deep_merge(map, defaults) when is_map(map) do
     Map.merge(defaults, map, fn _key, default, value ->
-      if is_map(default) and is_map(value), do: deep_merge(value, default), else: value
+      cond do
+        is_map(default) and is_map(value) and map_size(value) > 0 ->
+          deep_merge(value, default)
+
+        true ->
+          value
+      end
     end)
   end
 

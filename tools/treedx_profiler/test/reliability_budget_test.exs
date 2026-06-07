@@ -57,6 +57,34 @@ defmodule TreeDxProfiler.ReliabilityBudgetTest do
     assert Enum.any?(result["violations"], &(&1["key"] == "permission_matrix_failures"))
   end
 
+  test "custom empty p99 category budget disables latency thresholds" do
+    root =
+      Path.join(System.tmp_dir!(), "treedx-profiler-budget-#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+
+    budget_path = Path.join(root, "budget.json")
+    File.write!(budget_path, Jason.encode!(%{"maxP99MsByCategory" => %{}}))
+
+    report =
+      report(%{
+        "durationMs" => 60_000,
+        "requestedDurationMs" => 60_000,
+        "durationSatisfied" => true
+      })
+      |> Map.put("operations", [
+        %{
+          "operationId" => "slowButCorrect",
+          "category" => "operations",
+          "latencyMs" => %{"p99" => 30_000}
+        }
+      ])
+
+    assert %{"passed" => true, "violations" => []} =
+             ReliabilityBudget.evaluate(report, %{reliability_budget: budget_path})
+  end
+
   defp report(measured) do
     %{
       "summary" => %{"totalErrors" => 0, "totalCalls" => 1},
