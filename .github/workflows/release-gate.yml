@@ -1248,7 +1248,9 @@ jobs:
         working-directory: packages/elixir-sdk
 
       - name: Install dependencies
-        run: mix deps.get
+        run: |
+          mix deps.get
+          MIX_ENV=dev mix deps.get
         working-directory: packages/elixir-sdk
 
       - name: Check generated OpenAPI metadata
@@ -1269,7 +1271,7 @@ jobs:
           fi
 
       - name: Build Hex package artifact
-        run: MIX_ENV=prod mix hex.build
+        run: MIX_ENV=dev mix hex.build
         working-directory: packages/elixir-sdk
 
       - name: Upload Hex package artifact
@@ -1281,7 +1283,7 @@ jobs:
 
       - name: Publish Hex package
         if: github.ref_type == 'tag'
-        run: MIX_ENV=prod mix hex.publish --yes
+        run: MIX_ENV=dev mix hex.publish --yes
         working-directory: packages/elixir-sdk
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
