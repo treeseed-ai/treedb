@@ -1,6 +1,6 @@
 import pytest
 
-from treedx_sdk.binary import assert_binary_body, is_binary_body, to_bytes
+from treedx.binary import assert_binary_body, is_binary_body, to_bytes
 
 
 def test_binary_helpers_accept_byte_values() -> None:

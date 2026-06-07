@@ -14,7 +14,7 @@ live-conformance-complete release. All SDK manifests intentionally report
 - Repository root: `/home/adrian/Projects/treedx`
 - OpenAPI source: `docs/api/openapi.yaml`
 - Canonical SDK plan:
-  `docs/architecture/treedx-sdk-spec-implementation-plan.md`
+  `docs/architecture/treedx-spec-implementation-plan.md`
 - Python packaging tooling: local `python3 -m pip` is unavailable in this
   environment, so Python install/build/pytest checks are environment-blocked
   locally.
@@ -53,7 +53,7 @@ npm run check-sdk-manifests
 npm run render-capability-matrix
 npm test
 
-cd packages/ts-sdk
+cd packages/treedx
 npm ci
 npm run treedx:check-generated
 npm run build
@@ -75,7 +75,7 @@ mix test
 Focused downstream TreeSeed regression:
 
 ```bash
-cd packages/ts-sdk
+cd packages/treedx
 npm ci
 npm run build
 
@@ -140,7 +140,7 @@ path.
 
 Generic SDK packages exist:
 
-- `packages/ts-sdk`
+- `packages/treedx`
 - `packages/python-sdk`
 - `packages/rust-sdk`
 - `packages/elixir-sdk`
@@ -162,7 +162,7 @@ preserving lockfiles, manifests, generated source metadata, and workflow files:
 
 ```bash
 rm -rf packages/sdk-spec/node_modules
-rm -rf packages/ts-sdk/node_modules packages/ts-sdk/dist
+rm -rf packages/treedx/node_modules packages/treedx/dist
 rm -rf packages/trsd-sdk/node_modules packages/trsd-sdk/dist
 rm -rf packages/rust-sdk/target
 rm -rf packages/elixir-sdk/_build packages/elixir-sdk/deps

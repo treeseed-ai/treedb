@@ -2,7 +2,7 @@
 
 ## Scope
 
-TreeDX repository query primitives map to the current `packages/ts-sdk`
+TreeDX repository query primitives map to the current `packages/treedx`
 read/search behavior without moving TreeSeed domain models into TreeDX. TreeDX
 remains generic and Git-oriented; the SDK model registry remains responsible for
 model names, field aliases, product concepts, and content directory selection.

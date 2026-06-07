@@ -9,7 +9,7 @@ runbooks under `docs/runbooks`.
 
 The current repository includes the Phoenix API service, Rust crates, Docker
 runtime, Compose manifests, OpenAPI contract, runbooks, and the SDK package.
-`packages/ts-sdk` remains separately verifiable and also participates in the
+`packages/treedx` remains separately verifiable and also participates in the
 root release gate.
 
 ## Tooling
@@ -34,7 +34,7 @@ to run the service for contributors who do not already have the full toolchain.
 The root TreeDX repository uses Cargo, Mix, Docker, and shell verification
 scripts. The SDK package uses npm and remains independently verifiable.
 
-`packages/ts-sdk` uses npm, evidenced by `packages/ts-sdk/package-lock.json`. Its package metadata is:
+`packages/treedx` uses npm, evidenced by `packages/treedx/package-lock.json`. Its package metadata is:
 
 | Field | Value |
 | --- | --- |
@@ -70,7 +70,7 @@ and scanner tools installed.
 
 ## Current Environment Risks
 
-1. `packages/ts-sdk` can be checked out and verified independently, so contract
+1. `packages/treedx` can be checked out and verified independently, so contract
    generation must continue to support package-local OpenAPI files.
 2. Strict release scanning requires external tools (`cargo-audit`, `syft`,
    `trivy`, and Docker) that may not be installed on every developer machine.

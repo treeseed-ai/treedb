@@ -39,8 +39,9 @@ TreeSeed regression when TypeScript SDK changes affect package dependency
 behavior.
 
 On release-path pushes, the integrated workflow builds and uploads package
-artifacts after the required service profile gates pass. It does not publish to
-npm, PyPI, crates.io, or Hex in this pass.
+artifacts after the required service profile gates pass. On semantic version
+tag pushes, the same jobs publish packages to npm, PyPI, crates.io, and Hex
+through the GitHub `production` environment.
 
 ## Local Verification
 
@@ -102,10 +103,10 @@ Required SDK checks live in the `TreeDX Release Gate` workflow:
 
 Release-path package jobs:
 
-- `TreeDX Release Gate / Package TypeScript SDK`
-- `TreeDX Release Gate / Package Python SDK`
-- `TreeDX Release Gate / Package Rust SDK`
-- `TreeDX Release Gate / Package Elixir SDK`
+- `TreeDX Release Gate / Publish TypeScript SDK`
+- `TreeDX Release Gate / Publish Python SDK`
+- `TreeDX Release Gate / Publish Rust SDK`
+- `TreeDX Release Gate / Publish Elixir SDK`
 
 The workflow is path-filtered for pull requests and branch pushes, while tag
 pushes run release gates without custom tag-diff filtering.
@@ -117,7 +118,39 @@ Produced artifacts:
 - Rust: crate archive uploaded as `rust-sdk-crate`
 - Elixir: Hex tarball uploaded as `elixir-sdk-hex-package`
 
-Publishing remains manual or future work.
+Registry publishing runs only on git tag pushes whose semantic version tag
+matches the package version. Branch pushes build and upload artifacts but do
+not publish immutable package versions. The integrated release gate uses tags
+without a `v` prefix, matching the Docker publishing policy.
+
+## Package Registry Setup
+
+Create a GitHub environment named `production`. Add these environment secrets:
+
+- `NPM_TOKEN`: npm automation token with publish access to the `@treeseed`
+  scope. The TypeScript package publishes as `@treeseed/treedx` with public
+  access.
+- `PYPI_API_TOKEN`: PyPI API token. Use username `__token__`; the workflow
+  supplies it automatically. For the first release, use an account token if a
+  project-scoped token cannot exist yet, then replace it with a project-scoped
+  token for `treedx`.
+- `CARGO_REGISTRY_TOKEN`: crates.io API token with publish permission for the
+  `treedx` crate.
+- `HEX_API_KEY`: Hex.pm API key with publish permission for `treedx`.
+- `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`: Docker Hub credentials for
+  publishing `treeseed/treedx` and `treeseed/treedx-profiler`.
+
+Before the first tagged release, reserve or create the package identities where
+the registry allows it:
+
+- npm: ensure the `@treeseed` scope exists and the token can publish public scoped
+  packages.
+- PyPI: confirm `treedx` is available. The first publish may need an
+  account-wide token; after that, use a project-scoped token.
+- crates.io: confirm `treedx` is available and the token owner should be
+  the long-term crate owner.
+- Hex.pm: confirm `treedx` is available and the token owner should be the
+  long-term package owner.
 
 See `docs/runbooks/sdk-conformance.md` for shared scenario catalog rules and
 current adapter behavior.
@@ -165,6 +198,8 @@ A full release candidate is ready when:
 - Root `TreeDX Release Gate` passes.
 - Integrated SDK spec and language SDK test jobs pass.
 - Package artifacts are uploaded for affected SDK packages.
+- On semantic version tag pushes, SDK packages publish to npm, PyPI, crates.io,
+  and Hex.
 - Optional live integration is either not configured and cleanly reports not
   configured, or configured and passes.
 - `scripts/test-sdk-packages.sh` passes locally or in release candidate
@@ -177,7 +212,7 @@ A full release candidate is ready when:
 Python reports `No module named pip`: install `pip` or virtualenv tooling for
 the local Python interpreter. CI uses `actions/setup-python` and upgrades pip.
 
-TypeScript or TreeSeed reports missing `dist` from `@treedx/ts-sdk`: run
+TypeScript or TreeSeed reports missing `dist` from `@treeseed/treedx`: run
 `npm run build` in `packages/ts-sdk` before focused `packages/trsd-sdk`
 regression.
 

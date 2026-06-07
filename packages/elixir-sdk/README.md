@@ -1,6 +1,6 @@
 # TreeDX Elixir SDK
 
-`treedx_sdk` is the generic Elixir SDK for TreeDX. The public namespace is
+`treedx` is the generic Elixir SDK for TreeDX. The public namespace is
 `TreeDxSdk`. It implements the shared `packages/sdk-spec` architecture, follows
 `docs/api/openapi.yaml`, and does not encode TreeSeed product semantics.
 `packages/trsd-sdk` is a downstream TreeSeed consumer/reference only.
@@ -11,11 +11,14 @@ first-class module methods and a validated raw operation fallback.
 
 ## Install
 
-This package is private to the current repository baseline:
+Add the package:
 
-```bash
-cd packages/elixir-sdk
-mix deps.get
+```elixir
+def deps do
+  [
+    {:treedx, "~> 0.1"}
+  ]
+end
 ```
 
 ## Configure Client

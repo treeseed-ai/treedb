@@ -1,4 +1,4 @@
-use treedx_sdk::transport::{TreeDxHttpMethod, TreeDxRequest};
+use treedx::transport::{TreeDxHttpMethod, TreeDxRequest};
 
 #[test]
 fn request_defaults_are_empty() {

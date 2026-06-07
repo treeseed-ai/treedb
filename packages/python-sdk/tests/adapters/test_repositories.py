@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import RepositoriesAdapter
+from treedx.adapters import RepositoriesAdapter
 
 
 def test_repositories_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

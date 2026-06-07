@@ -4,7 +4,7 @@ Status: Typed contract coverage inventory
 
 `docs/api/openapi.yaml` is the public TreeDX HTTP contract. SDK API payload
 types are generated from that file into
-`packages/ts-sdk/src/treedx/generated/openapi-types.ts`.
+`packages/treedx/src/treedx/generated/openapi-types.ts`.
 
 ## Typed Contract Coverage
 
@@ -24,9 +24,9 @@ Route and schema drift is checked by:
 
 - `apps/api/test/treedx_web/route_openapi_inventory_test.exs`
 - `apps/api/test/treedx_web/openapi_contract_test.exs`
-- `packages/ts-sdk/test/utils/treedx-openapi-contract.test.ts`
-- `packages/ts-sdk/test/utils/treedx-generated-types.test.ts`
-- `packages/ts-sdk/test/utils/treedx-sdk-request-contract.test.ts`
+- `packages/treedx/test/utils/treedx-openapi-contract.test.ts`
+- `packages/treedx/test/utils/treedx-generated-types.test.ts`
+- `packages/treedx/test/utils/treedx-request-contract.test.ts`
 
 ## Missing Error Examples
 
@@ -68,12 +68,12 @@ Intentional open-map areas:
 Generated type freshness is checked with:
 
 ```bash
-cd packages/ts-sdk
+cd packages/treedx
 npm run treedx:check-types
 ```
 
 Public SDK type names remain stable through aliases in
-`packages/ts-sdk/src/treedx/types.ts`.
+`packages/treedx/src/treedx/types.ts`.
 
 ## Remaining Contract Work
 

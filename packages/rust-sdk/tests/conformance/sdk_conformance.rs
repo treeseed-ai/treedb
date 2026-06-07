@@ -2,10 +2,10 @@ use std::fs;
 use std::path::Path;
 
 use serde::Deserialize;
-use treedx_sdk::conformance::{
+use treedx::conformance::{
     TreeDxConformanceAdapter, TreeDxConformanceScenario, TreeDxConformanceStatus,
 };
-use treedx_sdk::{TreeDxClient, TreeDxConfig};
+use treedx::{TreeDxClient, TreeDxConfig};
 
 #[derive(Debug, Deserialize)]
 struct ScenarioFile {

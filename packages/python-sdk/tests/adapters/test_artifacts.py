@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import ArtifactsAdapter
+from treedx.adapters import ArtifactsAdapter
 
 
 def test_artifacts_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

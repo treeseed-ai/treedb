@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from treedx_sdk import TreeDxClient
+from treedx import TreeDxClient
 
 
 def test_live_health_or_clean_skip() -> None:

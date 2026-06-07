@@ -1,5 +1,5 @@
-from treedx_sdk import TreeDxClient
-from treedx_sdk.adapters import (
+from treedx import TreeDxClient
+from treedx.adapters import (
     ArtifactsAdapter,
     BlobsAdapter,
     ContextAdapter,
@@ -16,7 +16,7 @@ from treedx_sdk.adapters import (
     SnapshotsAdapter,
     WorkspacesAdapter,
 )
-from treedx_sdk.transport import TreeDxRequest, TreeDxResponse
+from treedx.transport import TreeDxRequest, TreeDxResponse
 
 
 class MockTransport:

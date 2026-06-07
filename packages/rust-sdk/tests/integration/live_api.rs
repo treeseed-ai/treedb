@@ -1,4 +1,4 @@
-use treedx_sdk::{TreeDxClient, TreeDxConfig};
+use treedx::{TreeDxClient, TreeDxConfig};
 
 #[tokio::test]
 async fn live_health_is_optional() {

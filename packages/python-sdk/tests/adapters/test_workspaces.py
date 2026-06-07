@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import WorkspacesAdapter
+from treedx.adapters import WorkspacesAdapter
 
 
 def test_workspaces_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

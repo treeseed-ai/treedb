@@ -1,7 +1,7 @@
 # TreeDX Rust SDK
 
-`treedx-sdk` is the generic Rust SDK for TreeDX. The library crate is
-`treedx_sdk`. It implements the shared `packages/sdk-spec` architecture, follows
+`treedx` is the generic Rust SDK for TreeDX. The library crate is
+`treedx`. It implements the shared `packages/sdk-spec` architecture, follows
 `docs/api/openapi.yaml`, and does not encode TreeSeed product semantics.
 `packages/trsd-sdk` is a downstream TreeSeed consumer/reference only.
 
@@ -11,23 +11,22 @@ first-class module methods and a validated raw operation fallback.
 
 ## Install
 
-This crate is private to the current repository baseline:
+Add the crate:
 
 ```bash
-cd packages/rust-sdk
-cargo test
+cargo add treedx
 ```
 
-Consumers use the library crate:
+Use the library crate:
 
 ```rust
-use treedx_sdk::{TreeDxClient, TreeDxConfig, TreeDxApiError};
+use treedx::{TreeDxClient, TreeDxConfig, TreeDxApiError};
 ```
 
 ## Configure Client
 
 ```rust
-use treedx_sdk::{TreeDxClient, TreeDxConfig};
+use treedx::{TreeDxClient, TreeDxConfig};
 
 let client = TreeDxClient::new(TreeDxConfig {
     base_url: "http://localhost:4000".to_string(),
@@ -48,7 +47,7 @@ production identity in request JSON and must not log bearer tokens.
 ## Basic Health Call
 
 ```rust
-# async fn example(client: treedx_sdk::TreeDxClient) -> treedx_sdk::TreeDxResult<()> {
+# async fn example(client: treedx::TreeDxClient) -> treedx::TreeDxResult<()> {
 let health = client.health().await?;
 let version = client.version().await?;
 # Ok(())
@@ -60,7 +59,7 @@ let version = client.version().await?;
 Repository-scoped query helpers live under `client.query()`:
 
 ```rust
-# async fn example(client: treedx_sdk::TreeDxClient) -> treedx_sdk::TreeDxResult<()> {
+# async fn example(client: treedx::TreeDxClient) -> treedx::TreeDxResult<()> {
 let results = client
     .query()
     .search_files("repo_demo", serde_json::json!({
@@ -86,7 +85,7 @@ Workspace-scoped file helpers live under `client.workspaces()` and
 `client.files()`:
 
 ```rust
-# async fn example(client: treedx_sdk::TreeDxClient) -> treedx_sdk::TreeDxResult<()> {
+# async fn example(client: treedx::TreeDxClient) -> treedx::TreeDxResult<()> {
 let workspace = client
     .workspaces()
     .create("repo_demo", serde_json::json!({ "ref": "refs/heads/main" }))
@@ -124,7 +123,7 @@ Binary helpers use `bytes::Bytes` and do not expose string constructors for
 binary upload bodies.
 
 ```rust
-# async fn example(client: treedx_sdk::TreeDxClient) -> treedx_sdk::TreeDxResult<()> {
+# async fn example(client: treedx::TreeDxClient) -> treedx::TreeDxResult<()> {
 client
     .blobs()
     .upload("workspace_123", bytes::Bytes::from_static(&[1, 2, 3]), None)
@@ -140,7 +139,7 @@ Multipart helpers expose create, part upload, complete, and abort.
 ## Graph And Context Query
 
 ```rust
-# async fn example(client: treedx_sdk::TreeDxClient) -> treedx_sdk::TreeDxResult<()> {
+# async fn example(client: treedx::TreeDxClient) -> treedx::TreeDxResult<()> {
 client.graph().refresh("repo_demo", serde_json::json!({})).await?;
 let graph = client.graph().query("repo_demo", serde_json::json!({ "query": "MATCH ..." })).await?;
 let context = client.context().build("repo_demo", serde_json::json!({ "query": "ctx docs" })).await?;
@@ -155,7 +154,7 @@ Federation helpers use portfolio/global TreeDX routes rather than a single
 configured repository:
 
 ```rust
-# async fn example(client: treedx_sdk::TreeDxClient) -> treedx_sdk::TreeDxResult<()> {
+# async fn example(client: treedx::TreeDxClient) -> treedx::TreeDxResult<()> {
 let plan = client.federation().plan(serde_json::json!({ "query": "release provenance" })).await?;
 let results = client.federation().search(serde_json::json!({ "query": "release provenance" })).await?;
 # Ok(())

@@ -1,5 +1,5 @@
-use treedx_sdk::TreeDxPage;
-use treedx_sdk::pagination::{create_page, get_next_cursor};
+use treedx::TreeDxPage;
+use treedx::pagination::{create_page, get_next_cursor};
 
 #[test]
 fn page_helpers_preserve_cursor_metadata() {

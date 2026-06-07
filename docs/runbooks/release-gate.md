@@ -139,12 +139,12 @@ Relevant GitHub checks are:
 - `TreeDX Release Gate / Elixir SDK Test (amd64)`
 - `TreeDX Release Gate / Elixir SDK Test (arm64)`
 
-For release-path pushes, package artifact jobs also run after profile gates:
+For release-path pushes, package jobs also run after profile gates:
 
-- `TreeDX Release Gate / Package TypeScript SDK`
-- `TreeDX Release Gate / Package Python SDK`
-- `TreeDX Release Gate / Package Rust SDK`
-- `TreeDX Release Gate / Package Elixir SDK`
+- `TreeDX Release Gate / Publish TypeScript SDK`
+- `TreeDX Release Gate / Publish Python SDK`
+- `TreeDX Release Gate / Publish Rust SDK`
+- `TreeDX Release Gate / Publish Elixir SDK`
 
 Local SDK package verification is:
 
@@ -152,9 +152,11 @@ Local SDK package verification is:
 ./scripts/test-sdk-packages.sh
 ```
 
-The integrated release gate builds and uploads SDK package artifacts but does
-not publish to npm, PyPI, crates.io, or Hex. Service Docker manifest publishing
-waits for SDK package artifacts on release-path pushes.
+The integrated release gate builds and uploads SDK package artifacts on
+release-path pushes. On semantic version tag pushes, it also publishes SDK
+packages to npm, PyPI, crates.io, and Hex through GitHub `production`
+environment secrets. Service Docker manifest publishing waits for SDK package
+jobs on release-path pushes.
 
 ## Docker Hub Publishing
 

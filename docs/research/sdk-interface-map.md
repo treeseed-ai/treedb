@@ -2,7 +2,7 @@
 
 ## SDK Public Exports
 
-`packages/ts-sdk/src/index.ts` exports the primary public SDK surface. Important TreeDX-relevant exports include:
+`packages/treedx/src/index.ts` exports the primary public SDK surface. Important TreeDX-relevant exports include:
 
 - `AgentSdk` and `ScopedAgentSdk`
 - `ContentGraphRuntime`
@@ -17,7 +17,7 @@
 - `TreeseedWorkflowSdk` and `TreeseedOperationsSdk`
 - many TreeSeed market, workflow, capacity, release, and platform domain types that must remain outside TreeDX
 
-Important package export subpaths from `packages/ts-sdk/package.json`:
+Important package export subpaths from `packages/treedx/package.json`:
 
 - `.`
 - `./sdk`

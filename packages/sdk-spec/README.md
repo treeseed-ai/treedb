@@ -47,7 +47,7 @@ architecture.
 
 `spec/architecture.yaml` is the machine-readable architecture source. It defines
 canonical layer directories, required modules, required ports, core concepts,
-and module-to-capability ownership. `spec/treedx-sdk-standard.md` is the
+and module-to-capability ownership. `spec/treedx-standard.md` is the
 human-readable version of the same contract.
 
 Once language SDK packages exist, each SDK manifest must report status for every
@@ -130,12 +130,13 @@ and required service profile gates, then run in parallel.
 | TreeDX Release Gate / Python SDK Test | Python generated metadata, build, pytest on amd64 and arm64 | `packages/python-sdk` changes |
 | TreeDX Release Gate / Rust SDK Test | Rust generated metadata, fmt, clippy, tests on amd64 and arm64 | `packages/rust-sdk` changes |
 | TreeDX Release Gate / Elixir SDK Test | Elixir generated metadata, format, tests on amd64 and arm64 | `packages/elixir-sdk` changes |
-| TreeDX Release Gate / Package SDK jobs | npm, Python, crate, and Hex package artifacts after service profiles and SDK tests pass | release-path pushes |
+| TreeDX Release Gate / Publish SDK jobs | npm, Python, crate, and Hex package artifacts after service profiles and SDK tests pass; registry publish on tags | release-path pushes |
 
 Branch and pull request runs are path-filtered. Tag pushes run release gates
 without custom tag-diff filtering so release-tag verification remains reliable.
-The integrated workflow builds and uploads SDK artifacts only; publishing to
-npm, PyPI, crates.io, and Hex is manual or future work.
+The integrated workflow builds and uploads SDK artifacts on release-path pushes.
+On semantic version tag pushes, it also publishes SDK packages to npm, PyPI,
+crates.io, and Hex through the GitHub `production` environment.
 
 Equivalent local commands:
 

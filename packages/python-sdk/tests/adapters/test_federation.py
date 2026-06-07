@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import FederationAdapter
+from treedx.adapters import FederationAdapter
 
 
 def test_federation_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

@@ -3,7 +3,7 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "treedx-sdk"
+name = "treedx"
 version = "0.1.0"
 description = "Generic Python SDK for TreeDX."
 readme = "README.md"
@@ -21,7 +21,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/treedx_sdk"]
+packages = ["src/treedx"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

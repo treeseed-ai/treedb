@@ -134,10 +134,10 @@ Required language package roots:
 
 | Language | Package | Public Package Name |
 | --- | --- | --- |
-| TypeScript | `packages/ts-sdk` | `@treedx/ts-sdk` |
-| Python | `packages/python-sdk` | `treedx-sdk` / `treedx_sdk` |
-| Rust | `packages/rust-sdk` | `treedx-sdk` / `treedx_sdk` |
-| Elixir | `packages/elixir-sdk` | `:treedx_sdk` / `TreeDxSdk` |
+| TypeScript | `packages/ts-sdk` | `@treeseed/treedx` |
+| Python | `packages/python-sdk` | `treedx` / `treedx` |
+| Rust | `packages/rust-sdk` | `treedx` / `treedx` |
+| Elixir | `packages/elixir-sdk` | `:treedx` / `TreeDxSdk` |
 
 Manifest status values are `implemented`, `partial`, `planned`, and
 `not_applicable`. Baseline SDK packages may use `partial` while live conformance

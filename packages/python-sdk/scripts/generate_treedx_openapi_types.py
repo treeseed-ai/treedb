@@ -7,7 +7,7 @@ import re
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PACKAGE_ROOT.parents[1]
 OPENAPI_PATH = REPO_ROOT / "docs" / "api" / "openapi.yaml"
-OUTPUT_PATH = PACKAGE_ROOT / "src" / "treedx_sdk" / "generated" / "openapi_types.py"
+OUTPUT_PATH = PACKAGE_ROOT / "src" / "treedx" / "generated" / "openapi_types.py"
 
 
 def render_openapi_types() -> str:

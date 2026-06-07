@@ -1,5 +1,5 @@
 use serde_json::json;
-use treedx_sdk::TreeDxApiError;
+use treedx::TreeDxApiError;
 
 #[test]
 fn response_error_preserves_payload_fields() {

@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use treedx_sdk::binary::{is_binary_body, to_bytes};
+use treedx::binary::{is_binary_body, to_bytes};
 
 #[test]
 fn binary_helpers_use_bytes() {

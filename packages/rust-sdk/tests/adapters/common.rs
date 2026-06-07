@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use serde_json::json;
-use treedx_sdk::{
+use treedx::{
     Transport, TreeDxClient, TreeDxConfig, TreeDxRequest, TreeDxResponse, TreeDxResult,
 };
 

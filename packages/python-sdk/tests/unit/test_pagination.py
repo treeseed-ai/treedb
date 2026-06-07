@@ -1,4 +1,4 @@
-from treedx_sdk.pagination import create_page, get_next_cursor, is_treedx_page
+from treedx.pagination import create_page, get_next_cursor, is_treedx_page
 
 
 def test_page_helpers_preserve_cursor_metadata() -> None:

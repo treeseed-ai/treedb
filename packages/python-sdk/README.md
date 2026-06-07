@@ -1,6 +1,6 @@
 # TreeDX Python SDK
 
-`treedx-sdk` is the generic Python SDK for TreeDX. It implements the shared
+`treedx` is the generic Python SDK for TreeDX. It implements the shared
 `packages/sdk-spec` architecture, follows `docs/api/openapi.yaml`, and does not
 encode TreeSeed product semantics. `packages/trsd-sdk` is a downstream
 TreeSeed consumer/reference only.
@@ -12,14 +12,13 @@ first-class module methods and a validated raw operation fallback.
 ## Install
 
 ```bash
-cd packages/python-sdk
-python -m pip install -e ".[dev]"
+python -m pip install treedx
 ```
 
 ## Configure Client
 
 ```python
-from treedx_sdk import TreeDxClient, TreeDxApiError
+from treedx import TreeDxClient, TreeDxApiError
 
 client = TreeDxClient(
     base_url="http://localhost:4000",

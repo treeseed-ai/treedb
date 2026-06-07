@@ -1,5 +1,5 @@
-from treedx_sdk.auth import StaticBearerTokenAuthProvider, resolve_authorization_header
-from treedx_sdk.config import TreeDxClientConfig
+from treedx.auth import StaticBearerTokenAuthProvider, resolve_authorization_header
+from treedx.config import TreeDxClientConfig
 
 
 def test_static_bearer_token_provider_returns_token() -> None:

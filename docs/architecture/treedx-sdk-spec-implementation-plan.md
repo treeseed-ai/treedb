@@ -2,7 +2,7 @@
 
 Status: Draft v0.2
 Date: 2026-06-05
-Canonical location: `docs/architecture/treedx-sdk-spec-implementation-plan.md`
+Canonical location: `docs/architecture/treedx-spec-implementation-plan.md`
 Plan implementation status: Implemented SDK baseline with full `/api/v1` OpenAPI coverage.
 Non-canonical draft: `sdk-plan.md`
 SDK manifest status: `implemented` for TypeScript, Python, Rust, and Elixir.
@@ -99,7 +99,7 @@ Make the current state explicit before introducing new packages, new specs, or n
 Create this canonical planning document:
 
 ```text
-docs/architecture/treedx-sdk-spec-implementation-plan.md
+docs/architecture/treedx-spec-implementation-plan.md
 ```
 
 Record the package baseline:
@@ -253,7 +253,7 @@ packages/sdk-spec/
   README.md
   package.json
   spec/
-    treedx-sdk-standard.md
+    treedx-standard.md
     architecture.yaml
     capabilities.yaml
     endpoints.yaml
@@ -424,7 +424,7 @@ required_core_concepts:
   - ConformanceAdapter
 ```
 
-Create `packages/sdk-spec/spec/treedx-sdk-standard.md` with sections:
+Create `packages/sdk-spec/spec/treedx-standard.md` with sections:
 
 ```markdown
 # TreeDX SDK Standard
@@ -488,7 +488,7 @@ Document that generated OpenAPI clients are not the entire public SDK.
 
 Phase 3 is complete. `architecture.yaml` defines canonical layers, modules,
 ports, core concepts, and module/capability ownership;
-`treedx-sdk-standard.md` documents the same architecture for humans; and
+`treedx-standard.md` documents the same architecture for humans; and
 `npm run validate` enforces module, port, concept, and future manifest
 architecture coverage.
 
@@ -979,7 +979,7 @@ blobs.multipart_upload
 
 ### Documentation Work
 
-In `treedx-sdk-standard.md`, document:
+In `treedx-standard.md`, document:
 
 ```text
 TreeDxApiError / equivalent shape
@@ -1544,7 +1544,7 @@ packages/python-sdk/
   pyproject.toml
   README.md
   src/
-    treedx_sdk/
+    treedx/
       __init__.py
       client.py
       config.py
@@ -1601,7 +1601,7 @@ packages/python-sdk/
 Public API target:
 
 ```python
-from treedx_sdk import TreeDxClient
+from treedx import TreeDxClient
 
 client = TreeDxClient(
     base_url="http://localhost:4000",
@@ -1762,7 +1762,7 @@ packages/rust-sdk/
 Public API target:
 
 ```rust
-use treedx_sdk::{TreeDxClient, TreeDxConfig};
+use treedx::{TreeDxClient, TreeDxConfig};
 
 let client = TreeDxClient::new(TreeDxConfig {
     base_url: "http://localhost:4000".into(),
@@ -1857,8 +1857,8 @@ packages/elixir-sdk/
     generate_treedx_openapi_types.exs
     check_treedx_generated_types.exs
   lib/
-    treedx_sdk.ex
-    treedx_sdk/
+    treedx.ex
+    treedx/
       auth.ex
       binary.ex
       client.ex
@@ -1999,7 +1999,7 @@ Add:
 
 ```text
 .github/workflows/sdk-spec-release-gate.yml
-.github/workflows/ts-sdk-release-gate.yml
+.github/workflows/treedx-release-gate.yml
 .github/workflows/python-sdk-release-gate.yml
 .github/workflows/rust-sdk-release-gate.yml
 .github/workflows/elixir-sdk-release-gate.yml
@@ -2012,7 +2012,7 @@ Update:
 packages/sdk-spec/README.md
 docs/runbooks/release-gate.md
 docs/runbooks/sdk-release.md
-docs/architecture/treedx-sdk-spec-implementation-plan.md
+docs/architecture/treedx-spec-implementation-plan.md
 ```
 
 Remove:
@@ -2329,7 +2329,7 @@ package gate across `sdk-spec`, TypeScript, Python, Rust, and Elixir. The releas
 gate runbook now documents how SDK tests and package artifact jobs are integrated
 into the root `TreeDX Release Gate`. `docs/runbooks/sdk-release.md` documents
 local SDK verification, required integrated release-gate SDK jobs,
-artifact-only package behavior, focused TreeSeed regression, release candidate readiness,
+tag-based package publishing behavior, focused TreeSeed regression, release candidate readiness,
 troubleshooting, and cleanup.
 
 ---
@@ -2346,7 +2346,7 @@ Add or update:
 
 ```text
 packages/sdk-spec/README.md
-packages/sdk-spec/spec/treedx-sdk-standard.md
+packages/sdk-spec/spec/treedx-standard.md
 packages/ts-sdk/README.md
 packages/python-sdk/README.md
 packages/rust-sdk/README.md
@@ -2499,7 +2499,7 @@ packages/python-sdk
 packages/rust-sdk
 packages/elixir-sdk
 .github/workflows/sdk-spec-release-gate.yml
-.github/workflows/ts-sdk-release-gate.yml
+.github/workflows/treedx-release-gate.yml
 .github/workflows/python-sdk-release-gate.yml
 .github/workflows/rust-sdk-release-gate.yml
 .github/workflows/elixir-sdk-release-gate.yml

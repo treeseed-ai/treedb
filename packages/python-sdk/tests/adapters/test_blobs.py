@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import BlobsAdapter
+from treedx.adapters import BlobsAdapter
 
 
 def test_blobs_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

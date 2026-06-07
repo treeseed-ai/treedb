@@ -1,6 +1,6 @@
 # TypeScript TreeDX SDK
 
-`@treedx/ts-sdk` is the generic TypeScript SDK for TreeDX. It implements the
+`@treeseed/treedx` is the generic TypeScript SDK for TreeDX. It implements the
 shared `packages/sdk-spec` architecture, follows `docs/api/openapi.yaml`, and
 does not encode TreeSeed product semantics. `packages/trsd-sdk` is a downstream
 TreeSeed consumer/reference only.
@@ -11,23 +11,20 @@ first-class module methods and a validated raw operation fallback.
 
 ## Install
 
-This package is private in the current repo baseline:
-
 ```bash
-cd packages/ts-sdk
-npm ci
+npm install @treeseed/treedx
 ```
 
-Consumers will import the package as:
+Import the package as:
 
 ```ts
-import { TreeDxClient, TreeDxApiError } from '@treedx/ts-sdk';
+import { TreeDxClient, TreeDxApiError } from '@treeseed/treedx';
 ```
 
 ## Configure Client
 
 ```ts
-import { TreeDxClient } from '@treedx/ts-sdk';
+import { TreeDxClient } from '@treeseed/treedx';
 
 const client = new TreeDxClient({
   baseUrl: 'http://localhost:4000',
@@ -168,7 +165,7 @@ Pagination helpers preserve opaque cursor values and page metadata. SDK code
 must not decode TreeDX cursor internals.
 
 ```ts
-import { getNextCursor } from '@treedx/ts-sdk/treedx/client';
+import { getNextCursor } from '@treeseed/treedx/treedx/client';
 ```
 
 ## Binary And Multipart

@@ -2,9 +2,9 @@ from pathlib import Path
 
 import yaml
 
-from treedx_sdk import TreeDxClient
-from treedx_sdk.conformance import TreeDxConformanceAdapter, TreeDxConformanceScenario
-from treedx_sdk.transport import TreeDxRequest, TreeDxResponse
+from treedx import TreeDxClient
+from treedx.conformance import TreeDxConformanceAdapter, TreeDxConformanceScenario
+from treedx.transport import TreeDxRequest, TreeDxResponse
 
 
 class MockTransport:

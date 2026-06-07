@@ -2,7 +2,7 @@
 
 ## Summary
 
-Baseline verification was run against `packages/ts-sdk` before TreeDX integration changes. The SDK is currently a standalone npm package named `@treeseed/sdk` at version `0.10.22`.
+Baseline verification was run against `packages/treedx` before TreeDX integration changes. The SDK is currently a standalone npm package named `@treeseed/sdk` at version `0.10.22`.
 
 ## Initial Command Results
 
@@ -10,7 +10,7 @@ Baseline verification was run against `packages/ts-sdk` before TreeDX integratio
 | --- | --- | --- |
 | `npm ci` | pass | Created dependencies; reported 18 audit vulnerabilities, including 13 moderate and 5 high. |
 | `npm run build` | pass | Build completed through `npm run build:dist`. |
-| `npm run typecheck --if-present` | pass/no-op | No `typecheck` script exists in `packages/ts-sdk/package.json`. |
+| `npm run typecheck --if-present` | pass/no-op | No `typecheck` script exists in `packages/treedx/package.json`. |
 | `npm test` | fail | Missing fixture submodule plus package graph self-reference assertion. |
 
 ## Initial Failure Details
@@ -38,7 +38,7 @@ After writing the initial docs, the requested documentation-safe verification co
 | Command | Result | Notes |
 | --- | --- | --- |
 | `git status --short` | pass | Root worktree shows only new `docs/` files. |
-| `git -C packages/ts-sdk status --short` | pass | SDK checkout is clean. |
+| `git -C packages/treedx status --short` | pass | SDK checkout is clean. |
 | `npm run build` | pass | Build completed through `npm run build:dist`. |
 | `npm test` | historical issue | Only the package graph assertion tripped on this historical rerun; this has been corrected. |
 
@@ -60,7 +60,7 @@ At the time of the final rerun, the fixture submodule was present at the expecte
 ## Cleanup Update
 
 The package graph self-reference was corrected by excluding the actual
-`packages/ts-sdk/test/utils/package-graph.test.ts` path from its
+`packages/treedx/test/utils/package-graph.test.ts` path from its
 deprecated-alias scan. The focused test passed:
 
 ```text
@@ -89,7 +89,7 @@ verification path.
 For SDK-facing TreeDX changes, run:
 
 ```bash
-cd packages/ts-sdk
+cd packages/treedx
 npm run build
 npx vitest run --config ./vitest.config.ts test/utils/package-graph.test.ts test/utils/treedx-e2e-contract.test.ts
 npm test

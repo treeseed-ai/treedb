@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import ExecAdapter
+from treedx.adapters import ExecAdapter
 
 
 def test_exec_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

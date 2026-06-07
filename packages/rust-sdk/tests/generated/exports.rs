@@ -1,6 +1,6 @@
-use treedx_sdk::conformance::TreeDxConformanceAdapter;
-use treedx_sdk::generated::openapi_types::TREEDX_OPENAPI_OPERATIONS;
-use treedx_sdk::{TreeDxApiError, TreeDxClient, TreeDxConfig};
+use treedx::conformance::TreeDxConformanceAdapter;
+use treedx::generated::openapi_types::TREEDX_OPENAPI_OPERATIONS;
+use treedx::{TreeDxApiError, TreeDxClient, TreeDxConfig};
 
 #[test]
 fn public_exports_compile() {

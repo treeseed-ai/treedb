@@ -1,4 +1,4 @@
-from treedx_sdk.errors import TreeDxApiError
+from treedx.errors import TreeDxApiError
 
 
 def test_error_from_response_preserves_payload() -> None:

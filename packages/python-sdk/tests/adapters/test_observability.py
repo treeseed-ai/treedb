@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import ObservabilityAdapter
+from treedx.adapters import ObservabilityAdapter
 
 
 def test_observability_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

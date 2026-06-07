@@ -1,10 +1,17 @@
 {
-  "name": "@treedx/ts-sdk",
+  "name": "@treeseed/treedx",
   "version": "0.1.0",
-  "private": true,
   "description": "Generic TypeScript SDK for TreeDX.",
   "license": "Apache-2.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/treeseed-ai/treedx.git",
+    "directory": "packages/ts-sdk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22"
   },

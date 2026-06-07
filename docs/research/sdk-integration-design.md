@@ -6,11 +6,11 @@ TreeDX-backed ports, registry routing, and global federation methods.
 
 ## Current SDK Construction
 
-`AgentSdk` currently constructs a local `ContentStore` and `ContentGraphRuntime` in `packages/ts-sdk/src/sdk.ts`.
+`AgentSdk` currently constructs a local `ContentStore` and `ContentGraphRuntime` in `packages/treedx/src/sdk.ts`.
 
 - `ContentStore` handles content-backed model operations through local filesystem reads/writes, Markdown/MDX walking, frontmatter parsing, local worktree paths, and `GitRuntime`.
 - `ContentGraphRuntime` handles local graph snapshots under `.treeseed/state/graph`.
-- Public SDK exports are declared in `packages/ts-sdk/src/index.ts` and package subpaths in `packages/ts-sdk/package.json`.
+- Public SDK exports are declared in `packages/treedx/src/index.ts` and package subpaths in `packages/treedx/package.json`.
 - `scripts/build-dist.ts` builds all `src/**/*.ts` into `dist`, so a new `src/treedx` namespace can be exported without extra build plumbing.
 
 ## TreeDX Integration Choice

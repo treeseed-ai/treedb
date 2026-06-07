@@ -15,10 +15,10 @@
 
 Generic TreeDX SDK packages are:
 
-- TypeScript: `@treedx/ts-sdk`
-- Python: `treedx-sdk` with import package `treedx_sdk`
-- Rust: crate `treedx-sdk` with library `treedx_sdk`
-- Elixir: app `:treedx_sdk` with namespace `TreeDxSdk`
+- TypeScript: `@treedx/treedx`
+- Python: `treedx` with import package `treedx`
+- Rust: crate `treedx` with library `treedx`
+- Elixir: app `:treedx` with namespace `TreeDxSdk`
 
 These packages expose generic TreeDX concepts only: repositories, refs, paths,
 workspaces, blobs, query, graph, context, federation, registry, snapshots,
@@ -27,7 +27,7 @@ artifacts, mirrors, migrations, exec, and observability.
 ## Downstream TreeSeed Package
 
 `@treeseed/sdk` in `packages/trsd-sdk` is downstream. It may consume
-`@treedx/ts-sdk` and may keep TreeSeed compatibility tests, but it does not
+`@treedx/treedx` and may keep TreeSeed compatibility tests, but it does not
 define generic TreeDX SDK architecture.
 
 TreeSeed portfolio-backed content is downstream compatibility behavior. TreeDX

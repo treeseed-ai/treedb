@@ -1,9 +1,9 @@
 import httpx
 import pytest
 
-from treedx_sdk.config import TreeDxClientConfig
-from treedx_sdk.errors import TreeDxApiError
-from treedx_sdk.transport import HttpxTransport, TreeDxRequest
+from treedx.config import TreeDxClientConfig
+from treedx.errors import TreeDxApiError
+from treedx.transport import HttpxTransport, TreeDxRequest
 
 
 def test_transport_wraps_network_errors() -> None:

@@ -2,14 +2,14 @@ from pathlib import Path
 
 import yaml
 
-import treedx_sdk
-from treedx_sdk.conformance import TreeDxConformanceAdapter
-from treedx_sdk.generated import TREEDX_OPENAPI_OPERATIONS
+import treedx
+from treedx.conformance import TreeDxConformanceAdapter
+from treedx.generated import TREEDX_OPENAPI_OPERATIONS
 
 
 def test_public_exports() -> None:
-    assert treedx_sdk.TreeDxClient is not None
-    assert treedx_sdk.TreeDxApiError is not None
+    assert treedx.TreeDxClient is not None
+    assert treedx.TreeDxApiError is not None
     assert TreeDxConformanceAdapter is not None
 
 

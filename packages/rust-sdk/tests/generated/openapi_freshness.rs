@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::process::Command;
 
-use treedx_sdk::generated::openapi_types::TREEDX_OPENAPI_OPERATIONS;
+use treedx::generated::openapi_types::TREEDX_OPENAPI_OPERATIONS;
 
 fn endpoint_strings_from_sdk_spec() -> BTreeSet<String> {
     let text = std::fs::read_to_string("../sdk-spec/spec/endpoints.yaml").unwrap();

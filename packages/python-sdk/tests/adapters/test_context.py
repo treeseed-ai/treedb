@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import ContextAdapter
+from treedx.adapters import ContextAdapter
 
 
 def test_context_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

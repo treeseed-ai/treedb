@@ -1,15 +1,16 @@
 [package]
-name = "treedx-sdk"
+name = "treedx"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
 description = "Generic Rust SDK for TreeDX."
-publish = false
+repository = "https://github.com/treeseed-ai/treedx"
+readme = "README.md"
 
 [workspace]
 
 [lib]
-name = "treedx_sdk"
+name = "treedx"
 path = "src/lib.rs"
 
 [dependencies]

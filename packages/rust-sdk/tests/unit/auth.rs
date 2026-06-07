@@ -1,5 +1,5 @@
-use treedx_sdk::auth::{AuthProvider, resolve_authorization_header};
-use treedx_sdk::{StaticBearerTokenAuthProvider, TreeDxConfig};
+use treedx::auth::{AuthProvider, resolve_authorization_header};
+use treedx::{StaticBearerTokenAuthProvider, TreeDxConfig};
 
 #[tokio::test]
 async fn static_bearer_token_provider_returns_token() {

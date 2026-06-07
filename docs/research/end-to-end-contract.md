@@ -19,12 +19,12 @@ and TypeScript SDK TreeDX clients.
 The required fast layer is:
 
 - `apps/api/test/treedx_web/end_to_end_mvp_test.exs`
-- `packages/ts-sdk/test/utils/treedx-e2e-contract.test.ts`
+- `packages/treedx/test/utils/treedx-e2e-contract.test.ts`
 
 The optional deployment layer is:
 
 - `scripts/mvp-smoke.sh`
-- `packages/ts-sdk/test/utils/treedx-live-contract.test.ts` when live env vars are set
+- `packages/treedx/test/utils/treedx-live-contract.test.ts` when live env vars are set
 
 ## Federation Scope
 
@@ -73,6 +73,6 @@ CARGO_TARGET_DIR=/tmp/treedx-target cargo test --workspace
 cd apps/api
 CARGO_TARGET_DIR=/tmp/treedx-target RUSTLER_TARGET_DIR=/tmp/treedx-target mix test test/treedx_web/end_to_end_mvp_test.exs
 cd ../..
-cd packages/ts-sdk
+cd packages/treedx
 npx vitest run --config ./vitest.config.ts test/utils/treedx-e2e-contract.test.ts test/utils/treedx-live-contract.test.ts
 ```

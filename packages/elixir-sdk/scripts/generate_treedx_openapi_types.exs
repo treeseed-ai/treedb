@@ -1,6 +1,6 @@
 defmodule TreeDxSdk.OpenApiGenerator do
   @openapi_path Path.expand("../../../docs/api/openapi.yaml", __DIR__)
-  @output_path Path.expand("../lib/treedx_sdk/generated/openapi_types.ex", __DIR__)
+  @output_path Path.expand("../lib/treedx/generated/openapi_types.ex", __DIR__)
 
   def operations do
     @openapi_path

@@ -6,7 +6,7 @@ context, content path maps, and repository-selection hints. It does not
 configure one global repository id.
 
 `packages/ts-sdk` remains the generic TypeScript TreeDX SDK. `packages/trsd-sdk`
-is a downstream TreeSeed consumer that uses `@treedx/ts-sdk` for TreeDX access
+is a downstream TreeSeed consumer that uses `@treeseed/treedx` for TreeDX access
 and keeps TreeSeed product semantics out of the generic SDK architecture.
 
 ## Runtime Shape

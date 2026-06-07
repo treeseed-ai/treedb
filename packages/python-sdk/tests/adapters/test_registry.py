@@ -1,4 +1,4 @@
-from treedx_sdk.adapters import RegistryAdapter
+from treedx.adapters import RegistryAdapter
 
 
 def test_registry_endpoints(MockTransport) -> None:  # type: ignore[no-untyped-def]

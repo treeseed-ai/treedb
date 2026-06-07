@@ -1,4 +1,4 @@
-use treedx_sdk::generated::openapi_types::{
+use treedx::generated::openapi_types::{
     TREEDX_OPENAPI_OPERATION_COUNT, TREEDX_OPENAPI_OPERATIONS,
 };
 

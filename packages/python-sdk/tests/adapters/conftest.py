@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from treedx_sdk.transport import TreeDxRequest, TreeDxResponse
+from treedx.transport import TreeDxRequest, TreeDxResponse
 
 
 class _MockTransport:
