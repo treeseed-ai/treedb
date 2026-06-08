@@ -19,6 +19,7 @@ on:
       - "Cargo.lock"
       - "apps/api/mix.exs"
       - "apps/api/mix.lock"
+      - "treeseed.package.yaml"
       - ".github/workflows/dev-image.yml"
 
 jobs:
