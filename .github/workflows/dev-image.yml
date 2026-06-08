@@ -1,0 +1,133 @@
+name: TreeDX Development Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - staging
+    paths:
+      - "apps/api/**"
+      - "apps/api/native/**"
+      - "config/**"
+      - "lib/**"
+      - "native/**"
+      - "Dockerfile"
+      - "docker-healthcheck.c"
+      - "mix.exs"
+      - "mix.lock"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "apps/api/mix.exs"
+      - "apps/api/mix.lock"
+      - ".github/workflows/dev-image.yml"
+
+jobs:
+  image-plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      image_tag: ${{ steps.tags.outputs.image_tag }}
+      arch_tag_prefix: ${{ steps.tags.outputs.arch_tag_prefix }}
+      moving_tag: ${{ steps.tags.outputs.moving_tag }}
+
+    steps:
+      - name: Derive Docker tags
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          branch_slug="$(printf '%s' "${GITHUB_REF_NAME}" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' \
+            | cut -c1-40)"
+          if [[ -z "$branch_slug" ]]; then
+            branch_slug="branch"
+          fi
+
+          short_sha="${GITHUB_SHA:0:12}"
+          immutable="treeseed/treedx:dev-${branch_slug}-${short_sha}"
+          moving="treeseed/treedx:dev-${branch_slug}"
+
+          echo "image_tag=${immutable}" >> "$GITHUB_OUTPUT"
+          echo "arch_tag_prefix=${immutable}" >> "$GITHUB_OUTPUT"
+          echo "moving_tag=${moving}" >> "$GITHUB_OUTPUT"
+
+  build-publish-dev-image:
+    needs: image-plan
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push development architecture image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: prod
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ needs.image-plan.outputs.arch_tag_prefix }}-${{ matrix.arch }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=treedx-dev-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=treedx-dev-${{ matrix.arch }}
+
+  publish-dev-manifest:
+    needs:
+      - image-plan
+      - build-publish-dev-image
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish development Docker manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker buildx imagetools create \
+            -t "${{ needs.image-plan.outputs.image_tag }}" \
+            -t "${{ needs.image-plan.outputs.moving_tag }}" \
+            "${{ needs.image-plan.outputs.arch_tag_prefix }}-amd64" \
+            "${{ needs.image-plan.outputs.arch_tag_prefix }}-arm64"
+
+          docker buildx imagetools inspect "${{ needs.image-plan.outputs.image_tag }}"
+
+      - name: Report image tag
+        run: |
+          echo "TreeDX development image: ${{ needs.image-plan.outputs.image_tag }}"
