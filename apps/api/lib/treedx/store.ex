@@ -2,7 +2,7 @@ defmodule TreeDx.Store do
   @moduledoc false
 
   def data_dir do
-    Application.get_env(:treedx, :data_dir) || System.get_env("TREEDX_DATA_DIR") ||
+    System.get_env("TREEDX_DATA_DIR") || Application.get_env(:treedx, :data_dir) ||
       "/var/lib/treedx"
   end
 

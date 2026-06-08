@@ -5,7 +5,7 @@ defmodule TreeDx.Application do
   @impl true
   def start(_type, _args) do
     data_dir =
-      Application.get_env(:treedx, :data_dir) || System.get_env("TREEDX_DATA_DIR") ||
+      System.get_env("TREEDX_DATA_DIR") || Application.get_env(:treedx, :data_dir) ||
         "/var/lib/treedx"
 
     Application.put_env(:treedx, :data_dir, data_dir)
