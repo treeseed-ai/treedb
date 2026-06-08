@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.7
-
 FROM elixir:1.17.3-otp-27-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive \
