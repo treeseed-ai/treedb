@@ -892,12 +892,14 @@ jobs:
   build-publish-profiler-image:
     needs:
       - publish-plan
+      - build-publish-image
       - test-typescript-sdk
       - test-python-sdk
       - test-rust-sdk
       - test-elixir-sdk
     if: >-
       needs.publish-plan.result == 'success' &&
+      needs.build-publish-image.result == 'success' &&
       needs.test-typescript-sdk.result == 'success' &&
       needs.test-python-sdk.result == 'success' &&
       needs.test-rust-sdk.result == 'success' &&
@@ -947,6 +949,7 @@ jobs:
   package-typescript-sdk:
     needs:
       - publish-plan
+      - build-publish-image
       - profile
       - profile-federation
       - profile-performance
@@ -956,6 +959,7 @@ jobs:
       - test-elixir-sdk
     if: >-
       needs.publish-plan.result == 'success' &&
+      needs.build-publish-image.result == 'success' &&
       needs.profile.result == 'success' &&
       needs.profile-federation.result == 'success' &&
       needs.profile-performance.result == 'success' &&
@@ -1030,6 +1034,7 @@ jobs:
   package-python-sdk:
     needs:
       - publish-plan
+      - build-publish-image
       - profile
       - profile-federation
       - profile-performance
@@ -1039,6 +1044,7 @@ jobs:
       - test-elixir-sdk
     if: >-
       needs.publish-plan.result == 'success' &&
+      needs.build-publish-image.result == 'success' &&
       needs.profile.result == 'success' &&
       needs.profile-federation.result == 'success' &&
       needs.profile-performance.result == 'success' &&
@@ -1116,6 +1122,7 @@ jobs:
   package-rust-sdk:
     needs:
       - publish-plan
+      - build-publish-image
       - profile
       - profile-federation
       - profile-performance
@@ -1125,6 +1132,7 @@ jobs:
       - test-elixir-sdk
     if: >-
       needs.publish-plan.result == 'success' &&
+      needs.build-publish-image.result == 'success' &&
       needs.profile.result == 'success' &&
       needs.profile-federation.result == 'success' &&
       needs.profile-performance.result == 'success' &&
@@ -1194,6 +1202,7 @@ jobs:
   package-elixir-sdk:
     needs:
       - publish-plan
+      - build-publish-image
       - profile
       - profile-federation
       - profile-performance
@@ -1203,6 +1212,7 @@ jobs:
       - test-elixir-sdk
     if: >-
       needs.publish-plan.result == 'success' &&
+      needs.build-publish-image.result == 'success' &&
       needs.profile.result == 'success' &&
       needs.profile-federation.result == 'success' &&
       needs.profile-performance.result == 'success' &&
