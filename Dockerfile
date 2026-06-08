@@ -77,6 +77,7 @@ RUN apt-get update \
 
 FROM debian:bookworm-slim AS prod
 RUN apt-get update \
+  && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends ca-certificates libssl3 libstdc++6 libtinfo6 util-linux zlib1g \
   && mkdir -p /var/lib/treedx /data \
   && chown -R 65532:65532 /var/lib/treedx /data \
