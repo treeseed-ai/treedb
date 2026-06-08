@@ -75,7 +75,13 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-FROM gcr.io/distroless/cc-debian12:nonroot AS prod
+FROM debian:bookworm-slim AS prod
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates libssl3 libstdc++6 libtinfo6 util-linux zlib1g \
+  && mkdir -p /var/lib/treedx /data \
+  && chown -R 65532:65532 /var/lib/treedx /data \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 ENV LANG=C.UTF-8 \
     TREEDX_DATA_DIR=/var/lib/treedx \
     PHX_SERVER=true \
@@ -94,6 +100,9 @@ ENV LANG=C.UTF-8 \
 COPY --from=runtime-root /runtime-root/ /
 WORKDIR /app
 COPY --from=build --chown=65532:65532 /workspace/treedx/apps/api/_build/prod/rel/treedx ./
-USER 65532:65532
+COPY docker-entrypoint.sh /usr/local/bin/treedx-entrypoint
+RUN chmod 0755 /usr/local/bin/treedx-entrypoint
+USER 0:0
 EXPOSE 4000
+ENTRYPOINT ["/usr/local/bin/treedx-entrypoint"]
 CMD ["/app/erts-current/bin/erlexec", "+fnu", "-noshell", "-s", "elixir", "start_cli", "-mode", "embedded", "-setcookie", "treedx", "-config", "/app/releases/current/sys", "-boot", "/app/releases/current/start", "-boot_var", "RELEASE_LIB", "/app/lib", "-args_file", "/app/releases/current/vm.args", "-extra", "--no-halt"]

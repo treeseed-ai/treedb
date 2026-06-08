@@ -51,18 +51,17 @@ GET /metrics
 6. Confirm production logs are JSON and do not contain raw secrets or local
    filesystem paths.
 
-The published `treeseed/treedx` service image uses
-`gcr.io/distroless/cc-debian12:nonroot`. It intentionally has no package
-manager, shell entrypoint, `git`, `curl`, profiler binary, profiler source, or
-operational test tooling. Native repository operations and local/file push paths
-do not require the shell `git` binary. If authenticated external Git transport
-is enabled, provide `git` through a derived image or a controlled worker
-environment with the documented credential-provider settings.
+The published `treeseed/treedx` service image uses a slim Debian runtime with a
+minimal entrypoint. The entrypoint creates and `chown`s `$TREEDX_DATA_DIR` for
+mounted-volume platforms such as Railway, then drops privileges and runs the
+TreeDX release as UID/GID `65532:65532`. It intentionally omits profiler source,
+profiler binaries, operational test tooling, and the shell `git` binary. Native
+repository operations and local/file push paths do not require the shell `git`
+binary. If authenticated external Git transport is enabled, provide `git`
+through a derived image or a controlled worker environment with the documented
+credential-provider settings.
 
-The service image runs as UID/GID `65532:65532` and does not perform runtime
-`chown`. Docker named volumes generally inherit `/var/lib/treedx` ownership from
-the image on first initialization. Kubernetes and other mounted-volume
-deployments should configure:
+Kubernetes and other mounted-volume deployments should configure:
 
 ```yaml
 securityContext:
