@@ -75,6 +75,16 @@ The core design choices are:
 
 The TypeScript SDK is intentionally tested and released independently from this TreeDX service repository. The top-level TreeDX release gate does not require `packages/ts-sdk`, npm, or Node setup.
 
+## Treeseed Reconciliation Integration
+
+TreeDX owns the implementation, release gate, Docker image workflows, generated SDK publication, and profiler image gates. Treeseed API hosting consumes TreeDX through the SDK-owned reconciliation platform documented in the root workspace `docs/reconciliation-platform.md`.
+
+- `treeseed.package.yaml` declares the TreeDX repository, image target, development-image workflow, tag policy, credential needs, and hosting override variable.
+- Tagged release images are cut only from merges to `main`.
+- Staging may publish pruneable development images, including the mutable `dev-staging` tag and immutable SHA-qualified development tags.
+- `trsd package image --package treedx --branch staging --plan|--sync-config|--execute --json` is the package workflow surface; `trsd db image` remains a TreeDX-domain wrapper.
+- `packages/api` owns public TreeDX federation hosting and reconciles the selected image into Railway services, domains, variables, and volumes.
+
 ## Architecture
 
 TreeDX is split into three layers.
